@@ -36,7 +36,7 @@ class Users(Base):
     )
     
     #relationships 
-    tenant = relationship("Tenant", back_populates="users")
+    tenants = relationship("Tenants", back_populates="users")
 
 
 

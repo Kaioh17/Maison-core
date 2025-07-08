@@ -41,7 +41,7 @@ class Drivers(Base):
     )
     
     #relationships 
-    tenant = relationship("Tenant", backref="drivers", passive_deletes=True)
+    tenant = relationship("Tenants", backref="drivers", passive_deletes=True)
     vehicle = relationship("Vehicles", backref="assigned_driver", passive_deletes=True)
 
 

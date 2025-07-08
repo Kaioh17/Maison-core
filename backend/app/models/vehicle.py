@@ -25,4 +25,4 @@ class Vehicles(Base):
     created_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
     updated_on = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
-    tenant = relationship("Tenant", backref="vehicles", passive_deletes=True)
+    tenant = relationship("Tenants", backref="vehicles", passive_deletes=True)
