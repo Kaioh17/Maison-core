@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.routers import tenants
+from api.routers import tenants, auth
 from db.database import engine,Base
 from models import *
 
@@ -10,3 +10,5 @@ app = FastAPI(
 )
 
 app.include_router(tenants.router)
+app.include_router(auth.router)
+    

@@ -20,4 +20,4 @@ COPY ../backend/app .
 
 
 ENV PYTHONUNBUFFERED=1
-# ENV PYTHONPATH=backend/app
+ENV PYTHONPATH=/backend/app
