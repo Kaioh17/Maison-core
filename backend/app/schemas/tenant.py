@@ -69,8 +69,10 @@ class TenantResponse(BaseModel):
     created_on: datetime
     updated_on: Optional[datetime]
     
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+
+    }
 
 class TenantLogin(BaseModel):
     email: EmailStr

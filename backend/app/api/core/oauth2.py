@@ -11,8 +11,9 @@ from db.database import get_db
 from models import *
 
 role_table_map = {
-    "user": user.Users,
-    "Tenant": tenant.Tenants
+    "rider": user.Users,
+    "Tenant": tenant.Tenants,
+    "Driver": driver.Drivers
 }
 
 """JWT generation"""

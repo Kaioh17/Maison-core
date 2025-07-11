@@ -1,10 +1,8 @@
 from fastapi import HTTPException, status
 from models import driver
 from utils import password_utils
+from utils.logging import logger
 
-import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 async def create_driver(payload, db):
     logger.info("Creating account...")

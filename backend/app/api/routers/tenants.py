@@ -5,20 +5,18 @@ from db.database import get_db
 from ..services import tenants_service
 from schemas import tenant,driver
 from ..core import oauth2
-import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+from utils.logging import logger
 
 router = APIRouter(
     prefix = "/tenant",
-    tags = ['tenant']
+    tags = ['Tenant']
 )   
 
 
 @router.get('/', status_code= status.HTTP_200_OK, response_model= tenant.TenantResponse)
 def tenants(db: Session = Depends(get_db), current_tenants: int =  Depends(oauth2.get_current_user) ):
 
-    logger.info("Tenants")
+    logger.info("Tenant's info")
     company = tenants_service.get_company_info(db,current_tenants)
     return company
 

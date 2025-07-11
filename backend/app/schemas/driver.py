@@ -7,9 +7,9 @@ import re
 class DriverBase(BaseModel):
     tenant_id: UUID
     email: EmailStr
-    phone_no: str
-    first_name: str
-    last_name: str
+    phone_no: str = Field(..., pattern = r'^\+?[\d\s\-\(\)]+$')
+    first_name: str = Field(..., min_length=1, max_length=200)
+    last_name: str = Field(..., min_length=1, max_length=200)
     state: Optional[str] = None
     postal_code: Optional[str] = None
     completed_rides: int
@@ -48,9 +48,11 @@ class DriverResponse(DriverBase):
     created_on: datetime
     updated_on: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
 
+    }
+       
 
 class DriverLogin(BaseModel):
     email: EmailStr

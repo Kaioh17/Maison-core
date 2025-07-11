@@ -29,7 +29,7 @@ class Users(Base):
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now())
 
-    tier = Column(String, )
+    tier = Column(String, nullable =False, index = True, default = 'free' )
     
     __table_args__ = (
         UniqueConstraint('email', 'tenant_id', name = 'unique_user'),

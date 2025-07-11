@@ -20,6 +20,7 @@ class Drivers(Base):
     password = Column(String, nullable=False)
     state = Column(String, nullable=True, index=True)
     postal_code = Column(String, nullable=True)
+    role = Column(String, nullable = True, default="Driver")
 
     completed_rides = Column(String,nullable=False)
 

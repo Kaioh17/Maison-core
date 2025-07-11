@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
-from models import tenant
+from models import tenant, driver
 from utils import password_utils
+from utils.logging import logger
 
 def create_tenant(db, payload):
 
@@ -17,3 +18,19 @@ def create_tenant(db, payload):
     db.refresh(new_tenant)
 
     return new_tenant
+def get_company_info(db, current_tenats):
+
+    company = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_tenats.id).first()
+
+    return company
+
+async def get_all_drivers(db, current_tenants):
+    logger.info("getting drivers.. ")
+    drivers_query = db.query(driver.Drivers).filter(driver.Drivers.tenant_id == current_tenants.id)
+    drivers = drivers_query.all()
+
+    if not drivers:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            details = "there are no drivers under this tenants")
+
+    return drivers

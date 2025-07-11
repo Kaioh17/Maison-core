@@ -5,13 +5,15 @@ from db.database import get_db
 from ..services import tenants_service
 from schemas import auth
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
-from models import tenant,driver
+from models import tenant,driver, user
 from ..core.oauth2 import create_access_token, verify_access_token
 from utils.password_utils import verify
+from utils.logging import logger
+
 
 router = APIRouter(
     prefix = '/login',
-    tags = ['authentication']
+    tags = ['Authentication']
 )   
 
 @router.post('/tenats')
@@ -58,6 +60,32 @@ def login( request: Request,
                             detail="Invalid credentials")
     
     access_token = create_access_token(data = {"id": str(drivers.id), "role": drivers.role})
+
+    return {
+        "access_token" : access_token,
+        "token_type": "bearer"
+    }
+
+
+@router.post('/user')
+def login( request: Request,
+    db: Session = Depends(get_db),
+    user_credentials: OAuth2PasswordRequestForm = Depends()):
+    
+    user_query = db.query(user.Users).filter(user.Users.email == user_credentials.username)
+    users = user_query.first()
+    print(f"user data: {users.email}")
+   
+   
+    if not users:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Invalid credentials")
+    
+    if not verify(user_credentials.password, users.password):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Invalid credentials")
+    
+    access_token = create_access_token(data = {"id": str(users.id), "role": users.role})
 
     return {
         "access_token" : access_token,
