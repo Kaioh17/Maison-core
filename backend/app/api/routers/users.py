@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, FastAPI, Response,status
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
-from db.database import get_db
+from app.db.database import get_db
 from ..services import tenants_service, user_services
-from schemas import user,driver
+from app.schemas import user,driver
 from ..core import oauth2
-from utils.logging import logger
+from app.utils.logging import logger
 
 router = APIRouter(
     prefix = "/users",
@@ -22,9 +22,9 @@ async def create_user(payload: user.UserCreate,db: Session = Depends(get_db)):
     return user
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def get_user_info(db:Session = Depends(get_db), current_user = Depends(oauth2.get_current_user)):
+async def get_user_info(db:Session = Depends(get_db), current_rider = Depends(oauth2.get_current_user)):
 
-    user_info = await user_services.get_user_info(db, current_user)
+    user_info = await user_services.get_user_info(db, current_rider)
 
     return user_info
 ##get available bookings available drivers 

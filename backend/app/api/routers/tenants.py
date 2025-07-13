@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, FastAPI, Response,status
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
-from db.database import get_db
+from app.db.database import get_db
 from ..services import tenants_service
-from schemas import tenant,driver
+from app.schemas import tenant,driver
 from ..core import oauth2
-from utils.logging import logger
+from app.utils.logging import logger
 
 router = APIRouter(
     prefix = "/tenant",

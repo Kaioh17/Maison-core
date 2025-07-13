@@ -5,10 +5,10 @@ from fastapi.params import Depends
 from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from config import Settings
-from schemas import auth
-from db.database import get_db
-from models import *
+from app.config import Settings
+from app.schemas import auth
+from app.db.database import get_db
+from app.models import *
 
 role_table_map = {
     "rider": user.Users,

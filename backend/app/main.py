@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from api.routers import tenants, auth, drivers, bookings, users
-from db.database import engine,Base
-from models import *
+from app.api.routers import tenants, auth, drivers, bookings, users, vehicles
+from app.db.database import engine
+from app.models import *
 # from utils import logging
 
 
@@ -17,5 +17,12 @@ app.include_router(tenants.router)
 app.include_router(auth.router)
 app.include_router(drivers.router)
 app.include_router(users.router)
+app.include_router(bookings.router)
+app.include_router(vehicles.router)
+
+
+
+
+
 
     

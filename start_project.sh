@@ -19,6 +19,14 @@ if [ $? != 0 ]; then
     tmux send-keys -t $SESSION:docker "source $VENV_PATH" C-m
     tmux send-keys -t $SESSION:docker "docker-compose up --build" C-m
 
+
+    tmux set-option -g mouse on
+    tmux new-window -t $SESSION -n 'docker_alembic'
+    tmux send-keys -t $SESSION:docker_alembic "cd $PROJECT_DIR" C-m
+    tmux send-keys -t $SESSION:docker_alembic "source $VENV_PATH" C-m
+    tmux send-keys -t $SESSION:docker_alembic "docker exec  -it maison /bin/bash" C-m
+
+
               
 
     
