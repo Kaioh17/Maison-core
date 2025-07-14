@@ -1,0 +1,6 @@
+{
+    "New York": {"name": "John F. Kennedy International Airport", "code": "JFK"},
+    "Los Angeles": {"name": "Los Angeles International Airport", "code": "LAX"},
+    "Chicago": {"name": "O'Hare International Airport", "code": "ORD"},
+    "Miami": {"name": "Miami International Airport", "code": "MIA"}
+}

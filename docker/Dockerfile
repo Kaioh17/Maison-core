@@ -1,8 +1,34 @@
+# # Use official Python image as base
+# FROM python:3.11-slim
+
+# # Set working directory
+# WORKDIR /backend/app
+
+# # Install system dependencies
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     build-essential \
+#     postgresql-client \
+#     libpq-dev \
+#     && rm -rf /var/lib/apt/lists/*
+
+# # Copy requirements file and install dependencies
+# COPY ../backend/requirements.txt .
+# RUN pip install --no-cache-dir -r requirements.txt
+# RUN pip install alembic
+
+# # Copy application code
+# COPY ../backend/app .
+
+
+# ENV PYTHONUNBUFFERED=1
+# ENV PYTHONPATH=/backend/app
+
+
 # Use official Python image as base
 FROM python:3.11-slim
 
 # Set working directory
-WORKDIR /backend/app
+WORKDIR /backend
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -11,13 +37,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file and install dependencies
-COPY ../backend/requirements.txt .
+# Copy requirements file and install dependencies backend/requirements.txt
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install alembic
 
 # Copy application code
-COPY ../backend/app .
+COPY ../backend .
+COPY backend/ .
 
 
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/backend/app
+ENV PYTHONPATH=/backend/
