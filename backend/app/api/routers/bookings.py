@@ -12,7 +12,7 @@ from .dependencies import is_rider
 
 router = APIRouter(
     prefix = "/bookings",
-    tags = ["bookings"]
+    tags = ["Bookings"]
 )
 
 #retrieve all bookings 
@@ -24,3 +24,12 @@ async def BookRide(book_ride: booking.CreateBooking, current_rider =  Depends(oa
 
     ride_booked = await booking_services.book_ride(book_ride, db, current_rider)
     return ride_booked
+
+
+@router.get("/", status_code=status.HTTP_200_OK, response_model=list[booking.BookingRespose])
+async def BookRide(current_user =  Depends(oauth2.get_current_user) 
+                    ,db: Session= Depends(get_db)):
+    
+    booked_rides = await booking_services.get_booked_rides(db, current_user)
+
+    return booked_rides

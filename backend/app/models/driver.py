@@ -3,15 +3,17 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
-from models.base import Base
+from app.models.base import Base
 
-"""Driver table holds the data for each tenant's driver"""
+id_seq =  Sequence('id_seq', start= 150)
+
+
 
 class Drivers(Base):
     __tablename__ = "drivers"
-
-    id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
-    tenant_id = Column(UUID(as_uuid =True), ForeignKey("tenants.id", ondelete="CASCADE"))
+    id = Column(Integer, Sequence('id_seq'), primary_key=True)
+    # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"))
 
     email = Column(String(200), unique = True, nullable = False,index=True)
     phone_no = Column(String(200),nullable=True,index=True)
@@ -20,13 +22,13 @@ class Drivers(Base):
     password = Column(String, nullable=False)
     state = Column(String, nullable=True, index=True)
     postal_code = Column(String, nullable=True)
-    role = Column(String, nullable = True, default="Driver")
+    role = Column(String, nullable = True, default="driver")
 
     completed_rides = Column(String,nullable=False)
 
     
     license_number = Column(String(100), nullable=True, unique=True)
-    vehicle_id = Column(UUID(as_uuid=True), ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
+    vehicle_id = Column(Integer, ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
 
     
     is_active =  Column(Boolean, default=True)

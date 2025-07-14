@@ -1,4 +1,4 @@
-from models.base import Base
+from app.models.base import Base
 from sqlalchemy import CheckConstraint, Sequence, Column, Integer, String, TIMESTAMP, ForeignKey,Boolean, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -6,12 +6,12 @@ from sqlalchemy.sql.expression import text
 import uuid
 
 """Tenants table hold every client"""
-tenant_id_seq =  Sequence('user_id_seq', start= 150)
+id_seq =  Sequence('id_seq', start= 150)
 
 class Tenants(Base):
     __tablename__ = "tenants"
-
-    id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
+    id = Column(Integer, id_seq, primary_key=True, server_default=id_seq.next_value())
+    # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
     email = Column(String(200), unique = True, nullable = False,index=True)    
     first_name =  Column(String(200), nullable=False)
     last_name =  Column(String(200), nullable=False)
@@ -23,7 +23,7 @@ class Tenants(Base):
     slug = Column(String, unique=True, nullable = False, index=True)
     address = Column(String, nullable=True)
     city = Column(String, nullable=False, index=True)
-    role = Column(String, nullable=False, index=True, default = "Tenant")
+    role = Column(String, nullable=False, index=True, default = "tenant")
 
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
@@ -50,3 +50,8 @@ class Tenants(Base):
     def full_name(self):
         """Return the full name of the tenant"""
         return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def company(self):
+        """Return company name"""
+        return f"{self.company_name}"

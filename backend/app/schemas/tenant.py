@@ -51,7 +51,7 @@ class TenantUpdate(BaseModel):
 
 
 class TenantResponse(BaseModel):
-    id: UUID
+    id: int
     email: str
     first_name: str
     last_name: str

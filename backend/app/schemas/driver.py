@@ -5,7 +5,7 @@ from typing import Optional
 import re
 
 class DriverBase(BaseModel):
-    tenant_id: UUID
+    tenant_id: int
     email: EmailStr
     phone_no: str = Field(..., pattern = r'^\+?[\d\s\-\(\)]+$')
     first_name: str = Field(..., min_length=1, max_length=200)
@@ -14,7 +14,7 @@ class DriverBase(BaseModel):
     postal_code: Optional[str] = None
     completed_rides: int
     license_number: Optional[str] = None
-    vehicle_id: Optional[UUID] = None
+    vehicle_id: Optional[int] = None
     is_active: bool = True
     status: Optional[str] = "available"
 
@@ -43,7 +43,7 @@ class DriverCreate(DriverBase):
     #     return v
 
 class DriverResponse(DriverBase):
-    id: UUID
+    id: int
     role: str
     created_on: datetime
     updated_on: Optional[datetime] = None

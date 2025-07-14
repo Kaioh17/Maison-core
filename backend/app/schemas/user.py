@@ -14,7 +14,7 @@ class UserBase(BaseModel):
     state:  Optional[str] = None
     country:  Optional[str] = None
     postal_code:  Optional[str] = None
-    tenant_id: UUID
+    tenant_id:  int
     
     @validator('email')
     def validate_email(cls, v):
@@ -34,8 +34,8 @@ class UserCreate(UserBase):
             raise ValueError('Password must contain at least one number')
         return v
 class UserResponse(UserBase):
-    id:UUID
+    id: int
     role: str
     tier: str
-    created_on: datetime
-    updated_on: datetime
+    created_on: Optional[datetime]
+    updated_on: Optional[datetime]

@@ -1,4 +1,4 @@
-from models.base import Base
+from app.models.base import Base
 from sqlalchemy import Sequence, Column, Integer, String, TIMESTAMP, ForeignKey, func, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -6,12 +6,15 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 
 
+id_seq =  Sequence('id_seq', start= 1050)
+
 class Vehicles(Base):
     __tablename__ = "vehicles"
+    id = Column(Integer, Sequence('id_seq'), primary_key=True)
 
-    id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
+    # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
 
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
     
     name = Column(String(200), nullable=False)     # e.g. "Executive SUV"
     model = Column(String(200), nullable=False)    # e.g. "Escalade"

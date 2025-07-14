@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
-from models import driver
-from utils import password_utils
-from utils.logging import logger
+from app.models import driver
+from app.utils import password_utils
+from app.utils.logging import logger
 
 
 async def create_driver(payload, db):

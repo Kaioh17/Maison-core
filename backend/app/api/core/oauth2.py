@@ -12,8 +12,8 @@ from app.models import *
 
 role_table_map = {
     "rider": user.Users,
-    "Tenant": tenant.Tenants,
-    "Driver": driver.Drivers
+    "tenant": tenant.Tenants,
+    "driver": driver.Drivers
 }
 
 """JWT generation"""
