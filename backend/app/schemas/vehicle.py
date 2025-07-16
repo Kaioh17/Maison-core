@@ -5,7 +5,7 @@ from typing import Optional
 
 
 class VehicleBase(BaseModel):
-    tenant_id: int  
+     
     name: str
     model: str
     year: Optional[int]
@@ -25,6 +25,7 @@ class VehicleCreate(VehicleBase):
     pass 
 
 class VehicleResponse(VehicleBase):
+    tenant_id: int 
     id: int 
     created_on: datetime
     updated_on: Optional[datetime]

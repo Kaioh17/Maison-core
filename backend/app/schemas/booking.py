@@ -37,7 +37,7 @@ class PaymentType(str, Enum):
 class BoookingBase(BaseModel):
     driver_id: Optional[int]
     vehicle_id: Optional[int] = None
-    city: Optional[str]
+    city: str
     service_type: ServiceType
     pickup_location: str
     pickup_time: datetime
