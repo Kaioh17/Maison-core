@@ -16,17 +16,22 @@ services:
       
     volumes:
       - ../backend:/backend
-      # - ../backend/app:/backend/app
-      # - ../backend/docker.env:/backend/app/docker/.env
     command: > 
       sh -c "sleep 10 && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     working_dir: /backend
     networks:
       - app-network
     restart: unless-stopped
-  # frontend:
-  #   build:
-  #     context: ..
+  
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    container_name: maison_frontend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
     
 
   db:
