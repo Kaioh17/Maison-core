@@ -47,7 +47,15 @@ async def create_driver(payload, db):
     return new_driver
 
 async def register_driver(payload, db):
-    """This function resgisters driver right after tenants create a row"""
+    """
+    Completes driver registration after initial creation by a tenant.
+
+    This function verifies the driver's token and personal information,
+    checks for duplicate license numbers, and updates the driver's record
+    with the provided registration details and hashed password. If the driver
+    is of type 'outsourced' and vehicle data is provided, it also creates a new
+    vehicle entry for the driver after ensuring the vehicle does not already exist.
+    """
     try:
         logger.info("Creating account...")
 
