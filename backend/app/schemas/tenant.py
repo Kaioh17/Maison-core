@@ -3,7 +3,11 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional
 import re
+from enum import Enum
 
+class DriverType(str, Enum):
+    OUTSOURCED = "outsourced"
+    IN_HOUSE = "in_house"
 """Tenants Schemas"""
 class TenantCreate(BaseModel):
     email: EmailStr
@@ -73,6 +77,21 @@ class TenantResponse(BaseModel):
         "from_attributes": True
 
     }
+
+"""schema to onboard driver """
+class OnboardDriverBase(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    driver_type: DriverType
+
+class OnboardDriver(OnboardDriverBase):
+    pass
+class OnboardDriverResponse(OnboardDriverBase):
+    id: int
+    driver_token: str
+    created_on: datetime
+    
 
 class TenantLogin(BaseModel):
     email: EmailStr

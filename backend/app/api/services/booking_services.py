@@ -21,8 +21,20 @@ def _bookings_overlap(db, payload):
      #check for overlaps
     try:
         exists = db.query(booking_table).filter(booking_table.vehicle_id == payload.vehicle_id).all()
-        
-        if not exists: return
+        """If we implement driver model:
+                cases:
+                    if drivers are outsourced or contracted:
+                        we will have to check if both the driver and that vehicle are available
+                    elif drivers are inhouse:
+                        we will check if the vehicle is available and if that 
+        """
+
+        logger.info(f"Checking for any booking overlaps")
+
+        if not exists: 
+            logger.info(f"There are no overlaps")
+
+            return
 
         new_start =  payload.pickup_time
         new_end =  payload.dropoff_time

@@ -33,3 +33,14 @@ async def BookRide(current_user =  Depends(oauth2.get_current_user)
     booked_rides = await booking_services.get_booked_rides(db, current_user)
 
     return booked_rides
+
+##endpoints:
+    ##update
+    ##PUT    /bookings/{booking_id}         # ❌ Missing - Update booking
+# DELETE /bookings/{booking_id}         # ❌ Missing - Cancel booking
+# POST   /bookings/{booking_id}/accept  # ❌ Missing - Driver accepts
+# POST   /bookings/{booking_id}/start   # ❌ Missing - Start ride
+# POST   /bookings/{booking_id}/complete # ❌ Missing - Complete ride
+# GET    /bookings/available            # ❌ Missing - Available rides for drivers
+
+###search endpoint using query parameters to filter through date, times, drivers.

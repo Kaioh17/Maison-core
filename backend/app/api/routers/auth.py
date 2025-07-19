@@ -48,7 +48,7 @@ def login( request: Request,
     
     driver_query = db.query(driver.Drivers).filter(driver.Drivers.email == user_credentials.username)
     drivers = driver_query.first()
-    print(f"user data: {drivers.email}")
+    # print(f"user data: {drivers.email}")
    
    
     if not drivers:

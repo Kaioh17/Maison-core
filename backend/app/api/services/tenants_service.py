@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from app.models import tenant, driver, TenantSettings
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
+# from .helper_service import 
 
 
 db_exceptions = db_error_handler.DBErrorHandler
@@ -10,7 +11,7 @@ tenant_table = tenant.Tenants
 driver_table = driver.Drivers
 
 
-def check_unique_fields(model, db, fields: dict):
+def _check_unique_fields(model, db, fields: dict):
     try:
         for field_name, value in fields.items():
             column = getattr(model, field_name)
@@ -23,7 +24,7 @@ def check_unique_fields(model, db, fields: dict):
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
             
-def set_up_tenant_settings(new_tenant_id,payload,db):
+def _set_up_tenant_settings(new_tenant_id,payload,db):
     try: 
         new_tenants_settings = TenantSettings(tenant_id = new_tenant_id,
                                            logo_url = payload.logo_url, 
@@ -43,7 +44,7 @@ def create_tenant(db, payload):
             "slug": payload.slug
         }
 
-        check_unique_fields(tenant_table, db, model_map)
+        _check_unique_fields(tenant_table, db, model_map)
         """Create new tenants"""
         hashed_pwd = password_utils.hash(payload.password) #hash password
         tenats_info = payload.model_dump()
@@ -55,10 +56,10 @@ def create_tenant(db, payload):
         db.add(new_tenant)
         db.commit()
         db.refresh(new_tenant)
-        
+
         logger.info(f"new tenant_id {new_tenant.id}")
         """add tenants settings"""
-        set_up_tenant_settings( new_tenant.id,payload,db)
+        _set_up_tenant_settings( new_tenant.id,payload,db)
 
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
@@ -89,3 +90,53 @@ async def get_all_drivers(db, current_tenants):
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
     return drivers
+
+"""Approve drivers before they can take rides"""
+## run background check, liscence checks, 
+##payload will hold verified row in driver table
+#set constraint ini other functions to prevent drivers that are not verified from recieving rides 
+async def approve_driver(payload,db, current_user):
+    try:
+        logger.info(approve_driver)
+
+        
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
+async def _confirm_driver_email_absence(db, current_tenant, payload):
+    ##verify_email does not exist
+    driver_exists = db.query(driver_table).filter(driver_table.email == payload.email,
+                                                    driver_table.tenant_id == current_tenant.id).first()
+
+    if driver_exists: 
+        logger.warning("Driver with email already exists...")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail = "Driver with email already exists...")
+    
+
+import random
+import string
+async def _onboarding_token(length = 6):
+    access_token = string.ascii_letters + string.digits
+    return ''.join(random.choices(access_token, k=length))
+
+async def onboard_drivers(db, payload, current_tenant):
+    try:
+        await _confirm_driver_email_absence(db, current_tenant, payload)
+        onboard_token = await _onboarding_token(6)
+        logger.info("Starting onboarding process....")
+        driver_info = payload.model_dump()
+        driver_info.pop("users", None)
+        new_driver = driver_table(tenant_id = current_tenant.id,
+                                  driver_token = onboard_token, 
+                                  is_registered = "pending",**driver_info)
+
+
+        db.add(new_driver)
+        db.commit()
+        db.refresh(new_driver)
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
+
+    logger.info("Onboarding process complete...")
+
+    return new_driver

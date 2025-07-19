@@ -1,0 +1,1227 @@
+[
+  {
+    "make": "Mercedes-Benz",
+    "model": "S-Class",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "S-Class",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "S-Class",
+    "year": 2022,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "S-Class",
+    "year": 2021,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "S-Class",
+    "year": 2020,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "BMW",
+    "model": "7 Series",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "BMW",
+    "model": "7 Series",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "BMW",
+    "model": "7 Series",
+    "year": 2022,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "BMW",
+    "model": "7 Series",
+    "year": 2021,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "BMW",
+    "model": "7 Series",
+    "year": 2020,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Audi",
+    "model": "A8",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Audi",
+    "model": "A8",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Audi",
+    "model": "A8",
+    "year": 2022,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Audi",
+    "model": "A8",
+    "year": 2021,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Audi",
+    "model": "A8",
+    "year": 2020,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lexus",
+    "model": "LS",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lexus",
+    "model": "LS",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lexus",
+    "model": "LS",
+    "year": 2022,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lexus",
+    "model": "LS",
+    "year": 2021,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lexus",
+    "model": "LS",
+    "year": 2020,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Jaguar",
+    "model": "XJ",
+    "year": 2019,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Jaguar",
+    "model": "XJ",
+    "year": 2018,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Jaguar",
+    "model": "XF",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Jaguar",
+    "model": "XF",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Cadillac",
+    "model": "CT6",
+    "year": 2020,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Cadillac",
+    "model": "CT6",
+    "year": 2019,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Cadillac",
+    "model": "CT5",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Cadillac",
+    "model": "CT5",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Genesis",
+    "model": "G90",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Genesis",
+    "model": "G90",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Genesis",
+    "model": "G80",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Genesis",
+    "model": "G80",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Bentley",
+    "model": "Flying Spur",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Bentley",
+    "model": "Flying Spur",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Bentley",
+    "model": "Mulsanne",
+    "year": 2020,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": "Ghost",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": "Ghost",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": "Phantom",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": "Phantom",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Maserati",
+    "model": "Quattroporte",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Maserati",
+    "model": "Quattroporte",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Porsche",
+    "model": "Panamera",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 4
+  },
+  {
+    "make": "Porsche",
+    "model": "Panamera",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 4
+  },
+  {
+    "make": "Tesla",
+    "model": "Model S",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Tesla",
+    "model": "Model S",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lucid",
+    "model": "Air Dream",
+    "year": 2024,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lucid",
+    "model": "Air Dream",
+    "year": 2023,
+    "category": "Luxury Sedan",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade",
+    "year": 2022,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade",
+    "year": 2021,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade ESV",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade ESV",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Lincoln",
+    "model": "Navigator",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Lincoln",
+    "model": "Navigator",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Lincoln",
+    "model": "Navigator",
+    "year": 2022,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Lincoln",
+    "model": "Navigator L",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Lincoln",
+    "model": "Navigator L",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "GLS",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "GLS",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "GLS",
+    "year": 2022,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "G-Class",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "G-Class",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "BMW",
+    "model": "X7",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "BMW",
+    "model": "X7",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "BMW",
+    "model": "X7",
+    "year": 2022,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Audi",
+    "model": "Q7",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Audi",
+    "model": "Q7",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Audi",
+    "model": "Q8",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Audi",
+    "model": "Q8",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lexus",
+    "model": "LX",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Lexus",
+    "model": "LX",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Lexus",
+    "model": "GX",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Lexus",
+    "model": "GX",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Infiniti",
+    "model": "QX80",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Infiniti",
+    "model": "QX80",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Acura",
+    "model": "MDX",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Acura",
+    "model": "MDX",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Range Rover",
+    "model": "Range Rover",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Range Rover",
+    "model": "Range Rover",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Range Rover",
+    "model": "Range Rover Sport",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Range Rover",
+    "model": "Range Rover Sport",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Bentley",
+    "model": "Bentayga",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Bentley",
+    "model": "Bentayga",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": "Cullinan",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": "Cullinan",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lamborghini",
+    "model": "Urus",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Lamborghini",
+    "model": "Urus",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Maserati",
+    "model": "Levante",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Maserati",
+    "model": "Levante",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Porsche",
+    "model": "Cayenne",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Porsche",
+    "model": "Cayenne",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Tesla",
+    "model": "Model X",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Tesla",
+    "model": "Model X",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Genesis",
+    "model": "GV80",
+    "year": 2024,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Genesis",
+    "model": "GV80",
+    "year": 2023,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Lincoln",
+    "model": "Town Car Stretch",
+    "year": 2011,
+    "category": "Stretch Limo",
+    "seating_capacity": 10
+  },
+  {
+    "make": "Lincoln",
+    "model": "Town Car Stretch",
+    "year": 2010,
+    "category": "Stretch Limo",
+    "seating_capacity": 10
+  },
+  {
+    "make": "Lincoln",
+    "model": "Town Car Stretch",
+    "year": 2009,
+    "category": "Stretch Limo",
+    "seating_capacity": 10
+  },
+  {
+    "make": "Lincoln",
+    "model": "Continental Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Lincoln",
+    "model": "Continental Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Cadillac",
+    "model": "XTS Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Cadillac",
+    "model": "XTS Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Cadillac",
+    "model": "XTS Stretch",
+    "year": 2022,
+    "category": "Stretch Limo",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 20
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 20
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade Stretch",
+    "year": 2022,
+    "category": "Stretch Limo",
+    "seating_capacity": 20
+  },
+  {
+    "make": "Lincoln",
+    "model": "Navigator Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 18
+  },
+  {
+    "make": "Lincoln",
+    "model": "Navigator Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 18
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "S-Class Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "S-Class Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "Sprinter Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 14
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "Sprinter Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 14
+  },
+  {
+    "make": "BMW",
+    "model": "7 Series Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 10
+  },
+  {
+    "make": "BMW",
+    "model": "7 Series Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 10
+  },
+  {
+    "make": "Chrysler",
+    "model": "300C Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 10
+  },
+  {
+    "make": "Chrysler",
+    "model": "300C Stretch",
+    "year": 2022,
+    "category": "Stretch Limo",
+    "seating_capacity": 10
+  },
+  {
+    "make": "Hummer",
+    "model": "H2 Stretch",
+    "year": 2009,
+    "category": "Stretch Limo",
+    "seating_capacity": 16
+  },
+  {
+    "make": "Hummer",
+    "model": "H2 Stretch",
+    "year": 2008,
+    "category": "Stretch Limo",
+    "seating_capacity": 16
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": "Phantom Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": "Phantom Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Tesla",
+    "model": "Model S Stretch",
+    "year": 2024,
+    "category": "Stretch Limo",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Tesla",
+    "model": "Model S Stretch",
+    "year": 2023,
+    "category": "Stretch Limo",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Ford",
+    "model": "Excursion Stretch",
+    "year": 2005,
+    "category": "Stretch Limo",
+    "seating_capacity": 22
+  },
+  {
+    "make": "Ford",
+    "model": "Excursion Stretch",
+    "year": 2004,
+    "category": "Stretch Limo",
+    "seating_capacity": 22
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "Sprinter",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "Sprinter",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "Sprinter",
+    "year": 2022,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "Metris",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "Metris",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 8
+  },
+  {
+    "make": "Ford",
+    "model": "Transit",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 15
+  },
+  {
+    "make": "Ford",
+    "model": "Transit",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 15
+  },
+  {
+    "make": "Ford",
+    "model": "Transit",
+    "year": 2022,
+    "category": "Business Van",
+    "seating_capacity": 15
+  },
+  {
+    "make": "Ford",
+    "model": "Transit Connect",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Ford",
+    "model": "Transit Connect",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Express",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 15
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Express",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 15
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Express",
+    "year": 2022,
+    "category": "Business Van",
+    "seating_capacity": 15
+  },
+  {
+    "make": "GMC",
+    "model": "Savana",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 15
+  },
+  {
+    "make": "GMC",
+    "model": "Savana",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 15
+  },
+  {
+    "make": "RAM",
+    "model": "ProMaster",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "RAM",
+    "model": "ProMaster",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "RAM",
+    "model": "ProMaster City",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 5
+  },
+  {
+    "make": "RAM",
+    "model": "ProMaster City",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 5
+  },
+  {
+    "make": "Nissan",
+    "model": "NV200",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Nissan",
+    "model": "NV200",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Nissan",
+    "model": "NV200",
+    "year": 2022,
+    "category": "Business Van",
+    "seating_capacity": 7
+  },
+  {
+    "make": "Nissan",
+    "model": "NV3500",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Nissan",
+    "model": "NV3500",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Iveco",
+    "model": "Daily",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 17
+  },
+  {
+    "make": "Iveco",
+    "model": "Daily",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 17
+  },
+  {
+    "make": "Volkswagen",
+    "model": "Crafter",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 17
+  },
+  {
+    "make": "Volkswagen",
+    "model": "Crafter",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 17
+  },
+  {
+    "make": "Toyota",
+    "model": "Hiace",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 14
+  },
+  {
+    "make": "Toyota",
+    "model": "Hiace",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 14
+  },
+  {
+    "make": "Freightliner",
+    "model": "Sprinter",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Freightliner",
+    "model": "Sprinter",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 12
+  },
+  {
+    "make": "Isuzu",
+    "model": "NPR",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 20
+  },
+  {
+    "make": "Isuzu",
+    "model": "NPR",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 20
+  },
+  {
+    "make": "Grech Motors",
+    "model": "GM33",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 33
+  },
+  {
+    "make": "Grech Motors",
+    "model": "GM33",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 33
+  },
+  {
+    "make": "Executive Coach Builders",
+    "model": "ECB35",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 35
+  },
+  {
+    "make": "Executive Coach Builders",
+    "model": "ECB35",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 35
+  },
+  {
+    "make": "Turtle Top",
+    "model": "VanTerra",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 14
+  },
+  {
+    "make": "Turtle Top",
+    "model": "VanTerra",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 14
+  },
+  {
+    "make": "StarTrans",
+    "model": "Candidate",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 25
+  },
+  {
+    "make": "StarTrans",
+    "model": "Candidate",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 25
+  },
+  {
+    "make": "Braun",
+    "model": "Chief XL",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 24
+  },
+  {
+    "make": "Braun",
+    "model": "Chief XL",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 24
+  },
+  {
+    "make": "ElDorado National",
+    "model": "Axess",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 30
+  },
+  {
+    "make": "ElDorado National",
+    "model": "Axess",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 30
+  },
+  {
+    "make": "Blue Bird",
+    "model": "Micro Bird",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 35
+  },
+  {
+    "make": "Blue Bird",
+    "model": "Micro Bird",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 35
+  },
+  {
+    "make": "Collins",
+    "model": "Nexbus",
+    "year": 2024,
+    "category": "Business Van",
+    "seating_capacity": 14
+  },
+  {
+    "make": "Collins",
+    "model": "Nexbus",
+    "year": 2023,
+    "category": "Business Van",
+    "seating_capacity": 14
+  }
+]

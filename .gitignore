@@ -3,11 +3,5 @@ docker/.env
 venv
 __pycache__
 backend/_alembic_setup.sh
-backend/alembic/versions/2d6e21c2dbc5_describe_your_change.py
-backend/alembic/versions/5ef2936dbae4_describe_your_change.py
-backend/alembic/versions/7d7af57f5213_describe_your_change.py
-backend/alembic/versions/9f97e7aa1847_describe_your_change.py
-backend/alembic/versions/27df2e5976c6_describe_your_change.py
-backend/alembic/versions/670a22a259e1_describe_your_change.py
-backend/alembic/versions/53069ad5891b_describe_your_change.py
+backend/alembic/versions
 .env

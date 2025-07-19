@@ -15,10 +15,15 @@ class Vehicles(Base):
     # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
 
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    driver_id = Column(Integer, ForeignKey("drivers.id", ondelete="CASCADE"), index=True, nullable=True)
+    driver = relationship("Drivers", foreign_keys=[driver_id], passive_deletes=True)
+    ##vehicle info
     
-    name = Column(String(200), nullable=False)     # e.g. "Executive SUV"
-    model = Column(String(200), nullable=False)    # e.g. "Escalade"
-    year = Column(Integer, nullable=True)
+    vehicle_name = Column(String(200), nullable=False)     # e.g. "Mercedes"
+    vehicle_make = Column(String(200), nullable=False)    # e.g. "GLS"
+    vehicle_year = Column(Integer, nullable=True)
+    vehicle_config_id =Column(Integer, ForeignKey("vehicle_config.id", ondelete="CASCADE"), nullable=True)
+    
 
     license_plate = Column(String(50), unique=True, nullable=True)
     color = Column(String(50), nullable=True)
@@ -28,4 +33,6 @@ class Vehicles(Base):
     created_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
     updated_on = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
-    tenant = relationship("Tenants", backref="vehicles", passive_deletes=True)
+    # tenant = relationship("Tenants", backref="vehicles", passive_deletes=True)
+    vehicle_model = relationship("VehicleConfig", passive_deletes=True)
+

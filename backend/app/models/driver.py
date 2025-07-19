@@ -15,23 +15,30 @@ class Drivers(Base):
     # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"))
 
-    email = Column(String(200), unique = True, nullable = False,index=True)
+    email = Column(String(200), nullable = False,index=True)
     phone_no = Column(String(200),nullable=True,index=True)
     first_name =  Column(String(200), nullable=False)
     last_name =  Column(String(200), nullable=False)
-    password = Column(String, nullable=False)
+    
+
+    password = Column(String, nullable= True)
     state = Column(String, nullable=True, index=True)
     postal_code = Column(String, nullable=True)
     role = Column(String, nullable = True, default="driver")
 
-    completed_rides = Column(String,nullable=False)
+    ##driver_type 
+    driver_type = Column(String, nullable=False)
+    
+
+    completed_rides = Column(String, nullable=False, default=0, server_default=text("0"))
 
     
-    license_number = Column(String(100), nullable=True, unique=True)
+    license_number = Column(String(100), nullable=True)
     vehicle_id = Column(Integer, ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
 
-    
-    is_active =  Column(Boolean, default=True)
+    driver_token = Column(String,nullable=False)
+    is_registered = Column(String, nullable=False, default="not_registered")
+    is_active =  Column(Boolean, default=False)
     status = Column(String(50), default = "available")
     
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
@@ -40,12 +47,12 @@ class Drivers(Base):
 
     
     __table_args__ = (
-        UniqueConstraint('email', 'tenant_id', name = 'unique_driver'),
+        UniqueConstraint('email', 'tenant_id','license_number', name = 'unique_driver'),
     )
     
     #relationships 
-    tenant = relationship("Tenants", backref="drivers", passive_deletes=True)
-    vehicle = relationship("Vehicles", backref="assigned_driver", passive_deletes=True)
+    tenant = relationship("Tenants",passive_deletes=True)
+    vehicle = relationship("Vehicles", foreign_keys=[vehicle_id], passive_deletes=True)
 
 
 

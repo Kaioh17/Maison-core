@@ -22,7 +22,7 @@ class Bookings(Base):
     dropoff_location = Column(String, nullable=True)
     dropoff_time = Column(TIMESTAMP(timezone=True), nullable=True)
     city = Column(String, nullable=True)
-    booking_status = Column(String, nullable=False, default="pending")
+    booking_status = Column(String, nullable=False, default = 'pending', server_default=text("'pending'"))
     estimated_price =  Column(Integer, nullable=True)
     payment_method = Column(String, nullable=True)
     notes = Column(String, nullable=False)

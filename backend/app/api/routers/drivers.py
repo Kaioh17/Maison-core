@@ -21,3 +21,9 @@ async def create_driver(payload: driver.DriverCreate, db: Session =  Depends(get
     logger.info("Collecting info....")
     driver = await driver_service.create_driver(payload, db)
     return driver
+
+@router.patch("/register", status_code=status.HTTP_202_ACCEPTED,response_model= driver.DriverResponse)
+async def create_driver(payload: driver.DriverCreate, db: Session =  Depends(get_db)):
+    logger.info("Updating info....")
+    driver = await driver_service.register_driver(payload, db)
+    return driver

@@ -26,13 +26,23 @@ def create_tenants(payload: tenant.TenantCreate,db: Session = Depends(get_db)):
     logger.info("Tenants created")
     tenant = tenants_service.create_tenant(db, payload)
     
-    
     return tenant
 
 @router.get('/drivers', status_code= status.HTTP_200_OK, response_model= list[driver.DriverResponse])
-async def tenants(db: Session = Depends(get_db), current_tenants: int =  Depends(oauth2.get_current_user) ):
+async def tenants(db: Session = Depends(get_db), current_tenants: int =  Depends(oauth2.get_current_user)):
 
-    logger.info("Drivers")
+    logger.info("tenant drivers")
     drivers = await tenants_service.get_all_drivers(db,current_tenants)
 
     return drivers
+
+@router.post('/onboard', status_code=status.HTTP_201_CREATED, response_model=tenant.OnboardDriverResponse)
+async def onboard_drivers(payload: tenant.OnboardDriver, db: Session = Depends(get_db),
+                          current_tenant: int = Depends(oauth2.get_current_user)):
+    logger.info("Onboarding driver...")
+    new_driver = await tenants_service.onboard_drivers(db, payload, current_tenant)
+
+    return new_driver
+# @router.patch('/settings', status_code= status.HTTP_202_ACCEPTED)
+# async def update_settings(db: Session):
+#     pass
