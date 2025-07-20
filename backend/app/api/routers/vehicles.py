@@ -9,7 +9,7 @@ from .dependencies import tenant_and_driver_check
 from app.utils.logging import logger
 
 router = APIRouter(
-    prefix = "/vehicles",
+    prefix = "/api/v1/vehicles",
     tags = ["vehicles"]
 )
 

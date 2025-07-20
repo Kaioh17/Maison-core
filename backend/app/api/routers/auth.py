@@ -12,7 +12,7 @@ from app.utils.logging import logger
 
 
 router = APIRouter(
-    prefix = '/login',
+    prefix = '/api/v1/login',
     tags = ['Authentication']
 )   
 

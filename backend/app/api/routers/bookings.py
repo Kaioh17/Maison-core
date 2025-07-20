@@ -11,7 +11,7 @@ from .dependencies import is_rider
 
 
 router = APIRouter(
-    prefix = "/bookings",
+    prefix = "/api/v1/bookings",
     tags = ["Bookings"]
 )
 

@@ -8,7 +8,7 @@ from ..core import oauth2
 from app.utils.logging import logger
 
 router = APIRouter(
-    prefix = "/users",
+    prefix = "/api/v1/users",
     tags = ['Users']
 )   
 

@@ -12,7 +12,7 @@ logger.setLevel(logging.DEBUG)
 
 
 router = APIRouter(
-    prefix = "/driver",
+    prefix = "/api/v1/driver",
     tags = ["Drivers"]
 )
 
