@@ -42,13 +42,13 @@ class DriverCreate(DriverBase):
 class DriverResponse(DriverBase):
     id: int
     role: str
-    # vehicle_model: VehicleConfigResponse
     driver_type: str
     completed_rides: int
     is_active: bool = True
     status: Optional[str] = "available"
     created_on: datetime
     updated_on: Optional[datetime] = None
+    vehicle: Optional[VehicleResponse]
 
     model_config = {
         "from_attributes": True

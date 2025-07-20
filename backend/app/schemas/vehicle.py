@@ -7,12 +7,11 @@ from .vehicle_config import VehicleConfigResponse
 
 class VehicleBase(BaseModel):
      
-    vehicle_name: str
-    vehicle_make: str
-    vehicle_year: Optional[int]
+    make: str
+    model: str
+    year: Optional[int]
     license_plate: Optional[str]
     color: Optional[str]
-    seating_capacity: Optional[int]
     status: Optional[str] = "available"
 
     model_config = {
@@ -28,7 +27,7 @@ class VehicleCreate(VehicleBase):
 class VehicleResponse(VehicleBase):
     tenant_id: int 
     id: int 
-    vehicle_model: VehicleConfigResponse
+    vehicle_config: VehicleConfigResponse
     created_on: datetime
     updated_on: Optional[datetime]
 

@@ -19,20 +19,19 @@ class Vehicles(Base):
     driver = relationship("Drivers", foreign_keys=[driver_id], passive_deletes=True)
     ##vehicle info
     
-    vehicle_name = Column(String(200), nullable=False)     # e.g. "Mercedes"
-    vehicle_make = Column(String(200), nullable=False)    # e.g. "GLS"
-    vehicle_year = Column(Integer, nullable=True)
+    make = Column(String(200), nullable=False)     # e.g. "Mercedes"
+    model = Column(String(200), nullable=False)    # e.g. "GLS"
+    year = Column(Integer, nullable=True)
     vehicle_config_id =Column(Integer, ForeignKey("vehicle_config.id", ondelete="CASCADE"), nullable=True)
     
 
     license_plate = Column(String(50), unique=True, nullable=True)
     color = Column(String(50), nullable=True)
-    seating_capacity = Column(Integer, nullable=True)
     status = Column(String(50), default="available")  # e.g. "available", "in_use", "maintenance"
 
     created_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
     updated_on = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
     # tenant = relationship("Tenants", backref="vehicles", passive_deletes=True)
-    vehicle_model = relationship("VehicleConfig", passive_deletes=True)
+    vehicle_config = relationship("VehicleConfig", foreign_keys=[vehicle_config_id], passive_deletes=True)
 

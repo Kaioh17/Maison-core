@@ -16,10 +16,8 @@ router = APIRouter(
     tags = ["Drivers"]
 )
 
-
-
 @router.patch("/register", status_code=status.HTTP_202_ACCEPTED,response_model= driver.DriverResponse)
-async def create_driver(payload: driver.DriverCreate, db: Session =  Depends(get_db)):
-    logger.info("Updating info....")
+async def register_driver(payload: driver.DriverCreate, db: Session =  Depends(get_db)):
+    logger.info("Registration begins....")
     driver = await driver_service.register_driver(payload, db)
     return driver

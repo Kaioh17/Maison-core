@@ -4,7 +4,8 @@ from app.db.database import engine
 from app.models import *
 # from utils import logging
 
-
+##add frontend urls and middleware 
+#user cors
 
 
 Base.metadata.create_all(bind=engine)
