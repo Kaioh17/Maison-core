@@ -3,5 +3,5 @@ docker/.env
 venv
 __pycache__
 backend/_alembic_setup.sh
-backend/alembic/versions
+
 .env

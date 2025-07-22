@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from ..services import tenants_service, user_services
 from app.schemas import user,driver
-from ..core import oauth2
+from ..core import deps
 from app.utils.logging import logger
 
 router = APIRouter(
@@ -22,7 +22,7 @@ async def create_user(payload: user.UserCreate,db: Session = Depends(get_db)):
     return user
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def get_user_info(db:Session = Depends(get_db), current_rider = Depends(oauth2.get_current_user)):
+async def get_user_info(db:Session = Depends(get_db), current_rider = Depends(deps.get_current_user)):
 
     user_info = await user_services.get_user_info(db, current_rider)
 

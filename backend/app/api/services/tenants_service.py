@@ -86,7 +86,7 @@ async def get_all_drivers(db, current_tenants):
             logger.warning(f"There are no drivers for tenant {current_tenants.id}")
 
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                details = "There are no drivers under this tenants")
+                                detail = "There are no drivers under this tenants")
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
     return drivers

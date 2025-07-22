@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from ..services import driver_service
 from app.schemas import driver
-from ..core import oauth2
+from ..core import deps
 
 import logging
 logger = logging.getLogger(__name__)

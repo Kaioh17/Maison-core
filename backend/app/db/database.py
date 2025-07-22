@@ -1,8 +1,11 @@
-from sqlalchemy import create_engine
+from typing import Optional
+from fastapi.params import Depends
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import Settings
 from app.models.base import Base
+from app.api.core import security
 
 settings = Settings()
 
@@ -11,11 +14,27 @@ DATABASE_URL = f"postgresql://{settings.db_user}:{settings.db_password}@{setting
 engine  = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-# Base = declarative_base()
 
-def get_db():
+def get_db(tenant_id: int | None = Depends(security.get_tenant_id_from_token)):
+    
+    # tenant_id = security.get_tenant_id()
     db = SessionLocal()
     try:
+        if tenant_id is not None:
+            
+            db.execute(
+                text("SET app.current_tenant_id = :tenant_id").bindparams(tenant_id=tenant_id)
+            )
+        yield db
+    finally:
+        db.close()  
+
+
+##for login process 
+def get_base_db():
+    try:
+        db = SessionLocal()
+
         yield db
     finally:
         db.close()

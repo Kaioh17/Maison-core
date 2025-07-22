@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, FastAPI, Response,status, Request
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
-from app.db.database import get_db
+from app.db.database import  get_base_db
 from ..services import tenants_service
 from app.schemas import auth
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
@@ -18,12 +18,14 @@ router = APIRouter(
 
 @router.post('/tenants')
 def login( request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_base_db),
     user_credentials: OAuth2PasswordRequestForm = Depends()):
+
+    logger.info("Login in....")
     
     user_query = db.query(tenant.Tenants).filter(tenant.Tenants.email == user_credentials.username)
     user = user_query.first()
-    print(f"user data: {user.email}")
+    logger.info(f"user data: {user.email}")
    
    
     if not user:
@@ -43,7 +45,7 @@ def login( request: Request,
 
 @router.post('/driver')
 def login( request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_base_db),
     user_credentials: OAuth2PasswordRequestForm = Depends()):
     
     driver_query = db.query(driver.Drivers).filter(driver.Drivers.email == user_credentials.username)
@@ -59,7 +61,7 @@ def login( request: Request,
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Invalid credentials")
     
-    access_token = create_access_token(data = {"id": str(drivers.id), "role": drivers.role})
+    access_token = create_access_token(data = {"id": str(drivers.id), "role": drivers.role , "tenant_id": str(drivers.tenant_id)})
 
     return {
         "access_token" : access_token,
@@ -69,7 +71,7 @@ def login( request: Request,
 
 @router.post('/user')
 def login( request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_base_db),
     user_credentials: OAuth2PasswordRequestForm = Depends()):
     
     user_query = db.query(user.Users).filter(user.Users.email == user_credentials.username)
@@ -85,7 +87,7 @@ def login( request: Request,
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Invalid credentials")
     
-    access_token = create_access_token(data = {"id": str(users.id), "role": users.role})
+    access_token = create_access_token(data = {"id": str(users.id), "role": users.role, "tenant_id": str(users.tenant_id)})
 
     return {
         "access_token" : access_token,

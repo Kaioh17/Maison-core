@@ -5,6 +5,7 @@ services:
     build: 
       context: ..
       dockerfile: docker/Dockerfile
+    user: "1000:1000" #match your linux/wsl with uid:gid   #check with id -u
     container_name: maison
     ports:
       - "8000:8000"
@@ -23,14 +24,14 @@ services:
       - app-network
     restart: unless-stopped
   
-  frontend:
-    build:
-      context: ..
-      dockerfile: frontend/Dockerfile
-    container_name: maison_frontend
-    ports:
-      - "3000:3000"
-    restart: unless-stopped
+  # frontend:
+  #   build:
+  #     context: ..
+  #     dockerfile: frontend/Dockerfile
+  #   container_name: maison_frontend
+  #   ports:
+  #     - "3000:3000"
+  #   restart: unless-stopped
 
     
 

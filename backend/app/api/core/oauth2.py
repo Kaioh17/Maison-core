@@ -7,7 +7,6 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from app.config import Settings
 from app.schemas import auth
-from app.db.database import get_db
 from app.models import *
 
 role_table_map = {
@@ -48,24 +47,3 @@ def verify_access_token(token: str, credentials_exception):
         raise credentials_exception
     
     return token_data
-
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-
-    credentials_exception =  HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"could not validate credentials in get current user", 
-                                          headers={"WWW-Authenticate": "Bearer"})
-    token = verify_access_token(token, credentials_exception)
-
-    role = token.role
-
-    if not role:
-        print(f"role not present {role}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail = "No role")
-    table = role_table_map.get(role)
-
-    if not table:
-        raise credentials_exception
-
-    user = db.query(table).filter(table.id == token.id).first()
-
-    return user
