@@ -16,6 +16,7 @@ Dependencies:
 from app.models import tenant, driver, TenantSettings, vehicle, booking
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
+from datetime import datetime, timedelta 
 import random
 import string
 # from .helper_service import 
@@ -217,6 +218,32 @@ async def onboard_drivers(db, payload, current_tenant):
     return new_driver
 
 
+async def assign_driver_to_rides(payload,rider_id: int , db, current_tenant):
+   
+    ride =  db.query(booking_table).filter(booking_table.id == rider_id).first()
+
+    if not ride:
+        logger.warning("There are no bookings without assigned drivers....")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail= "There are no bookings without assigned drivers....")
+    if ride.driver_id:
+        raise HTTPException(status_code=404,
+                            detail = "Driver already assigned to ride....")
+    driver_info = db.query(driver_table).filter(driver_table.id == payload.driver_id).first()
+    if driver_info.driver_type != "inhouse":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
+                            detail="In house drivers cannot be assigned to rides...")
+    ride.driver_id = payload.driver_id
+
+    db.commit()
+    return {"msg": f"Driver {payload.driver_id} has been assigned to {rider_id}"}
+
+
+
+#patch
+# async def send_driver_new_token(db, payload):
+#     ### update token in driver table 
+#     ## if u
 ## helper functions 
 def _check_unique_fields(model, db, fields: dict):
     try:

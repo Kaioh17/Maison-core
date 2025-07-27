@@ -14,7 +14,7 @@ async def create_user(db, payload):
     try:
         exists = db.query(user_table).filter(user_table.email == payload.email, 
                                              user_table.tenant_id == payload.tenant_id, 
-                                             user_table.email == payload.phone_no
+                                             user_table.phone_no == payload.phone_no
                                              ).first()  
         if exists:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT,
@@ -39,9 +39,9 @@ async def create_user(db, payload):
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
 
-        logger.info(f"User {full_name} has been added")
+    logger.info(f"User {full_name} has been added")
 
-        return new_user
+    return new_user
 
 async def get_user_info(db, current_user):
     try:

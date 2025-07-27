@@ -1,5 +1,5 @@
 from app.models.base import Base
-from sqlalchemy import CheckConstraint, Sequence, Column, Integer, String, TIMESTAMP, ForeignKey,Boolean, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, Sequence, Column, Integer,Float ,String, TIMESTAMP, ForeignKey,Boolean, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
@@ -23,7 +23,7 @@ class Bookings(Base):
     dropoff_time = Column(TIMESTAMP(timezone=True), nullable=True)
     city = Column(String, nullable=True)
     booking_status = Column(String, nullable=False, default = 'pending', server_default=text("'pending'"))
-    estimated_price =  Column(Integer, nullable=True)
+    estimated_price =  Column(Float, nullable=True)
     payment_method = Column(String, nullable=True)
     notes = Column(String, nullable=False)
     created_on = Column(TIMESTAMP(timezone = True), nullable=False

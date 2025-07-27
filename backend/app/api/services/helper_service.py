@@ -29,6 +29,8 @@ def _user_exist(db, data):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail= f"User with {data.email} already exists")
 
+
+
 @staticmethod
 def _tenant_activity_(db, data):
     tenants = _tenants_exist(db,data)

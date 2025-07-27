@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from app.models import booking, tenant, driver
+from app.models import booking, tenant, driver, teanant_settings, vehicle_config
 from app.utils import db_error_handler
 from app.utils.logging import logger
 from datetime import timedelta, datetime
@@ -16,6 +16,8 @@ role_to_booking_field  = {
 tenant_table = tenant.Tenants
 driver_table = driver.Drivers
 booking_table = booking.Bookings
+tenant_setting_table = teanant_settings.TenantSettings  
+vehicle_config_table = vehicle_config.VehicleConfig
 
 def _bookings_overlap(db, payload):
      #check for overlaps
@@ -63,9 +65,10 @@ def _bookings_overlap(db, payload):
 async def book_ride(payload, db, current_rider):
 
     try:
-
+        price_estimate = await _price_quote(db, current_rider, payload)
         book_ride_info = payload.model_dump()
-        new_ride = booking.Bookings(rider_id = current_rider.id,tenant_id = current_rider.tenant_id,**book_ride_info)
+        new_ride = booking.Bookings(rider_id = current_rider.id,tenant_id = current_rider.tenant_id,
+                                    estimated_price = price_estimate,**book_ride_info)
 
         
         tenant_query = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_rider.tenant_id).first()
@@ -90,9 +93,9 @@ async def book_ride(payload, db, current_rider):
         db.refresh(new_ride)
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
-    finally:    
-        logger.info(f"A new ride has been set for {current_rider.full_name}")
-        return new_ride
+      
+    logger.info(f"A new ride has been set for {current_rider.full_name}")
+    return new_ride
 
 
 async def get_booked_rides(db, current_user):
@@ -112,3 +115,27 @@ async def get_booked_rides(db, current_user):
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
 
+async def _price_quote(db, current_user, payload):
+    try: 
+        settings = db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == current_user.tenant_id).first()
+        vehicle_base_price = db.query(vehicle_config_table).filter(vehicle_config_table.vehicle_id == payload.vehicle_id).first()
+        if not settings:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail= "Settingd for tenants found...")
+        #calculate price
+        logger.info(f"base_fare = {settings.base_fare}")
+        base_fare = settings.base_fare
+        per_mile_rate = settings.per_mile_rate
+        
+        per_minute_rate = settings.per_minute_rate
+        vehicle_rate = vehicle_base_price.vehicle_flat_rate
+       
+        total_quote = base_fare + per_mile_rate + per_minute_rate + vehicle_rate
+
+        if payload.service_type.lower() == "hourly":
+            per_hour_rate = settings.per_hour_rate
+            total_quote = total_quote + per_hour_rate
+
+        return total_quote
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)

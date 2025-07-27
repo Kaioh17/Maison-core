@@ -35,7 +35,7 @@ class PaymentType(str, Enum):
     CARD = "card"
 
 class BoookingBase(BaseModel):
-    driver_id: Optional[int]
+    # driver_id: Optional[int]
     vehicle_id: Optional[int] = None
     city: str
     service_type: ServiceType
@@ -44,7 +44,7 @@ class BoookingBase(BaseModel):
     dropoff_location: Optional[str]
     dropoff_time: Optional[datetime]
     payment_method: PaymentType
-    notes: str
+    notes: Optional[str]
 
     @validator("pickup_time", "dropoff_time", pre = True)
     def ensure_timezone(cls, value):
@@ -84,7 +84,7 @@ class UpdateBookingTenants(BoookingBase):
 class BookingRespose(BoookingBase):
     id: int
     tenant_id: Optional[int]
-    estimated_price: Optional[int]
+    estimated_price: Optional[float]
     booking_status: str
     created_on: Optional[datetime]
     updated_on: Optional[datetime]

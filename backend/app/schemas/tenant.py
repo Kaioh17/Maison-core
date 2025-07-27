@@ -92,6 +92,8 @@ class OnboardDriverResponse(OnboardDriverBase):
     driver_token: str
     created_on: datetime
     
+class AssignDriver(BaseModel):
+    driver_id: int 
 
 class TenantLogin(BaseModel):
     email: EmailStr

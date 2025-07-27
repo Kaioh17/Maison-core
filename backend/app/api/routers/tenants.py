@@ -83,6 +83,26 @@ async def onboard_drivers(
     new_driver = await tenants_service.onboard_drivers(db, payload, current_tenant)
     return new_driver
 
+"""Assign driver to a booked rides pending drivers"""
+@router.patch("/assign_driver/{rider_id}", status_code=status.HTTP_202_ACCEPTED)
+async def assign_driver_to_rides(payload: tenant.AssignDriver,
+                        rider_id: int,db: Session = Depends(get_db),
+                        current_tenant: int = Depends(deps.get_current_user)):
+     
+     assigned_driver = await tenants_service.assign_driver_to_rides(payload,rider_id,db, current_tenant)
+     return assigned_driver
+
+"""Assign drivers to vehicles"""
+@router.patch("/assign_driver_vehicle/{vehicle_id}", status_code=status.HTTP_202_ACCEPTED)
+async def assign_driver_to_vehicles(payload: tenant.AssignDriver,
+                        vehicle_id: int,db: Session = Depends(get_db),
+                        current_tenant: int = Depends(deps.get_current_user)):
+     
+     assigned_driver = await tenants_service.assign_driver_to_vehicle(payload,vehicle_id,db, current_tenant)
+     return assigned_driver
+
+###approve rides
+
 # # Update tenant settings (future implementation)
 # @router.patch('/settings', status_code=status.HTTP_202_ACCEPTED)
 # async def update_settings(db: Session):

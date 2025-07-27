@@ -15,6 +15,7 @@ class TenantSettings(Base):
     id = Column(Integer, id_seq, primary_key=True, server_default=id_seq.next_value())
     # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete = "CASCADE"), nullable=False, unique = True)
+    
     #branding
     theme = Column(String, nullable=False, default="dark", server_default=text("'dark'"))
     logo_url = Column(String, nullable= True)
@@ -27,7 +28,7 @@ class TenantSettings(Base):
     per_hour_rate = Column(Float, nullable=False, default=0.0, server_default=text('0.0'))
     #rider
     rider_tiers_enabled = Column(Boolean, nullable=False, default=False, server_default='False')
-    cancellation_fee =  Column(Float, nullable=False, default= '0.0', server_default= '0.0')
+    cancellation_fee =  Column(Float, nullable=False, default= 0.0, server_default= '0.0')
     
 
     discounts = Column(Boolean, nullable=False, default=False, server_default=text('false'))

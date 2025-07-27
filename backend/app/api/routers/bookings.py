@@ -34,6 +34,9 @@ async def BookRide(current_user =  Depends(deps.get_current_user)
 
     return booked_rides
 
+
+
+
 ##endpoints:
     ##update
     ##PUT    /bookings/{booking_id}         # ❌ Missing - Update booking

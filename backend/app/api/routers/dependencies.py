@@ -19,10 +19,10 @@ def is_tenants(current_tenant = Depends(deps.get_current_user)):
     return current_tenant
 
 def is_driver(current_driver = Depends(deps.get_current_user)):
-    if current_driver.role != "Driver":
+    if current_driver.role != "driver":
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail = "unauthorized user")
-    return current_driver
+    return True
 
 def tenant_and_driver_check(tenants = Depends(is_tenants),
                      driver = Depends(is_driver)):
