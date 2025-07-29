@@ -1,4 +1,5 @@
-from fastapi import HTTPException, status
+
+
 """
 Service layer for tenant-related operations in the Maison-core backend.
 This module provides functions to manage tenants, drivers, vehicles, and bookings, including creation, retrieval, onboarding, and approval processes. It handles database interactions, enforces unique constraints, and manages error handling for common DB exceptions. The service also includes helper functions for tenant settings setup, driver email validation, and onboarding token generation.
@@ -13,7 +14,8 @@ Dependencies:
 - SQLAlchemy ORM models for tenants, drivers, vehicles, bookings, and tenant settings
 - Utility modules for password hashing, database error handling, and logging
 """
-from app.models import tenant, driver, TenantSettings, vehicle, booking
+from fastapi import HTTPException, status
+from app.models import tenant, driver, TenantSettings, vehicle, booking, vehicle_category_rate
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from datetime import datetime, timedelta 
@@ -28,13 +30,28 @@ tenant_table = tenant.Tenants
 driver_table = driver.Drivers
 vehicle_table = vehicle.Vehicles
 booking_table = booking.Bookings
+vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 
 
+async def _create_vehicle_category_rate_table(db, id_tenant):
+    try:
+        logger.info("New tenant vehicle settings table has been set")
+        vehicle_category = [
+            vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Luxury Sedan"),
+            vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Executive SUV"),
+            vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Stretch Limo"),
+            vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Business Van")
+
+        ]
+
+        db.add_all(vehicle_category)
+        db.commit()
+        
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
 
 
-
-
-def create_tenant(db, payload):
+async def create_tenant(db, payload):
     try:
         model_map = {
             "email": payload.email,
@@ -58,14 +75,16 @@ def create_tenant(db, payload):
 
         logger.info(f"new tenant_id {new_tenant.id}")
         """add tenants settings"""
-        _set_up_tenant_settings( new_tenant.id,payload,db)
+
+        await _set_up_tenant_settings( new_tenant.id,payload,db)
+        await _create_vehicle_category_rate_table(db, new_tenant.id)
 
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
         
     return new_tenant
 
-def get_company_info(db, current_tenats):
+async def get_company_info(db, current_tenats):
     try: 
         company = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_tenats.id).first()
         if not company:
@@ -125,7 +144,7 @@ async def fetch_assigned_drivers_vehicles(db, current_tenants):
         db_exceptions.handle(e, db)
 async def find_vehicles_owned_by_driver(db,driver_id: int, current_tenants):
     try:
-        _validate_driver_id(db, current_tenants, driver_id)
+        await _validate_driver_id(db, current_tenants, driver_id)
         logger.info(f"Getting vehicles with assigned drivers for tenant: {current_tenants.id}")
         vehicle_query = db.query(vehicle_table).filter(vehicle_table.tenant_id == current_tenants.id,
                                                         vehicle_table.driver_id == driver_id)
@@ -230,14 +249,32 @@ async def assign_driver_to_rides(payload,rider_id: int , db, current_tenant):
         raise HTTPException(status_code=404,
                             detail = "Driver already assigned to ride....")
     driver_info = db.query(driver_table).filter(driver_table.id == payload.driver_id).first()
-    if driver_info.driver_type != "inhouse":
+    if driver_info.driver_type != "in_house":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
-                            detail="In house drivers cannot be assigned to rides...")
+                            detail="outsourced drivers cannot be assigned to rides...")
     ride.driver_id = payload.driver_id
 
     db.commit()
     return {"msg": f"Driver {payload.driver_id} has been assigned to {rider_id}"}
 
+async def assign_driver_to_vehicle(payload, vehicle_id, db, current_tenant):
+    vehicle =  db.query(vehicle_table).filter(vehicle_table.id == vehicle_id).first()
+
+    if not vehicle:
+        logger.warning("There are no bookings without assigned drivers....")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail= "There are no bookings without assigned drivers....")
+    if vehicle.driver_id:
+        raise HTTPException(status_code=404,
+                            detail = "Driver already assigned to ride....")
+    driver_info = db.query(driver_table).filter(driver_table.id == payload.driver_id).first()
+    if driver_info.driver_type != "in_house":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
+                            detail="Outsourced drivers cannot be assigned to rides...")
+    vehicle.driver_id = payload.driver_id
+
+    db.commit()
+    return {"msg": f"Driver {payload.driver_id} has been assigned to vehicle: {vehicle_id}"}
 
 
 #patch
@@ -258,7 +295,7 @@ def _check_unique_fields(model, db, fields: dict):
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
             
-def _set_up_tenant_settings(new_tenant_id,payload,db):
+async def _set_up_tenant_settings(new_tenant_id,payload,db):
     try: 
         new_tenants_settings = TenantSettings(tenant_id = new_tenant_id,
                                            logo_url = payload.logo_url, 
@@ -268,7 +305,7 @@ def _set_up_tenant_settings(new_tenant_id,payload,db):
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
 
-def _validate_driver_id(db,current_tenants, driver_id):
+async def _validate_driver_id(db,current_tenants, driver_id):
     exists = db.query(driver_table).filter(driver_table.id == driver_id, 
                                          driver_table.tenant_id == current_tenants.id).first()
     if not exists:

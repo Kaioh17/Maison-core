@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from app.models import vehicle,tenant, vehicle_config
+from app.models import vehicle,tenant, vehicle_config, vehicle_category_rate
 from app.utils import db_error_handler
 from app.utils.logging import logger
 import json
@@ -7,6 +7,8 @@ from pathlib import Path
 db_exceptions = db_error_handler.DBErrorHandler
 
 
+vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
+vehicle_config_table = vehicle_config.VehicleConfig
 
 async def get_vehicles(current_user, db):
     try:
@@ -68,21 +70,31 @@ def load_vehicles():
     logger.info("File found and data read!!")
     return vehicle_data
 async def allocate_vehicle_category(payload, db, id_tenant, id_vehicle):
+    
+
     vehicle_category = load_vehicles()
-   
+    
+    
     # if current_tenant.role == driver
     if vehicle_category:
+        found = False
         for v in vehicle_category:
             # logger.info(f"{v["make"]}")
             if (v["make"].lower() == payload.make.lower()
             and v["model"].lower() == payload.model.lower()
             and v["year"] == payload.year):
-                vehicle_category = vehicle_config.VehicleConfig(vehicle_id = id_vehicle, tenant_id = id_tenant, vehicle_category = v["category"], seating_capacity = v["seating_capacity"])
+                vehicle_category_rate = db.query(vehicle_category_table).filter(vehicle_category_table.tenant_id == id_tenant, 
+                                                               vehicle_category_table.vehicle_category == v["category"]).first()
+                vehicle_category = vehicle_config.VehicleConfig(vehicle_id = id_vehicle,
+                                                                 tenant_id = id_tenant, 
+                                                                 vehicle_category = v["category"], 
+                                                                seating_capacity = v["seating_capacity"], 
+                                                                vehicle_flat_rate = vehicle_category_rate.vehicle_flat_rate)
+                
+            
                 db.add(vehicle_category)
                 db.commit()
 
-                
-                
     
                 found = True
                 break   
@@ -100,3 +112,28 @@ async def allocate_vehicle_category(payload, db, id_tenant, id_vehicle):
 
 
     return vehicle_category
+
+"""Update vehicle flat rate """
+async def set_vehicle_flat_rate(db, payload, current_user):
+    category_ = db.query(vehicle_category_table).filter(vehicle_category_table.tenant_id == current_user.id,
+                                                        vehicle_category_table.vehicle_category == payload.vehicle_category).first()
+    config_ = db.query(vehicle_config_table).filter(vehicle_config_table.tenant_id == current_user.id,
+                                                    vehicle_config_table.vehicle_category == payload.vehicle_category).all()
+
+    if config_:
+        for v in config_:
+            v.vehicle_flat_rate = payload.vehicle_flat_rate
+    
+    if not category_:
+        raise HTTPException(status_code=404, detail= f"There is no vehicle catgory for tenant {current_user.id}")
+    
+    if payload.vehicle_flat_rate < 0:
+       logger.warning("Flat rate entered is lower than 0")
+       raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                      detail=f"Vehicle flat rate cannot be lower than 0")
+    category_.vehicle_flat_rate = payload.vehicle_flat_rate
+
+    db.commit()
+    db.refresh(category_)
+
+    return category_

@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from app.models import booking, tenant, driver, teanant_settings, vehicle_config
+from app.models import booking, tenant, driver, teanant_settings, vehicle_config, vehicle
 from app.utils import db_error_handler
 from app.utils.logging import logger
 from datetime import timedelta, datetime
@@ -18,6 +18,7 @@ driver_table = driver.Drivers
 booking_table = booking.Bookings
 tenant_setting_table = teanant_settings.TenantSettings  
 vehicle_config_table = vehicle_config.VehicleConfig
+vehicle_table = vehicle.Vehicles
 
 def _bookings_overlap(db, payload):
      #check for overlaps
@@ -67,17 +68,19 @@ async def book_ride(payload, db, current_rider):
     try:
         price_estimate = await _price_quote(db, current_rider, payload)
         book_ride_info = payload.model_dump()
+        vehicle = db.query(vehicle_table).filter(vehicle_table.id == payload.vehicle_id).first()
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="vehicle not found")
+
         new_ride = booking.Bookings(rider_id = current_rider.id,tenant_id = current_rider.tenant_id,
-                                    estimated_price = price_estimate,**book_ride_info)
+                                    estimated_price = price_estimate,driver_id = vehicle.driver_id,**book_ride_info)
 
         
         tenant_query = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_rider.tenant_id).first()
-        driver_query = db.query(driver.Drivers).filter(driver.Drivers.id == payload.driver_id).first()
-
+       
         if not tenant_query: 
             raise HTTPException(status_code=404, detail="tenant not found")
-        if not driver_query: 
-            raise HTTPException(status_code=404, detail="driver not found")
+      
         
         if not payload.city:
             logger.warning("City was not entered..")
@@ -130,7 +133,7 @@ async def _price_quote(db, current_user, payload):
         per_minute_rate = settings.per_minute_rate
         vehicle_rate = vehicle_base_price.vehicle_flat_rate
        
-        total_quote = base_fare + per_mile_rate + per_minute_rate + vehicle_rate
+        total_quote = base_fare + per_mile_rate + per_minute_rate + vehicle_rate 
 
         if payload.service_type.lower() == "hourly":
             per_hour_rate = settings.per_hour_rate

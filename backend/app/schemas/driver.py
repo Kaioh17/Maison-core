@@ -24,7 +24,7 @@ class DriverBase(BaseModel):
 class DriverCreate(DriverBase):
     driver_token: str 
     password: str
-    vehicle: Optional[VehicleCreate] #outsourced/contracted type only
+    vehicle: Optional[VehicleCreate] = None #outsourced/contracted type only
     ##for inhouse -- due    
     
 
@@ -48,7 +48,7 @@ class DriverResponse(DriverBase):
     status: Optional[str] = "available"
     created_on: datetime
     updated_on: Optional[datetime] = None
-    vehicle: Optional[VehicleResponse]
+    vehicle: Optional[VehicleResponse] = None
 
     model_config = {
         "from_attributes": True

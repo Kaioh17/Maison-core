@@ -13,7 +13,7 @@ def is_rider(current_rider = Depends(deps.get_current_user)):
     return current_rider
 
 def is_tenants(current_tenant = Depends(deps.get_current_user)):
-    if current_tenant.role.lower() != "Tenant":
+    if current_tenant.role.lower() != "tenant":
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail = "unauthorized user")
     return current_tenant

@@ -33,6 +33,7 @@ class ServiceType(str, Enum):
 class PaymentType(str, Enum):
     CASH = "cash"
     CARD = "card"
+    ZELLE = "zelle"
 
 class BoookingBase(BaseModel):
     # driver_id: Optional[int]

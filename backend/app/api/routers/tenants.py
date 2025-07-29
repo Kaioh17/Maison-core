@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, FastAPI, Query, Response, status
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
-from app.db.database import get_db
+from app.db.database import get_db, get_base_db
 from ..core import deps
 from ..services import tenants_service
 from app.schemas import tenant, driver, vehicle, booking
@@ -18,16 +18,16 @@ router = APIRouter(
 # id = security.get_tenant_id
 # Get tenant's company info
 @router.get('/', status_code=status.HTTP_200_OK, response_model=tenant.TenantResponse)
-def tenants(db: Session = Depends(get_db), current_tenants: int = Depends(deps.get_current_user)):
+async def tenants(db: Session = Depends(get_db), current_tenants: int = Depends(deps.get_current_user)):
     logger.info("Tenant's info")
-    company = tenants_service.get_company_info(db, current_tenants)
+    company = await tenants_service.get_company_info(db, current_tenants)
     return company
 
 # Create a new tenant
 @router.post('/add', status_code=status.HTTP_201_CREATED, response_model=tenant.TenantResponse)
-def create_tenants(payload: tenant.TenantCreate, db: Session = Depends(get_db)):
+async def create_tenants(payload: tenant.TenantCreate, db: Session = Depends(get_base_db)):
     logger.info("Tenants created")
-    tenant_obj = tenants_service.create_tenant(db, payload)
+    tenant_obj = await tenants_service.create_tenant(db, payload)
     return tenant_obj
 
 # Get all drivers for the current tenant
@@ -100,6 +100,8 @@ async def assign_driver_to_vehicles(payload: tenant.AssignDriver,
      
      assigned_driver = await tenants_service.assign_driver_to_vehicle(payload,vehicle_id,db, current_tenant)
      return assigned_driver
+
+
 
 ###approve rides
 
