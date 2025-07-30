@@ -200,17 +200,20 @@ async def approve_driver(payload,db, current_user):
         db_exceptions.handle(e, db)
 async def _confirm_driver_email_absence(db, current_tenant, payload):
     ##verify_email does not exist
-    driver_exists = db.query(driver_table).filter(driver_table.email == payload.email,
-                                                    driver_table.tenant_id == current_tenant.id).first()
+    try:
+        driver_exists = db.query(driver_table).filter(driver_table.email == payload.email,
+                                                        driver_table.tenant_id == current_tenant.id).first()
 
-    if driver_exists: 
-        logger.warning("Driver with email already exists...")
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail = "Driver with email already exists...")
+        if driver_exists: 
+            logger.warning("Driver with email already exists...")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail = "Driver with email already exists...")
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
     
 
 
-async def _onboarding_token(length = 6):
+async def _onboarding_token(length = 10):
     access_token = string.ascii_letters + string.digits
     return ''.join(random.choices(access_token, k=length))
 
@@ -238,42 +241,55 @@ async def onboard_drivers(db, payload, current_tenant):
 
 
 async def assign_driver_to_rides(payload,rider_id: int , db, current_tenant):
-   
-    ride =  db.query(booking_table).filter(booking_table.id == rider_id).first()
+   try:
+        ride =  db.query(booking_table).filter(booking_table.id == rider_id).first()
 
-    if not ride:
-        logger.warning("There are no bookings without assigned drivers....")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail= "There are no bookings without assigned drivers....")
-    if ride.driver_id:
-        raise HTTPException(status_code=404,
-                            detail = "Driver already assigned to ride....")
-    driver_info = db.query(driver_table).filter(driver_table.id == payload.driver_id).first()
-    if driver_info.driver_type != "in_house":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
-                            detail="outsourced drivers cannot be assigned to rides...")
-    ride.driver_id = payload.driver_id
+        if not ride:
+            logger.warning("There are no bookings without assigned drivers....")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail= "There are no bookings without assigned drivers....")
+        if ride.driver_id:
+            raise HTTPException(status_code=404,
+                                detail = "Driver already assigned to ride....")
+        
+        driver_info = db.query(driver_table).filter(driver_table.id == payload.driver_id).first()
+        if not driver_info:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail= "Driver info does not exists")
+        if driver_info.driver_type == None and driver_info.driver_type != "in_house":
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
+                                detail="outsourced drivers cannot be assigned to rides...")
+        
+        ride.driver_id = payload.driver_id
 
-    db.commit()
-    return {"msg": f"Driver {payload.driver_id} has been assigned to {rider_id}"}
+        db.commit()
+        return {"msg": f"Driver {payload.driver_id} has been assigned to {rider_id}"}
+   except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
 
 async def assign_driver_to_vehicle(payload, vehicle_id, db, current_tenant):
-    vehicle =  db.query(vehicle_table).filter(vehicle_table.id == vehicle_id).first()
+    try:
+        vehicle =  db.query(vehicle_table).filter(vehicle_table.id == vehicle_id).first()
 
-    if not vehicle:
-        logger.warning("There are no bookings without assigned drivers....")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail= "There are no bookings without assigned drivers....")
-    if vehicle.driver_id:
-        raise HTTPException(status_code=404,
-                            detail = "Driver already assigned to ride....")
-    driver_info = db.query(driver_table).filter(driver_table.id == payload.driver_id).first()
-    if driver_info.driver_type != "in_house":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
-                            detail="Outsourced drivers cannot be assigned to rides...")
-    vehicle.driver_id = payload.driver_id
+        if not vehicle:
+            logger.warning("There are no bookings without assigned drivers....")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail= "There are no bookings without assigned drivers....")
+        if vehicle.driver_id:
+            raise HTTPException(status_code=404,
+                                detail = "Driver already assigned to ride....")
+        driver_info = db.query(driver_table).filter(driver_table.id == payload.driver_id).first()
+        if not driver_info:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail= "Driver info does not exists")
+        if driver_info.driver_type == None and driver_info.driver_type != "in_house":
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
+                                detail="Outsourced drivers cannot be assigned to rides...")
+        vehicle.driver_id = payload.driver_id
 
-    db.commit()
+        db.commit()
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
     return {"msg": f"Driver {payload.driver_id} has been assigned to vehicle: {vehicle_id}"}
 
 
@@ -306,8 +322,11 @@ async def _set_up_tenant_settings(new_tenant_id,payload,db):
         db_exceptions.handle(e, db)
 
 async def _validate_driver_id(db,current_tenants, driver_id):
-    exists = db.query(driver_table).filter(driver_table.id == driver_id, 
-                                         driver_table.tenant_id == current_tenants.id).first()
-    if not exists:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail= f"Driver with {driver_id} does not exists") 
+    try:
+        exists = db.query(driver_table).filter(driver_table.id == driver_id, 
+                                            driver_table.tenant_id == current_tenants.id).first()
+        if not exists:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail= f"Driver with {driver_id} does not exists") 
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)

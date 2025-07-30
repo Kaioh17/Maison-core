@@ -1,9 +1,11 @@
 from fastapi import HTTPException, status
-from app.models import booking, tenant, driver, teanant_settings, vehicle_config, vehicle
+from app.models import booking, tenant, driver, vehicle_config, vehicle
 from app.utils import db_error_handler
 from app.utils.logging import logger
 from datetime import timedelta, datetime
 from sqlalchemy.exc import *
+
+from app.models import tenant_setting
 
 db_exceptions = db_error_handler.DBErrorHandler
 
@@ -16,7 +18,7 @@ role_to_booking_field  = {
 tenant_table = tenant.Tenants
 driver_table = driver.Drivers
 booking_table = booking.Bookings
-tenant_setting_table = teanant_settings.TenantSettings  
+tenant_setting_table = tenant_setting.TenantSettings  
 vehicle_config_table = vehicle_config.VehicleConfig
 vehicle_table = vehicle.Vehicles
 

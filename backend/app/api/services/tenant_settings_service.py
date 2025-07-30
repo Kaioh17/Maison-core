@@ -1,13 +1,14 @@
 from fastapi import HTTPException, status
-from app.models import driver, vehicle, teanant_settings
+from app.models import driver, vehicle
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
+from app.models import tenant_setting
 from .helper_service import _tenants_exist
 from .vehicle_service import allocate_vehicle_category
 from sqlalchemy.orm import selectinload
 
 db_exceptions = db_error_handler.DBErrorHandler
-tenant_setting_table= teanant_settings.TenantSettings
+tenant_setting_table= tenant_setting.TenantSettings
 vehicle_table = vehicle.Vehicles
 
 async def update_tenant_settings(payload, db, current_tenant):

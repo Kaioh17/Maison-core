@@ -32,14 +32,16 @@ async def _table_checks_(driver_obj, payload, db):
 from datetime import timedelta, datetime, timezone
 
 async def _ensure_token_not_expired_(created_on):
-  
-    now = datetime.now(timezone.utc)
-    logger.info(f" current time between {now - created_on} ")
-    if now - created_on >  timedelta(minutes=1440):
-        logger.info("Token has expired!!")
-        raise HTTPException(status_code=status.HTTP_408_REQUEST_TIMEOUT,
-                      detail="Token has timed out...")
-    
+    try:     
+        now = datetime.now(timezone.utc)
+        logger.info(f" current time between {now - created_on} ")
+        if now - created_on >  timedelta(minutes=1440):
+            logger.info("Token has expired!!")
+            raise HTTPException(status_code=status.HTTP_408_REQUEST_TIMEOUT,
+                        detail="Token has timed out...")
+    except Exception as e:
+        logger.error(f"Unkown error at token verification as {e}")
+        raise HTTPException(status_code=500, detail="Unexpected error")
 
 async def register_driver(payload, db):
     """
@@ -121,47 +123,54 @@ async def _vehicle_exists(vehicle_data, driver, db):
     return vehicle_exist
 
 async def get_driver(db, current_driver):
-    logger.info("Getting driver info..")
+    try:
+        logger.info("Getting driver info..")
 
-    driver_query = db.query(driver_table).filter(driver_table.tenant_id == current_driver.tenant_id,
-                                                 driver_table.id == current_driver.id)  
-    driver_obj = driver_query.first()
+        driver_query = db.query(driver_table).filter(driver_table.tenant_id == current_driver.tenant_id,
+                                                    driver_table.id == current_driver.id)  
+        driver_obj = driver_query.first()
 
-    if not driver_obj:
-        logger.warning(f"Driver {current_driver.id} not found")
-        raise HTTPException(status_code=404, detail="Driver was not found..")
-
+        if not driver_obj:
+            logger.warning(f"Driver {current_driver.id} not found")
+            raise HTTPException(status_code=404, detail="Driver was not found..")
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
     return driver_obj
 ## check available rides 
 ## acheck earnings
 
 ##Check rides
 async def get_bookings(db, current_driver, booking_status):
-    booked_rides = db.query(booking_table).filter(booking_table.driver_id == current_driver.id, 
-                                                  booking_table.booking_status == booking_status).all()
-    if not booked_rides:
-        logger.warning("There are no booked_rides..")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail = f"There no '{booking_status}' bookings")    
+    try:
+        booked_rides = db.query(booking_table).filter(booking_table.driver_id == current_driver.id, 
+                                                    booking_table.booking_status == booking_status).all()
+        if not booked_rides:
+            logger.warning("There are no booked_rides..")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail = f"There no '{booking_status}' bookings")    
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
     return booked_rides
 
 ##update booked ride response
 async def driver_ride_response(action, db, current_driver, booking_id):
-    ride = db.query(booking_table).filter(booking_table.id == booking_id).first()
+    try:
+        ride = db.query(booking_table).filter(booking_table.id == booking_id).first()
 
-    if not ride:
-        logger.warning("There are no booked_rides..")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail = f"There no {booking_id} bookings")    
-    # if ride.booking_satus == "":
-    if action not in {'confirm', 'cancellation'}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                            detail= "Invalid action: action should be (confirm/cancellation)")
-    
-    ride.booking_status = action
-    db.commit()
-    db.refresh(ride)
-
+        if not ride:
+            logger.warning("There are no booked_rides..")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail = f"There no {booking_id} bookings")    
+        # if ride.booking_satus == "":
+        if action not in {'confirm', 'cancellation'}:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                                detail= "Invalid action: action should be (confirm/cancellation)")
+        
+        ride.booking_status = action
+        db.commit()
+        db.refresh(ride)
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
     return ride
     
 

@@ -10,7 +10,7 @@ from app.utils.logging import logger
 
 router = APIRouter(
     prefix = "/api/v1/tenant_setting",
-    tags = ["Drivers"]
+    tags = ["tenant_settings"]
 )
 
 @router.patch("/", status_code=status.HTTP_202_ACCEPTED, response_model=tenant_setting.UpdateTenantSetting)
