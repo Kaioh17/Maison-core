@@ -62,7 +62,7 @@ async def create_tenant(db, payload):
 
         _check_unique_fields(tenant_table, db, model_map)
         """Create new tenants"""
-        hashed_pwd = password_utils.hash(payload.password) #hash password
+        hashed_pwd = password_utils.hash(payload.password.strip()) #hash password
         tenats_info = payload.model_dump()
         tenats_info.pop("users", None)
         new_tenant = tenant_table(**tenats_info)

@@ -17,6 +17,10 @@ router = APIRouter(
 )
 # id = security.get_tenant_id
 # Get tenant's company info
+@router.get("/public_test", status_code=status.HTTP_200_OK)
+def public_info():
+    logger.info("Public test started")
+    return {"msg": "test endpoint"}
 @router.get('/', status_code=status.HTTP_200_OK, response_model=tenant.TenantResponse)
 async def tenants(db: Session = Depends(get_db), current_tenants: int = Depends(deps.get_current_user)):
     logger.info("Tenant's info")

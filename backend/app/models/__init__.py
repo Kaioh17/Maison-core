@@ -4,5 +4,6 @@ from .tenant import *
 from .booking import *
 from .vehicle import *
 from .review import *
-from .teanant_settings import *
+from .tenant_setting import *
 from .vehicle_config import *
+from .vehicle_category_rate import *

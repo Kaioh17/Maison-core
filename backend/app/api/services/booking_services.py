@@ -70,23 +70,22 @@ async def book_ride(payload, db, current_rider):
     try:
         price_estimate = await _price_quote(db, current_rider, payload)
         book_ride_info = payload.model_dump()
-        vehicle = db.query(vehicle_table).filter(vehicle_table.id == payload.vehicle_id).first()
+        vehicle = db.query(vehicle_table).filter_by(id=payload.vehicle_id).first()
         if not vehicle:
             raise HTTPException(status_code=404, detail="vehicle not found")
 
         new_ride = booking.Bookings(rider_id = current_rider.id,tenant_id = current_rider.tenant_id,
                                     estimated_price = price_estimate,driver_id = vehicle.driver_id,**book_ride_info)
 
-        
-        tenant_query = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_rider.tenant_id).first()
        
-        if not tenant_query: 
+        if not db.query(tenant.Tenants).filter(tenant.Tenants.id == current_rider.tenant_id).first(): 
             raise HTTPException(status_code=404, detail="tenant not found")
       
         
         if not payload.city:
-            logger.warning("City was not entered..")
-            raise HTTPException("")
+            logger.warning(f"City was not entered for rider {current_rider.id}")
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                detail= "City was not entered..")
 
         #check for overlaps
         _bookings_overlap(db, payload)
@@ -96,17 +95,19 @@ async def book_ride(payload, db, current_rider):
         db.add(new_ride)
         db.commit()
         db.refresh(new_ride)
+
+        logger.info(f"A new ride has been set for {current_rider.full_name}")
+        return new_ride
+
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
       
-    logger.info(f"A new ride has been set for {current_rider.full_name}")
-    return new_ride
-
+   
 
 async def get_booked_rides(db, current_user):
     try:
         user = current_user.role
-        rows = role_to_booking_field .get(user.lower())
+        rows = role_to_booking_field.get(user.lower())
 
         if not rows:
             raise ValueError("Role not in settings")

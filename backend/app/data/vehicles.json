@@ -623,6 +623,13 @@
     "seating_capacity": 5
   },
   {
+    "make": "Chevrolet",
+    "model": "Suburban",
+    "year": 2022,
+    "category": "Executive SUV",
+    "seating_capacity": 7
+  },
+  {
     "make": "Maserati",
     "model": "Levante",
     "year": 2023,

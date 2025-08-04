@@ -17,6 +17,10 @@ router = APIRouter(
 
 #retrieve all bookings 
 #
+@router.get("/public_test", status_code=status.HTTP_200_OK)
+def public_info():
+    logger.info("Public test started")
+    return {"msg": "test endpoint"}
 
 @router.post("/set", status_code=status.HTTP_201_CREATED,response_model= booking.BookingRespose)
 async def BookRide(book_ride: booking.CreateBooking, current_rider =  Depends(deps.get_current_user) 
