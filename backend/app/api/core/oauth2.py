@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from app.config import Settings
 from app.schemas import auth
 from app.models import *
+from app.utils.logging import logger
+
 
 role_table_map = {
     "rider": user.Users,
@@ -29,11 +31,23 @@ def create_access_token(data: dict):
     to_encode = data.copy()
 
     expire = datetime.utcnow() + timedelta(minutes = ACCESS_TOKEN_EXPIRE_MINUTES)
+    logger.info(f"Access token expiration: {expire}")
     to_encode.update({"exp": expire})
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
     return encoded_jwt
+
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+
+    # expire = datetime.utcnow() + timedelta(minutes = REFRESH_TOKEN_EXPIRE_MINUTES)
+    # to_encode.update({"exp": expire})
+
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    return encoded_jwt
+
 
 def verify_access_token(token: str, credentials_exception):
     try:
@@ -47,3 +61,4 @@ def verify_access_token(token: str, credentials_exception):
         raise credentials_exception
     
     return token_data
+

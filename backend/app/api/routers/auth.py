@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, FastAPI, Response,status, Request
 from fastapi.params import Depends
 
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 
@@ -14,7 +15,7 @@ from ..services import tenants_service
 from app.schemas import auth
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from app.models import tenant,driver, user
-from ..core.oauth2 import create_access_token, verify_access_token
+from ..core.oauth2 import create_access_token, verify_access_token, create_refresh_token
 from app.utils.password_utils import verify
 from app.utils.logging import logger
 from app.utils import db_error_handler
@@ -33,7 +34,7 @@ def login( request: Request,
 
     try:
 
-        logger.info("Login in....")
+        logger.info("Tenant {}Login in....")
         
         #retrieve client ip
         client_ip = get_remote_address(request)
@@ -49,23 +50,41 @@ def login( request: Request,
         user_query = db.query(tenant.Tenants).filter(tenant.Tenants.email == user_credentials.username)
         user = user_query.first()
         
+        password = user_credentials.password.strip()
+
         if not user:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Invalid credentials")
-        if not verify(user_credentials.password, user.password):
+        if not verify(password, user.password):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Invalid credentials")
         
         clear_failed_attempts(attempts_key)
 
         access_token = create_access_token(data = {"id": str(user.id), "role": user.role})
+        refresh_token = create_refresh_token(data = {"id": str(user.id), "role": user.role})
+        logger.info(f"refresh token: {refresh_token}")
 
+        response = JSONResponse(content = {"access_token": access_token})
+        response.set_cookie(
+            key = "refresh_token",
+            value= refresh_token,
+            httponly=True,
+            secure=False, #set to true for prpoduction 
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,
+            path= "/api/v1/login/refresh_tenants"
+        )
+        # logger.info(f"response: {response}")
+
+        return response
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
-    return {
-        "access_token" : access_token,
-        "token_type": "bearer"
-    }
+    # return {
+    #     "access_token" : access_token,
+    #     "token_type": "bearer"
+    # }
+    
 
 @router.post('/driver')
 def login( request: Request,
@@ -87,27 +106,41 @@ def login( request: Request,
         driver_query = db.query(driver.Drivers).filter(driver.Drivers.email == user_credentials.username)
         drivers = driver_query.first()
         # print(f"user data: {drivers.email}")
-    
+        password = user_credentials.password.strip()
+
     
         if not drivers:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Invalid credentials")
         
-        if not verify(user_credentials.password, drivers.password):
+        if not verify(password, drivers.password):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Invalid credentials")
         
         clear_failed_attempts(attempts_key)
 
         access_token = create_access_token(data = {"id": str(drivers.id), "role": drivers.role , "tenant_id": str(drivers.tenant_id)})
+        refresh_token = create_refresh_token(data = {"id": str(drivers.id), "role": drivers.role , "tenant_id": str(drivers.tenant_id)})
+        logger.info(f"refresh token: {refresh_token}")
 
+        response = JSONResponse(content = {"access_token": access_token})
+        response.set_cookie(
+            key = "refresh_token",
+            value= refresh_token,
+            httponly=True,
+            secure=False, #set to true for prpoduction 
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,
+            path= "/api/v1/login/refresh"
+        )
+
+        # return {"msg": response,
+        #         "token_type": "bearer"}
+        return response
        
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
-    return {
-                "access_token" : access_token,
-                "token_type": "bearer"
-            }
+    
 @router.post('/user')
 def login( request: Request,
     db: Session = Depends(get_base_db),
@@ -125,6 +158,8 @@ def login( request: Request,
             window_minutes=5
         )
 
+        password = user_credentials.password.strip()
+
         user_query = db.query(user.Users).filter(user.Users.email == user_credentials.username)
         users = user_query.first()
         # print(f"user data: {users.email}")
@@ -134,15 +169,60 @@ def login( request: Request,
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Invalid credentials")
         
-        if not verify(user_credentials.password, users.password):
+        if not verify(password, users.password):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Invalid credentials")
         clear_failed_attempts(attempts_key)
         
         access_token = create_access_token(data = {"id": str(users.id), "role": users.role, "tenant_id": str(users.tenant_id)})
+        refresh_token = create_refresh_token(data = {"id": str(users.id), "role": users.role, "tenant_id": str(users.tenant_id)})
+        logger.info(f"refresh token: {refresh_token}")
+
+        response = JSONResponse(content = {"access_token": access_token})
+        response.set_cookie(
+            key = "refresh_token",
+            value= refresh_token,
+            httponly=True,
+            secure=False, #set to true for prpoduction 
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,
+            path= "/api/v1/login/refresh"
+        )
+
+        # return {"msg": response,
+        #         # "token_type": "bearer"}
+        return response
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
-    return {
-        "access_token" : access_token,
-        "token_type": "bearer"
-    }
+    
+
+###refresh tokens endpoint
+@router.post("/refresh_tenants")
+async def refresh_token(request: Request):
+    refresh_token =request.cookies.get("refresh_token")
+    if not refresh_token:
+        logger.error("There is no refresh token...")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="No refresh token")
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
+    payload = verify_access_token(refresh_token, credentials_exception)
+
+    #create new access token
+    logger.info("Token refreshed...")
+    new_access_token = create_access_token(data = {"id": payload['id'], "role": payload['role']})
+    return {"new_access_token": new_access_token}    
+
+@router.post("/refresh")
+async def refresh_token(request: Request):
+    refresh_token =request.cookies.get("refresh_token")
+    if not refresh_token:
+        logger.error("There is no refresh token...")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="No refresh token")
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
+    payload = verify_access_token(refresh_token, credentials_exception)
+
+    #create new access token
+    logger.info("Token refreshed...")
+    new_access_token = create_access_token(data = {"id": payload['id'], "role": payload['role'], "tenant_id": payload['tenant_id']})
+    return {"new_access_token": new_access_token}  
