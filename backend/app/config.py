@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     secret_key: str 
     algorithm: str 
     access_token_expire_minutes: int
+    pk_test: str
+    sk_test: str
 
     class Config:
         # env_file = "/backend/docker/.env"

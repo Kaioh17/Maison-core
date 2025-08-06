@@ -22,7 +22,7 @@ class Tenants(Base):
     logo_url = Column(String, nullable= True)
     slug = Column(String, unique=True, nullable = False, index=True)
     address = Column(String, nullable=True)
-    city = Column(String, nullable=False, index=True)
+    city = Column(String, nullable=False, index=True)   
     role = Column(String, nullable=False, index=True, default = "tenant")
 
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
@@ -30,9 +30,17 @@ class Tenants(Base):
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)
     
     drivers_count = Column(Integer, nullable=False, index=True)
+    total_ride_count = Column(Integer, nullable=False, default=0, server_default="0")
     is_verified = Column(Boolean, default=False)
-    plan = Column(String, nullable=False, default= "free")
     is_active = Column(Boolean, default=True)
+
+    #stripe payment columns (temporatily saved here, might move to new table)
+    stripe_customer_id = Column(String, nullable=True, index=True)
+    stripe_account_id =  Column(String, nullable=True, index=True)
+    subscription_status = Column(String, nullable=True, default= "free")
+    subscription_plan = Column(String, nullable=True, default="free")
+    daily_ride_count = Column(Integer, nullable=True, default=0, server_default= "0")
+    last_ride_count_reset = Column(TIMESTAMP(timezone=True), nullable=True)
     
     # relationships
     users = relationship("Users", back_populates="tenants", cascade= "all, delete", passive_deletes=True)

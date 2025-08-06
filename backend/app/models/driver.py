@@ -45,6 +45,11 @@ class Drivers(Base):
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now())
 
+    #stripe configuration
+    stripe_account_id = Column(String(255), nullable=True, index=True)
+    background_check_status = Column(String(50),nullable=True, default='pending')
+    stripe_onboaring_complete = Column(Boolean, nullable=True, default=False)
+
     
     __table_args__ = (
         UniqueConstraint('email', 'tenant_id','license_number', name = 'unique_driver'),

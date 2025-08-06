@@ -11,10 +11,18 @@ settings = Settings()
 
 DATABASE_URL = f"postgresql://{settings.db_user}:{settings.db_password}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
 
-engine  = create_engine(DATABASE_URL)
+engine  = create_engine(DATABASE_URL,
+                         echo=False, 
+                         pool_size = 10, 
+                         max_overflow = 20,
+                         pool_timeout= 30,
+                         pool_recycle=1800)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
+# def recieve_checkouot():
+#     logger.debug(f"Connection checked out ")
 def get_db(tenant_id: int | None = Depends(security.get_tenant_id_from_token)):
     
     # tenant_id = security.get_tenant_id()

@@ -20,6 +20,7 @@ from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from datetime import datetime, timedelta 
 import random
+from .stripe_services import StripeService
 import string
 # from .helper_service import 
 
@@ -59,16 +60,23 @@ async def create_tenant(db, payload):
             "phone_no": payload.phone_no,
             "slug": payload.slug
         }
+        """Stripe config"""
+        stripe_customer = StripeService.create_customer(email = payload.email,name = f"{payload.first_name} {payload.last_name}")
+        stripe_express = StripeService.create_express_account(email = payload.email)
 
         _check_unique_fields(tenant_table, db, model_map)
         """Create new tenants"""
         hashed_pwd = password_utils.hash(payload.password.strip()) #hash password
         tenats_info = payload.model_dump()
         tenats_info.pop("users", None)
-        new_tenant = tenant_table(**tenats_info)
+        
+        new_tenant = tenant_table(stripe_customer_id = stripe_customer,
+                                    stripe_account_id = stripe_express,
+                                   **tenats_info)
         new_tenant.password = hashed_pwd
 
-    
+       
+       
         db.add(new_tenant)
         db.commit()
         db.refresh(new_tenant)

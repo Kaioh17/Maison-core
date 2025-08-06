@@ -26,6 +26,13 @@ class Bookings(Base):
     estimated_price =  Column(Float, nullable=True)
     payment_method = Column(String, nullable=True)
     notes = Column(String, nullable=False)
+
+    #Stripe payment configuratioin
+    stripe_payment_intent_id = Column(String(255), nullable=True)
+    platform_fee_amount = Column(Float, nullable=True)
+    payment_status = Column(String, nullable=True, default="pending", server_default= "pending")
+
+
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)

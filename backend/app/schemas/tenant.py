@@ -68,8 +68,17 @@ class TenantResponse(BaseModel):
     role: str
     drivers_count: int
     is_verified: bool
-    plan: str
     is_active: bool
+
+    #stripe details
+    stripe_customer_id: Optional[str]
+    stripe_account_id: Optional[str]
+    subscription_status: Optional[str]
+    subscription_plan: Optional[str]
+    total_ride_count: Optional[int]
+    daily_ride_count:Optional[int]
+    last_ride_count_reset:Optional[datetime]
+    
     created_on: datetime
     updated_on: Optional[datetime]
     
