@@ -24,14 +24,20 @@ services:
       - app-network
     restart: unless-stopped
   
-  # frontend:
-  #   build:
-  #     context: ..
-  #     dockerfile: frontend/Dockerfile
-  #   container_name: maison_frontend
-  #   ports:
-  #     - "3000:3000"
-  #   restart: unless-stopped
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_API_BASE: /api
+    container_name: maison_frontend
+    depends_on:
+      - web
+    ports:
+      - "5173:80"
+    networks:
+      - app-network
+    restart: unless-stopped
 
     
 
