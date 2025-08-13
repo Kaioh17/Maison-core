@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, TypeAdapter, validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, TypeAdapter, field_validator, model_validator
 from typing import Optional
 import re
 from fastapi import HTTPException, status
@@ -47,7 +47,7 @@ class BoookingBase(BaseModel):
     payment_method: PaymentType
     notes: Optional[str]
 
-    @validator("pickup_time", "dropoff_time", pre = True)
+    @field_validator("pickup_time", "dropoff_time")
     def ensure_timezone(cls, value):
         dt = TypeAdapter(datetime).validate_python(value)
         if dt.tzinfo is None:

@@ -7,7 +7,7 @@ import uuid
 
 id_seq =  Sequence('id_seq', start= 150)
 
-
+"""For riders transactions"""
 class Transaction(Base):
     __tablename__ ="transactions"
 

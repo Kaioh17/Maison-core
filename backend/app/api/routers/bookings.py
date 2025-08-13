@@ -15,7 +15,8 @@ router = APIRouter(
     tags = ["Bookings"]
 )
 
-#retrieve all bookings 
+#retrieve all bookings
+#  
 #
 @router.get("/public_test", status_code=status.HTTP_200_OK)
 def public_info():
@@ -41,13 +42,3 @@ async def BookRide(current_user =  Depends(deps.get_current_user)
 
 
 
-##endpoints:
-    ##update
-    ##PUT    /bookings/{booking_id}         # ❌ Missing - Update booking
-# DELETE /bookings/{booking_id}         # ❌ Missing - Cancel booking
-# POST   /bookings/{booking_id}/accept  # ❌ Missing - Driver accepts
-# POST   /bookings/{booking_id}/start   # ❌ Missing - Start ride
-# POST   /bookings/{booking_id}/complete # ❌ Missing - Complete ride
-# GET    /bookings/available            # ❌ Missing - Available rides for drivers
-
-###search endpoint using query parameters to filter through date, times, drivers.

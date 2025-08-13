@@ -10,7 +10,7 @@ export async function addVehicle(payload: VehicleCreate) {
   return data
 }
 
-export async function setVehicleRate(payload: VehicleRate) {
+export async function setVehicleRates(payload: VehicleRate) {
   const { data } = await http.patch<VehicleCategoryRateResponse>('/v1/vehicles/set_rates', payload)
   return data
 }
@@ -56,4 +56,6 @@ export type VehicleCategoryRateResponse = {
   vehicle_flat_rate: number
   created_on: string
   updated_on?: string | null
-} 
+}
+
+export type VehicleCategoryRateCreate = VehicleRate 

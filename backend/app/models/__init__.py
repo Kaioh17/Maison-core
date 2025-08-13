@@ -7,3 +7,4 @@ from .review import *
 from .tenant_setting import *
 from .vehicle_config import *
 from .vehicle_category_rate import *
+from .transactions import *

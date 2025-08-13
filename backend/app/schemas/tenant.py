@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 import re
 from enum import Enum
@@ -22,17 +22,17 @@ class TenantCreate(BaseModel):
     city: str = Field(..., min_length=1, max_length=100)
     drivers_count: int = Field(default=0, ge=0)
 
-    @validator('email')
+    @field_validator('email')
     def validate_email(cls, v):
         return v.lower()
     
-    @validator('slug')
+    @field_validator('slug')
     def validate_slug(cls, v):
         if not re.match(r'^[a-z0-9-]+$', v):
             raise ValueError('Slug must contain only lowercase letters, numbers, and hyphens')
         return v.lower()
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, v):
         if not re.search(r'[A-Z]', v):
             raise ValueError('Password must contain at least one uppercase letter')

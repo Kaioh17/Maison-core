@@ -27,3 +27,14 @@ class StripeService:
         
         
         return express_account.id
+    
+    def create_onboarding_link(express_account_id):
+        
+        account_link = stripe.AccountLink.create(
+            account=express_account_id,
+            refresh_url = "https://retry-onboarding", #where they when they fail
+            return_url = "https://onboarding-complete", # where they go onoce it passes 
+            type="account_onboarding"
+        )
+
+        return account_link.id

@@ -5,10 +5,18 @@ import { useAuthStore } from '@store/auth'
 export const http = axios.create({
   baseURL: API_BASE,
   withCredentials: true, // to send/receive refresh_token cookie
+  maxRedirects: 5, // Allow following redirects (e.g., /api/v1/tenant -> /api/v1/tenant/)
 })
 
 http.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
+  console.log('🚀 HTTP Request:', {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    baseURL: config.baseURL,
+    fullURL: `${config.baseURL}${config.url}`,
+    hasToken: !!token
+  })
   if (token) {
     config.headers = config.headers || {}
     config.headers.Authorization = `Bearer ${token}`
@@ -25,8 +33,22 @@ function onRefreshed() {
 }
 
 http.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    console.log('✅ HTTP Response:', {
+      status: res.status,
+      url: res.config.url,
+      data: res.data
+    })
+    return res
+  },
   async (error) => {
+    console.error('❌ HTTP Error:', {
+      status: error?.response?.status,
+      url: error?.config?.url,
+      message: error?.message,
+      response: error?.response?.data
+    })
+    
     const original = error.config
     const status = error?.response?.status
     if (status === 401 && !original._retry) {

@@ -66,10 +66,11 @@ async def create_tenant(db, payload):
 
         _check_unique_fields(tenant_table, db, model_map)
         """Create new tenants"""
+        _verify_upload(payload.logo_url)
+
         hashed_pwd = password_utils.hash(payload.password.strip()) #hash password
         tenats_info = payload.model_dump()
         tenats_info.pop("users", None)
-        
         new_tenant = tenant_table(stripe_customer_id = stripe_customer,
                                     stripe_account_id = stripe_express,
                                    **tenats_info)
@@ -91,17 +92,27 @@ async def create_tenant(db, payload):
         db_exceptions.handle(e, db)
         
     return new_tenant
+async def _verify_upload(logo_url):
+    contents = await logo_url.read()
 
+    with open(f"upload/{logo_url}", "wb") as f:
+        f.write(contents)
 async def get_company_info(db, current_tenats):
     try: 
         company = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_tenats.id).first()
         if not company:
-            logger.warning("404: company is not in db")
+            logger.warning(f"404: company with id {current_tenats.id} is not in db")
             raise HTTPException(status_code=404,
                                 detail="Company cannot be found")
+        return company
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
-    return company
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_company_info: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 async def get_all_drivers(db, current_tenants):
@@ -111,13 +122,16 @@ async def get_all_drivers(db, current_tenants):
         drivers = drivers_query.all()
 
         if not drivers:
-            logger.warning(f"There are no drivers for tenant {current_tenants.id}")
+            logger.info(f"There are no drivers for tenant {current_tenants.id}")
+            return []  # Return empty array instead of raising error
 
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail = "There are no drivers under this tenants")
+        return drivers
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
-    return drivers
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        logger.error(f"Unexpected error in get_all_drivers: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 """Tenanant"""
 async def get_all_vehicles(db, current_tenants):
@@ -127,12 +141,16 @@ async def get_all_vehicles(db, current_tenants):
         vehicle_obj = vehicle_query.all()
 
         if not vehicle_obj:
-            logger.warning(f"There are no vehicles for tenant {current_tenants.id}")
-            raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-                                detail = f"Tenant {current_tenants.id} have no vehicles")
+            logger.info(f"There are no vehicles for tenant {current_tenants.id}")
+            return []  # Return empty array instead of raising error
+
         return vehicle_obj
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        logger.error(f"Unexpected error in get_all_vehicles: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 async def fetch_assigned_drivers_vehicles(db, current_tenants):
     try:
@@ -170,15 +188,19 @@ async def find_vehicles_owned_by_driver(db,driver_id: int, current_tenants):
 async def get_all_bookings(db, current_tenant):
     try:
         booking_query = db.query(booking_table).filter(booking_table.tenant_id == current_tenant.id)
-
         booking_obj = booking_query.all()
         
         if not booking_obj:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail= "There are no history of bookings right now....")
+            logger.info(f"There are no bookings for tenant {current_tenant.id}")
+            return []  # Return empty array instead of raising error
+
         return booking_obj
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        logger.error(f"Unexpected error in get_all_bookings: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 async def get_bookings_by_status(db,booking_status: str, current_tenant):
     try:

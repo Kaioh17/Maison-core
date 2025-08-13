@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getAllTenants, deleteTenant } from '@api/admin'
+import { getTenants, deleteTenant } from '@api/admin'
 import { useAuthStore } from '@store/auth'
 
 export default function AdminTenants() {
@@ -9,7 +9,7 @@ export default function AdminTenants() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await getAllTenants()
+      const res = await getTenants()
       setTenants(res.data)
     } finally {
       setLoading(false)

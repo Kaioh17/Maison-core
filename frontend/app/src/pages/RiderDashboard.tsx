@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createBooking, getMyBookings } from '@api/bookings'
+import { createBooking, getBookings } from '@api/bookings'
 import { useAuthStore } from '@store/auth'
 
 export default function RiderDashboard() {
@@ -15,7 +15,7 @@ export default function RiderDashboard() {
   const [bookings, setBookings] = useState<any[]>([])
 
   const load = async () => {
-    const b = await getMyBookings()
+    const b = await getBookings()
     setBookings(b)
   }
 

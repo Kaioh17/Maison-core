@@ -1,5 +1,8 @@
 import { FormEvent, useState } from 'react'
 import { createTenant } from '@api/tenant'
+import { loginTenant } from '@api/auth'
+import { useAuthStore } from '@store/auth'
+import { useNavigate } from 'react-router-dom'
 
 export default function Signup() {
   const [email, setEmail] = useState('')
@@ -12,6 +15,7 @@ export default function Signup() {
   const [city, setCity] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -27,64 +31,64 @@ export default function Signup() {
         slug,
         city,
       })
-      setMessage('Account created. You can sign in now.')
-      setEmail(''); setPassword(''); setFirstName(''); setLastName(''); setPhone(''); setCompany(''); setSlug(''); setCity('')
+      // Auto-login then go to dashboard
+      const data = await loginTenant(email, password)
+      useAuthStore.getState().login({ token: data.access_token })
+      navigate('/tenant')
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to create account')
     }
   }
 
   return (
-    <div className="container">
-      <div className="card">
-        <h2>Create Account</h2>
-        <form onSubmit={submit} className="vstack">
-          <div className="grid">
-            <div className="grid-6">
-              <label>First name</label>
-              <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            </div>
-            <div className="grid-6">
-              <label>Last name</label>
-              <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            </div>
-          </div>
-          <div className="grid">
-            <div className="grid-6">
-              <label>Email</label>
-              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div className="grid-6">
-              <label>Password</label>
-              <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
-          </div>
-          <div>
-            <label>Phone</label>
-            <input className="input" placeholder="+1 555-555-5555" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </div>
-          <div className="grid">
-            <div className="grid-6">
-              <label>Company</label>
-              <input className="input" value={company} onChange={(e) => setCompany(e.target.value)} />
-            </div>
-            <div className="grid-6">
-              <label>Slug</label>
-              <input className="input" placeholder="my-company" value={slug} onChange={(e) => setSlug(e.target.value)} />
-            </div>
-            <div className="grid-6">
-              <label>City</label>
-              <input className="input" value={city} onChange={(e) => setCity(e.target.value)} />
-            </div>
-          </div>
+    <main className="bw" aria-label="Create account">
+      <div className="bw-container bw-auth">
+        <div className="bw-auth-card bw-card" role="form" aria-labelledby="signup-title">
+          <h1 id="signup-title" style={{ margin: 0, fontSize: 28 }}>Create account</h1>
+          <p className="small-muted" style={{ marginTop: 6 }}>Set up your company profile in minutes.</p>
 
-          {error && <div className="small" style={{ color: '#f87171' }}>{error}</div>}
-          {message && <div className="small" style={{ color: '#10b981' }}>{message}</div>}
-          <div className="hstack">
-            <button className="btn" type="submit">Create account</button>
-          </div>
-        </form>
+          <form onSubmit={submit} className="vstack" style={{ display: 'grid', gap: 12, marginTop: 16 }}>
+            <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr' }}>
+              <label className="small-muted">First name
+                <input className="bw-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </label>
+              <label className="small-muted">Last name
+                <input className="bw-input" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr' }}>
+              <label className="small-muted">Email
+                <input className="bw-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </label>
+              <label className="small-muted">Password
+                <input className="bw-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </label>
+            </div>
+
+            <label className="small-muted">Phone
+              <input className="bw-input" placeholder="+1 555-555-5555" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </label>
+
+            <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr' }}>
+              <label className="small-muted">Company
+                <input className="bw-input" value={company} onChange={(e) => setCompany(e.target.value)} />
+              </label>
+              <label className="small-muted">Slug
+                <input className="bw-input" placeholder="my-company" value={slug} onChange={(e) => setSlug(e.target.value)} />
+              </label>
+              <label className="small-muted">City
+                <input className="bw-input" value={city} onChange={(e) => setCity(e.target.value)} />
+              </label>
+            </div>
+
+            {error && <div className="small-muted" style={{ color: '#ffb3b3' }}>{error}</div>}
+            {message && <div className="small-muted" style={{ color: '#b3ffcb' }}>{message}</div>}
+
+            <button className="bw-btn" type="submit" style={{ color: '#000' }}>Create account</button>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   )
 } 

@@ -12,7 +12,7 @@ ALGORITHM= settings.algorithm
 
 # def get_tenant_id():
 from . import oauth2
-def get_tenant_id_from_token(token : str =  Depends(oauth2.oauth2_scheme)):
+def get_tenant_id_from_token(token =  Depends(oauth2.oauth2_scheme)):
         logger.info("retrieving")
 
         try:

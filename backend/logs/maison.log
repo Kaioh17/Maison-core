@@ -1,0 +1,1347 @@
+2025-08-03 18:10:33,474  [INFO] - retrieving 
+2025-08-03 18:10:33,481  [INFO] - Driver.. 
+2025-08-03 18:10:33,482  [INFO] - Getting driver info.. 
+2025-08-03 18:10:51,983  [INFO] - retrieving 
+2025-08-03 18:10:51,985  [INFO] - Availble rides... 
+2025-08-03 18:10:51,993  [WARNING] - There are no booked_rides.. 
+2025-08-03 18:11:04,146  [INFO] - retrieving 
+2025-08-03 18:11:04,149  [INFO] - Availble rides... 
+2025-08-03 18:11:04,155  [WARNING] - There are no booked_rides.. 
+2025-08-03 18:11:27,585  [INFO] - Login in.... 
+2025-08-03 18:11:27,586  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-03 18:11:27,587  [INFO] - current_attempts = 1 
+2025-08-03 18:11:27,832  [INFO] - attempts_key has been deleted 
+2025-08-03 18:11:36,644  [INFO] - retrieving 
+2025-08-03 18:11:36,656  [INFO] - Tenant's info  
+2025-08-03 18:11:41,974  [INFO] - retrieving 
+2025-08-03 18:11:41,979  [INFO] - Tenant drivers 
+2025-08-03 18:11:41,979  [INFO] - Getting all drivers for 329 
+2025-08-03 19:04:28,069  [INFO] - retrieving 
+2025-08-03 19:04:28,356  [INFO] - Getting driver [232] vehicles... 
+2025-08-03 20:04:16,749  [INFO] - retrieving 
+2025-08-03 20:08:50,659  [INFO] - Login in.... 
+2025-08-03 20:08:50,661  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-03 20:08:50,662  [INFO] - current_attempts = 1 
+2025-08-03 20:08:50,904  [INFO] - attempts_key has been deleted 
+2025-08-03 20:16:50,552  [INFO] - Login in.... 
+2025-08-03 20:16:50,553  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-03 20:16:50,554  [INFO] - current_attempts = 1 
+2025-08-03 20:16:50,857  [INFO] - attempts_key has been deleted 
+2025-08-03 20:16:50,870  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-03 21:31:45,967  [INFO] - Login in.... 
+2025-08-03 21:31:45,969  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-03 21:31:45,970  [INFO] - current_attempts = 1 
+2025-08-03 21:31:46,232  [INFO] - attempts_key has been deleted 
+2025-08-03 21:31:46,253  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-03 21:49:50,534  [INFO] - retrieving 
+2025-08-03 21:49:50,571  [INFO] - Tenant's info 
+2025-08-03 21:50:05,366  [INFO] - Login in.... 
+2025-08-03 21:50:05,366  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-03 21:50:05,367  [INFO] - current_attempts = 1 
+2025-08-03 21:50:05,617  [INFO] - attempts_key has been deleted 
+2025-08-03 21:50:05,618  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 18:25:40,345  [INFO] - Login in.... 
+2025-08-04 18:25:40,347  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-04 18:25:40,348  [INFO] - current_attempts = 1 
+2025-08-04 18:25:40,801  [INFO] - attempts_key has been deleted 
+2025-08-04 18:25:40,835  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 18:52:17,599  [INFO] - Login in.... 
+2025-08-04 18:52:17,608  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-04 18:52:17,611  [INFO] - current_attempts = 1 
+2025-08-04 18:52:18,081  [INFO] - attempts_key has been deleted 
+2025-08-04 18:52:18,094  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 19:07:12,805  [INFO] - Tenant {}Login in.... 
+2025-08-04 19:07:12,806  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-04 19:07:12,807  [INFO] - current_attempts = 1 
+2025-08-04 19:07:13,254  [INFO] - attempts_key has been deleted 
+2025-08-04 19:07:13,255  [INFO] - Access token expiration: 2025-08-04 19:12:13.255774 
+2025-08-04 19:07:13,271  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 19:08:23,268  [INFO] - Tenant {}Login in.... 
+2025-08-04 19:08:23,268  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-04 19:08:23,269  [INFO] - current_attempts = 1 
+2025-08-04 19:08:23,694  [INFO] - attempts_key has been deleted 
+2025-08-04 19:08:23,698  [INFO] - Access token expiration: 2025-08-04 19:13:23.698423 
+2025-08-04 19:08:23,705  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 19:11:17,984  [INFO] - Tenant {}Login in.... 
+2025-08-04 19:11:17,985  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-04 19:11:17,985  [INFO] - current_attempts = 1 
+2025-08-04 19:11:18,411  [INFO] - attempts_key has been deleted 
+2025-08-04 19:11:18,412  [INFO] - Access token expiration: 2025-08-04 19:16:18.412744 
+2025-08-04 19:11:18,417  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 19:17:14,278  [INFO] - Tenant {}Login in.... 
+2025-08-04 19:17:14,278  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-04 19:17:14,279  [INFO] - current_attempts = 1 
+2025-08-04 19:17:14,699  [INFO] - attempts_key has been deleted 
+2025-08-04 19:17:14,702  [INFO] - Access token expiration: 2025-08-04 19:22:14.702076 
+2025-08-04 19:17:14,708  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 19:17:19,783  [INFO] - Tenant {}Login in.... 
+2025-08-04 19:17:19,784  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-04 19:17:19,784  [INFO] - current_attempts = 1 
+2025-08-04 19:17:20,212  [INFO] - attempts_key has been deleted 
+2025-08-04 19:17:20,213  [INFO] - Access token expiration: 2025-08-04 19:22:20.213720 
+2025-08-04 19:17:20,220  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 19:21:29,269  [INFO] - retrieving 
+2025-08-04 19:21:29,329  [INFO] - Tenant's info 
+2025-08-04 19:21:43,416  [INFO] - retrieving 
+2025-08-04 19:21:43,426  [INFO] - Tenant's info 
+2025-08-04 19:21:47,624  [INFO] - retrieving 
+2025-08-04 19:21:47,630  [INFO] - Tenant drivers 
+2025-08-04 19:21:47,631  [INFO] - Getting all drivers for 329 
+2025-08-04 19:23:45,351  [INFO] - Tenant {}Login in.... 
+2025-08-04 19:23:45,351  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-04 19:23:45,353  [INFO] - current_attempts = 1 
+2025-08-04 19:23:45,764  [INFO] - attempts_key has been deleted 
+2025-08-04 19:23:45,766  [INFO] - Access token expiration: 2025-08-04 19:28:45.766058 
+2025-08-04 19:23:45,767  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-04 19:32:51,158  [INFO] - Driver madt@gmail.com logged in.... 
+2025-08-04 19:32:51,158  [INFO] -  login_attempts:735b9b5e116a803758a11e54394b9086 
+2025-08-04 19:32:51,159  [INFO] - current_attempts = 1 
+2025-08-04 19:32:51,583  [INFO] - attempts_key has been deleted 
+2025-08-04 19:32:51,586  [INFO] - Access token expiration: 2025-08-04 19:37:51.586142 
+2025-08-04 19:32:51,593  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0OSIsInJvbGUiOiJkcml2ZXIiLCJ0ZW5hbnRfaWQiOiIzMTcifQ.rGuwEMbQTWziytoSux-1qMKKcrBfOEF8bjF7aVmCmA4 
+2025-08-04 19:34:39,986  [INFO] - Driver madt@gmail.com logged in.... 
+2025-08-04 19:34:39,986  [INFO] -  login_attempts:735b9b5e116a803758a11e54394b9086 
+2025-08-04 19:34:39,987  [INFO] - current_attempts = 1 
+2025-08-04 19:34:40,398  [INFO] - attempts_key has been deleted 
+2025-08-04 19:34:40,400  [INFO] - Access token expiration: 2025-08-04 19:39:40.400190 
+2025-08-04 19:34:40,406  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0OSIsInJvbGUiOiJkcml2ZXIiLCJ0ZW5hbnRfaWQiOiIzMTcifQ.rGuwEMbQTWziytoSux-1qMKKcrBfOEF8bjF7aVmCmA4 
+2025-08-04 19:36:24,268  [INFO] - User john.swell@example.com logged in.... 
+2025-08-04 19:36:24,269  [INFO] -  login_attempts:2183783cd3051eb85d985dac2be2b230 
+2025-08-04 19:36:24,270  [INFO] - current_attempts = 1 
+2025-08-04 19:36:52,810  [INFO] - User lisa.martin@example.com logged in.... 
+2025-08-04 19:36:52,812  [INFO] -  login_attempts:206e03b4634c8ebec5e282e595dccbb3 
+2025-08-04 19:36:52,821  [INFO] - current_attempts = 1 
+2025-08-04 19:37:27,182  [INFO] - User lisa.martin@example.com logged in.... 
+2025-08-04 19:37:27,182  [INFO] -  login_attempts:206e03b4634c8ebec5e282e595dccbb3 
+2025-08-04 19:37:27,183  [INFO] - current_attempts = 2 
+2025-08-04 19:37:27,447  [INFO] - attempts_key has been deleted 
+2025-08-04 19:37:27,448  [INFO] - Access token expiration: 2025-08-04 19:42:27.448691 
+2025-08-04 19:37:27,452  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0MyIsInJvbGUiOiJyaWRlciIsInRlbmFudF9pZCI6IjMxNyJ9.P5kStD7gysMaWVXK_p1KamdLaZs6npQUzXDOxJVnhXM 
+2025-08-04 19:37:32,104  [INFO] - User lisa.martin@example.com logged in.... 
+2025-08-04 19:37:32,105  [INFO] -  login_attempts:206e03b4634c8ebec5e282e595dccbb3 
+2025-08-04 19:37:32,105  [INFO] - current_attempts = 1 
+2025-08-04 19:38:46,216  [INFO] - User lisa.martin@example.com logged in.... 
+2025-08-04 19:38:46,216  [INFO] -  login_attempts:206e03b4634c8ebec5e282e595dccbb3 
+2025-08-04 19:38:46,217  [INFO] - current_attempts = 2 
+2025-08-04 19:39:51,895  [INFO] - User lisa.martin@example.com logged in.... 
+2025-08-04 19:39:51,897  [INFO] -  login_attempts:206e03b4634c8ebec5e282e595dccbb3 
+2025-08-04 19:39:51,898  [INFO] - current_attempts = 3 
+2025-08-04 19:39:51,898  [INFO] - To many failed login attempts. Try again in 160 seconds. 
+2025-08-04 19:42:00,576  [INFO] - Tenants created 
+2025-08-04 19:43:04,070  [INFO] - Tenants created 
+2025-08-04 19:43:04,377  [INFO] - new tenant_id 359 
+2025-08-04 19:43:04,394  [INFO] - New tenant vehicle settings table has been set 
+2025-08-04 19:48:27,811  [INFO] - User lisa.martin@example.com logged in.... 
+2025-08-04 19:48:27,811  [INFO] -  login_attempts:206e03b4634c8ebec5e282e595dccbb3 
+2025-08-04 19:48:27,811  [INFO] - current_attempts = 1 
+2025-08-04 19:48:28,094  [INFO] - attempts_key has been deleted 
+2025-08-04 19:48:28,095  [INFO] - Access token expiration: 2025-08-04 19:53:28.095211 
+2025-08-04 19:48:28,098  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0MyIsInJvbGUiOiJyaWRlciIsInRlbmFudF9pZCI6IjMxNyJ9.P5kStD7gysMaWVXK_p1KamdLaZs6npQUzXDOxJVnhXM 
+2025-08-04 19:48:33,176  [INFO] - User lisa.martin@example.com logged in.... 
+2025-08-04 19:48:33,176  [INFO] -  login_attempts:206e03b4634c8ebec5e282e595dccbb3 
+2025-08-04 19:48:33,176  [INFO] - current_attempts = 1 
+2025-08-04 19:48:33,399  [INFO] - attempts_key has been deleted 
+2025-08-04 19:48:33,400  [INFO] - Access token expiration: 2025-08-04 19:53:33.400682 
+2025-08-04 19:48:33,402  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0MyIsInJvbGUiOiJyaWRlciIsInRlbmFudF9pZCI6IjMxNyJ9.P5kStD7gysMaWVXK_p1KamdLaZs6npQUzXDOxJVnhXM 
+2025-08-04 19:51:55,848  [INFO] - Driver madt@gmail.com logged in.... 
+2025-08-04 19:51:55,848  [INFO] -  login_attempts:735b9b5e116a803758a11e54394b9086 
+2025-08-04 19:51:55,849  [INFO] - current_attempts = 1 
+2025-08-04 19:51:56,171  [INFO] - attempts_key has been deleted 
+2025-08-04 19:51:56,172  [INFO] - Access token expiration: 2025-08-04 19:56:56.172340 
+2025-08-04 19:51:56,188  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0OSIsInJvbGUiOiJkcml2ZXIiLCJ0ZW5hbnRfaWQiOiIzMTcifQ.rGuwEMbQTWziytoSux-1qMKKcrBfOEF8bjF7aVmCmA4 
+2025-08-04 20:02:37,460  [INFO] - Tenant 359 has been deleted 
+2025-08-04 20:03:44,615  [ERROR] - Tenant 359 not found 
+2025-08-05 04:10:24,307  [INFO] - Tenant cLogin in.... 
+2025-08-05 04:10:24,313  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-05 04:10:24,314  [INFO] - current_attempts = 1 
+2025-08-05 04:10:24,610  [INFO] - attempts_key has been deleted 
+2025-08-05 04:10:24,615  [INFO] - Access token expiration: 2025-08-05 04:15:24.615446 
+2025-08-05 04:10:24,653  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-05 04:10:32,677  [INFO] - retrieving 
+2025-08-05 04:10:32,702  [INFO] - Tenant drivers 
+2025-08-05 04:10:32,702  [INFO] - Getting all drivers for 329 
+2025-08-05 04:10:59,108  [INFO] - retrieving 
+2025-08-05 04:10:59,140  [INFO] - Tenant drivers 
+2025-08-05 04:10:59,140  [INFO] - Getting all drivers for 329 
+2025-08-05 04:12:48,552  [INFO] - retrieving 
+2025-08-05 04:12:48,598  [INFO] - Tenant drivers 
+2025-08-05 04:12:48,598  [INFO] - Getting all drivers for 329 
+2025-08-05 04:13:26,766  [INFO] - retrieving 
+2025-08-05 04:13:26,806  [INFO] - Tenant drivers 
+2025-08-05 04:13:26,807  [INFO] - Getting all drivers for 329 
+2025-08-05 04:26:57,437  [INFO] - retrieving 
+2025-08-05 04:27:05,488  [INFO] - Tenant cLogin in.... 
+2025-08-05 04:27:05,490  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-05 04:27:05,490  [INFO] - current_attempts = 1 
+2025-08-05 04:27:05,826  [INFO] - attempts_key has been deleted 
+2025-08-05 04:27:05,827  [INFO] - Access token expiration: 2025-08-05 04:32:05.827855 
+2025-08-05 04:27:05,828  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-05 04:27:08,460  [INFO] - retrieving 
+2025-08-05 04:27:08,481  [INFO] - Tenant's info 
+2025-08-05 04:27:36,263  [INFO] - retrieving 
+2025-08-05 04:27:36,294  [INFO] - Tenant's info 
+2025-08-05 04:38:11,624  [INFO] - retrieving 
+2025-08-05 04:38:26,663  [INFO] - retrieving 
+2025-08-05 04:38:49,335  [INFO] - Tenant cLogin in.... 
+2025-08-05 04:38:49,335  [INFO] -  login_attempts:0936f6cac3074e5d7cb8efb1fcf8c1df 
+2025-08-05 04:38:49,336  [INFO] - current_attempts = 1 
+2025-08-05 04:38:49,611  [INFO] - attempts_key has been deleted 
+2025-08-05 04:38:49,613  [INFO] - Access token expiration: 2025-08-05 04:43:49.613350 
+2025-08-05 04:38:49,614  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMyOSIsInJvbGUiOiJ0ZW5hbnQifQ.RLMcnt0Uoxief-DqlpKtbHiCk7ZquvYyqtx2LCXjf9U 
+2025-08-05 04:40:35,008  [INFO] - retrieving 
+2025-08-05 04:40:35,036  [INFO] - Onboarding driver... 
+2025-08-05 04:40:35,044  [WARNING] - Driver with email already exists... 
+2025-08-05 04:40:47,019  [INFO] - retrieving 
+2025-08-05 04:40:47,026  [INFO] - Tenant vehicles... 
+2025-08-05 04:40:47,026  [INFO] - Getting vehicles for tenant: 329 
+2025-08-05 04:41:35,188  [INFO] - retrieving 
+2025-08-05 04:41:35,194  [INFO] - All available bookings for 329 
+2025-08-05 04:48:27,879  [INFO] - Tenant cLogin in.... 
+2025-08-05 04:48:27,882  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-05 04:48:27,883  [INFO] - current_attempts = 1 
+2025-08-05 04:48:28,144  [INFO] - attempts_key has been deleted 
+2025-08-05 04:48:28,201  [INFO] - Access token expiration: 2025-08-05 04:53:28.201305 
+2025-08-05 04:48:28,202  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-05 04:48:33,533  [INFO] - retrieving 
+2025-08-05 04:48:33,541  [INFO] - All available bookings for 317 
+2025-08-05 04:50:24,435  [INFO] - retrieving 
+2025-08-05 04:50:24,485  [INFO] - All available bookings for 317 
+2025-08-05 04:50:49,411  [INFO] - retrieving 
+2025-08-05 04:50:49,420  [INFO] - Getting active bookings... 
+2025-08-05 04:50:57,568  [INFO] - retrieving 
+2025-08-05 04:50:57,578  [INFO] - Getting pending bookings... 
+2025-08-05 21:24:44,675  [INFO] - Tenant cLogin in.... 
+2025-08-05 21:24:44,679  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-05 21:24:44,680  [INFO] - current_attempts = 1 
+2025-08-05 21:24:44,965  [INFO] - attempts_key has been deleted 
+2025-08-05 21:24:44,969  [INFO] - Access token expiration: 2025-08-05 21:29:44.969176 
+2025-08-05 21:24:45,016  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-05 21:24:54,568  [INFO] - retrieving 
+2025-08-05 21:24:54,591  [INFO] - Tenant's info 
+2025-08-05 21:25:02,498  [INFO] - retrieving 
+2025-08-05 21:25:02,503  [INFO] - Tenant drivers 
+2025-08-05 21:25:02,503  [INFO] - Getting all drivers for 317 
+2025-08-05 21:25:08,661  [INFO] - retrieving 
+2025-08-05 21:25:08,666  [INFO] - Tenant drivers 
+2025-08-05 21:25:08,667  [INFO] - Getting all drivers for 317 
+2025-08-05 21:25:11,198  [INFO] - retrieving 
+2025-08-05 21:25:11,203  [INFO] - Tenant drivers 
+2025-08-05 21:25:11,204  [INFO] - Getting all drivers for 317 
+2025-08-05 21:25:23,865  [INFO] - retrieving 
+2025-08-05 21:25:23,871  [INFO] - Tenant drivers 
+2025-08-05 21:25:23,871  [INFO] - Getting all drivers for 317 
+2025-08-05 21:25:42,115  [INFO] - retrieving 
+2025-08-05 21:25:42,122  [INFO] - Tenant drivers 
+2025-08-05 21:25:42,122  [INFO] - Getting all drivers for 317 
+2025-08-05 21:25:44,896  [INFO] - retrieving 
+2025-08-05 21:25:44,900  [INFO] - Getting pending bookings... 
+2025-08-05 21:25:50,705  [INFO] - retrieving 
+2025-08-05 21:25:50,711  [INFO] - Tenant vehicles... 
+2025-08-05 21:25:50,712  [INFO] - Getting vehicles for tenant: 317 
+2025-08-05 21:25:58,567  [INFO] - retrieving 
+2025-08-05 21:26:01,463  [INFO] - Tenant cLogin in.... 
+2025-08-05 21:26:01,463  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-05 21:26:01,464  [INFO] - current_attempts = 1 
+2025-08-05 21:26:01,684  [INFO] - attempts_key has been deleted 
+2025-08-05 21:26:01,686  [INFO] - Access token expiration: 2025-08-05 21:31:01.686681 
+2025-08-05 21:26:01,687  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-05 21:26:13,001  [INFO] - retrieving 
+2025-08-05 21:26:13,008  [INFO] - Onboarding driver... 
+2025-08-05 21:26:13,011  [INFO] - Starting onboarding process.... 
+2025-08-05 21:26:13,061  [INFO] - Onboarding process complete... 
+2025-08-05 21:27:00,040  [INFO] - retrieving 
+2025-08-05 21:27:00,079  [INFO] - Tenant drivers 
+2025-08-05 21:27:00,079  [INFO] - Getting all drivers for 317 
+2025-08-05 21:28:27,305  [INFO] - retrieving 
+2025-08-05 21:28:27,314  [INFO] - Tenant drivers 
+2025-08-05 21:28:27,315  [INFO] - Getting all drivers for 317 
+2025-08-05 21:28:33,066  [INFO] - retrieving 
+2025-08-05 21:28:33,072  [INFO] - Tenant vehicles... 
+2025-08-05 21:28:33,073  [INFO] - Getting vehicles for tenant: 317 
+2025-08-05 21:28:39,654  [INFO] - retrieving 
+2025-08-05 21:28:39,659  [INFO] - Tenant drivers 
+2025-08-05 21:28:39,659  [INFO] - Getting all drivers for 317 
+2025-08-05 21:29:12,751  [INFO] - retrieving 
+2025-08-05 21:29:12,817  [INFO] - Tenant drivers 
+2025-08-05 21:29:12,817  [INFO] - Getting all drivers for 317 
+2025-08-05 21:30:02,833  [INFO] - retrieving 
+2025-08-05 21:30:02,872  [INFO] - Tenant drivers 
+2025-08-05 21:30:02,873  [INFO] - Getting all drivers for 317 
+2025-08-05 21:33:18,264  [INFO] - Registration begins.... 
+2025-08-05 21:33:18,264  [INFO] - Creating account... 
+2025-08-05 21:33:18,295  [INFO] - Driver has already been registered.... 
+2025-08-05 21:34:09,673  [INFO] - retrieving 
+2025-08-05 21:34:14,948  [INFO] - Tenant cLogin in.... 
+2025-08-05 21:34:14,952  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-05 21:34:14,957  [INFO] - current_attempts = 1 
+2025-08-05 21:34:15,212  [INFO] - attempts_key has been deleted 
+2025-08-05 21:34:15,216  [INFO] - Access token expiration: 2025-08-05 21:39:15.215977 
+2025-08-05 21:34:15,216  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-05 21:34:19,398  [INFO] - retrieving 
+2025-08-05 21:34:19,416  [INFO] - Tenant drivers 
+2025-08-05 21:34:19,416  [INFO] - Getting all drivers for 317 
+2025-08-05 21:34:27,347  [INFO] - retrieving 
+2025-08-05 21:36:46,236  [INFO] - Tenants created 
+2025-08-05 21:36:46,474  [INFO] - new tenant_id 366 
+2025-08-05 21:36:46,492  [INFO] - New tenant vehicle settings table has been set 
+2025-08-05 21:37:58,973  [INFO] - Tenant cLogin in.... 
+2025-08-05 21:37:58,973  [INFO] -  login_attempts:3a3baf8d5b041b86398f0b3a4eaad2a7 
+2025-08-05 21:37:58,974  [INFO] - current_attempts = 1 
+2025-08-05 21:38:52,658  [INFO] - Tenant cLogin in.... 
+2025-08-05 21:38:52,658  [INFO] -  login_attempts:3a3baf8d5b041b86398f0b3a4eaad2a7 
+2025-08-05 21:38:52,659  [INFO] - current_attempts = 2 
+2025-08-05 21:38:52,869  [INFO] - attempts_key has been deleted 
+2025-08-05 21:38:52,872  [INFO] - Access token expiration: 2025-08-05 21:43:52.872073 
+2025-08-05 21:38:52,884  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM2NiIsInJvbGUiOiJ0ZW5hbnQifQ.9STve22VA0rvf7fKbR5AnLk_nuT92Wl8Iq27K8_Pg5s 
+2025-08-06 20:25:48,819  [INFO] - Tenants created 
+2025-08-06 20:27:03,145  [INFO] - Tenants created 
+2025-08-06 20:31:06,265  [INFO] - Tenants created 
+2025-08-06 20:31:06,712  [INFO] - Customer has been created cus_Sorixii7VmmX6i 
+2025-08-06 20:31:09,947  [INFO] - Express account has been created [acct_1RtDzLJS0vhXA4sk] for admin@royalrides.com 
+2025-08-06 20:39:12,473  [INFO] - Tenants created 
+2025-08-06 20:39:13,029  [INFO] - Customer has been created cus_Sorq8IWZhqyb0W 
+2025-08-06 20:39:15,821  [INFO] - Express account has been created [acct_1RtE7BJOGfmbXMI3] for admin@royalrides.com 
+2025-08-06 20:39:16,107  [INFO] - new tenant_id 404 
+2025-08-06 20:39:16,139  [INFO] - New tenant vehicle settings table has been set 
+2025-08-08 22:44:55,376  [INFO] - Tenant cLogin in.... 
+2025-08-08 22:44:55,410  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-08 22:44:55,420  [INFO] - current_attempts = 1 
+2025-08-08 22:44:56,261  [INFO] - attempts_key has been deleted 
+2025-08-08 22:44:56,271  [INFO] - Access token expiration: 2025-08-08 23:44:56.269573 
+2025-08-08 22:44:56,547  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-08 22:53:12,573  [INFO] - retrieving 
+2025-08-08 22:53:12,792  [INFO] - Onboarding driver... 
+2025-08-08 22:53:14,371  [INFO] - Starting onboarding process.... 
+2025-08-08 22:53:14,437  [INFO] - Onboarding process complete... 
+2025-08-08 22:55:06,529  [INFO] - Registration begins.... 
+2025-08-08 22:55:06,529  [INFO] - Creating account... 
+2025-08-08 22:55:06,540  [INFO] -  current time between 0:01:53.945067  
+2025-08-08 22:55:06,571  [INFO] - registeration started... 
+2025-08-08 22:55:06,819  [INFO] - Logger driver succesfully registered 
+2025-08-08 23:39:06,089  [INFO] - Client: 172.19.0.1 
+2025-08-08 23:41:59,781  [INFO] - Client: 172.19.0.1, origin: http://127.0.0.1:8000/ 
+2025-08-09 05:14:26,744  [INFO] - Tenant cLogin in.... 
+2025-08-09 05:14:26,746  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-09 05:14:26,747  [INFO] - current_attempts = 1 
+2025-08-09 05:14:27,188  [INFO] - attempts_key has been deleted 
+2025-08-09 05:14:27,190  [INFO] - Access token expiration: 2025-08-09 06:14:27.189969 
+2025-08-09 05:14:27,210  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 05:52:31,311  [INFO] - Tenant cLogin in.... 
+2025-08-09 05:52:31,318  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-09 05:52:31,323  [INFO] - current_attempts = 1 
+2025-08-09 05:52:31,582  [INFO] - attempts_key has been deleted 
+2025-08-09 05:52:31,584  [INFO] - Access token expiration: 2025-08-09 06:52:31.584288 
+2025-08-09 05:52:31,607  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 06:04:02,255  [INFO] - Tenants created 
+2025-08-09 06:04:02,765  [INFO] - Customer has been created cus_SplP18l4xfgI6l 
+2025-08-09 06:04:05,698  [INFO] - Express account has been created [acct_1Ru5ssJcqjTA86YW] for mubskill@gmail.com 
+2025-08-09 06:04:06,037  [INFO] - new tenant_id 411 
+2025-08-09 06:04:06,051  [INFO] - New tenant vehicle settings table has been set 
+2025-08-09 06:04:06,084  [INFO] - Tenants created 
+2025-08-09 06:04:06,306  [INFO] - Customer has been created cus_SplPV4AwponyTR 
+2025-08-09 06:04:10,204  [INFO] - Express account has been created [acct_1Ru5svJ4euh94ivh] for mubskill@gmail.com 
+2025-08-09 06:04:10,208  [INFO] - Tenants created 
+2025-08-09 06:04:10,431  [INFO] - Customer has been created cus_SplPMlStAwSOXG 
+2025-08-09 06:04:13,530  [INFO] - Express account has been created [acct_1Ru5szQqqzd5yyOc] for mubskill@gmail.com 
+2025-08-09 06:04:13,544  [INFO] - Tenants created 
+2025-08-09 06:04:13,776  [INFO] - Customer has been created cus_SplPOGoIO72AvO 
+2025-08-09 06:04:16,716  [INFO] - Express account has been created [acct_1Ru5t3QrGeA5TGjX] for mubskill@gmail.com 
+2025-08-09 06:04:16,726  [INFO] - Tenants created 
+2025-08-09 06:04:16,943  [INFO] - Customer has been created cus_SplPAfRSikKMN5 
+2025-08-09 06:04:19,745  [INFO] - Express account has been created [acct_1Ru5t6Qst2Ei2p9x] for mubskill@gmail.com 
+2025-08-09 06:04:19,768  [INFO] - Tenants created 
+2025-08-09 06:04:20,003  [INFO] - Customer has been created cus_SplPBnj76rpFKR 
+2025-08-09 06:04:21,445  [INFO] - Express account has been created [acct_1Ru5t8Jd5zeJrDR1] for mubskill@gmail.com 
+2025-08-09 06:04:21,459  [INFO] - Tenants created 
+2025-08-09 06:04:21,694  [INFO] - Customer has been created cus_SplQrRmJF4Y2dd 
+2025-08-09 06:04:24,882  [INFO] - Express account has been created [acct_1Ru5tBJMIhMWLq40] for mubskill@gmail.com 
+2025-08-09 06:07:28,644  [INFO] - Tenant cLogin in.... 
+2025-08-09 06:07:28,647  [INFO] -  login_attempts:b6305c1937ad146031b9b9c6b82526f4 
+2025-08-09 06:07:28,650  [INFO] - current_attempts = 1 
+2025-08-09 06:07:28,870  [INFO] - attempts_key has been deleted 
+2025-08-09 06:07:28,872  [INFO] - Access token expiration: 2025-08-09 07:07:28.871710 
+2025-08-09 06:07:28,883  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQxMSIsInJvbGUiOiJ0ZW5hbnQifQ.VBj1PKdSgXmD7SJ1hMdVxYOt4Yw3-STKwXAtq2aD7Uo 
+2025-08-09 06:07:28,920  [INFO] - retrieving 
+2025-08-09 06:07:28,925  [INFO] - retrieving 
+2025-08-09 06:07:28,930  [INFO] - retrieving 
+2025-08-09 06:07:28,934  [INFO] - Tenant drivers 
+2025-08-09 06:07:28,935  [INFO] - Getting all drivers for 411 
+2025-08-09 06:07:29,060  [WARNING] - There are no drivers for tenant 411 
+2025-08-09 06:07:29,065  [INFO] - Tenant vehicles... 
+2025-08-09 06:07:29,065  [INFO] - Getting vehicles for tenant: 411 
+2025-08-09 06:07:29,072  [WARNING] - There are no vehicles for tenant 411 
+2025-08-09 06:07:29,079  [INFO] - All available bookings for 411 
+2025-08-09 06:08:55,193  [INFO] - Tenant cLogin in.... 
+2025-08-09 06:08:55,193  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 06:08:55,194  [INFO] - current_attempts = 1 
+2025-08-09 06:08:55,396  [INFO] - attempts_key has been deleted 
+2025-08-09 06:08:55,397  [INFO] - Access token expiration: 2025-08-09 07:08:55.397719 
+2025-08-09 06:08:55,399  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 06:08:55,485  [INFO] - retrieving 
+2025-08-09 06:08:55,487  [INFO] - retrieving 
+2025-08-09 06:08:55,496  [INFO] - retrieving 
+2025-08-09 06:08:55,504  [INFO] - Tenant drivers 
+2025-08-09 06:08:55,506  [INFO] - Getting all drivers for 317 
+2025-08-09 06:08:55,524  [INFO] - Tenant vehicles... 
+2025-08-09 06:08:55,525  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 06:08:55,540  [INFO] - All available bookings for 317 
+2025-08-09 06:09:16,180  [INFO] - retrieving 
+2025-08-09 06:09:16,184  [INFO] - Tenant's info 
+2025-08-09 06:09:23,078  [INFO] - retrieving 
+2025-08-09 06:09:23,082  [INFO] - Tenant vehicles... 
+2025-08-09 06:09:23,082  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 06:33:33,422  [INFO] - Tenant cLogin in.... 
+2025-08-09 06:33:33,424  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 06:33:33,425  [INFO] - current_attempts = 1 
+2025-08-09 06:33:33,731  [INFO] - attempts_key has been deleted 
+2025-08-09 06:33:33,734  [INFO] - Access token expiration: 2025-08-09 07:33:33.734645 
+2025-08-09 06:33:33,760  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 06:33:33,815  [INFO] - retrieving 
+2025-08-09 06:33:33,823  [INFO] - retrieving 
+2025-08-09 06:33:33,826  [INFO] - retrieving 
+2025-08-09 06:33:33,837  [INFO] - Tenant drivers 
+2025-08-09 06:33:33,840  [INFO] - Getting all drivers for 317 
+2025-08-09 06:33:33,875  [INFO] - Tenant vehicles... 
+2025-08-09 06:33:33,875  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 06:33:33,882  [INFO] - All available bookings for 317 
+2025-08-09 06:33:44,849  [INFO] - Tenant cLogin in.... 
+2025-08-09 06:33:44,849  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 06:33:44,850  [INFO] - current_attempts = 1 
+2025-08-09 06:33:45,100  [INFO] - attempts_key has been deleted 
+2025-08-09 06:33:45,100  [INFO] - Access token expiration: 2025-08-09 07:33:45.100577 
+2025-08-09 06:33:45,100  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 06:33:45,166  [INFO] - retrieving 
+2025-08-09 06:33:45,167  [INFO] - retrieving 
+2025-08-09 06:33:45,168  [INFO] - retrieving 
+2025-08-09 06:33:45,173  [INFO] - Tenant vehicles... 
+2025-08-09 06:33:45,173  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 06:33:45,177  [INFO] - Tenant drivers 
+2025-08-09 06:33:45,178  [INFO] - Getting all drivers for 317 
+2025-08-09 06:33:45,191  [INFO] - All available bookings for 317 
+2025-08-09 07:11:55,468  [INFO] - Tenant cLogin in.... 
+2025-08-09 07:11:55,470  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 07:11:55,470  [INFO] - current_attempts = 1 
+2025-08-09 07:11:55,792  [INFO] - attempts_key has been deleted 
+2025-08-09 07:11:55,793  [INFO] - Access token expiration: 2025-08-09 08:11:55.793091 
+2025-08-09 07:11:55,805  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 07:11:55,842  [INFO] - retrieving 
+2025-08-09 07:11:55,845  [INFO] - retrieving 
+2025-08-09 07:11:55,846  [INFO] - retrieving 
+2025-08-09 07:11:55,859  [INFO] - Tenant drivers 
+2025-08-09 07:11:55,860  [INFO] - Getting all drivers for 317 
+2025-08-09 07:11:55,885  [INFO] - Tenant vehicles... 
+2025-08-09 07:11:55,885  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 07:11:55,890  [INFO] - All available bookings for 317 
+2025-08-09 07:18:49,277  [INFO] - Tenant cLogin in.... 
+2025-08-09 07:18:49,278  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 07:18:49,278  [INFO] - current_attempts = 1 
+2025-08-09 07:18:49,493  [INFO] - attempts_key has been deleted 
+2025-08-09 07:18:49,494  [INFO] - Access token expiration: 2025-08-09 08:18:49.494369 
+2025-08-09 07:18:49,495  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 07:18:49,548  [INFO] - retrieving 
+2025-08-09 07:18:49,553  [INFO] - retrieving 
+2025-08-09 07:18:49,553  [INFO] - retrieving 
+2025-08-09 07:18:49,561  [INFO] - Tenant vehicles... 
+2025-08-09 07:18:49,561  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 07:18:49,567  [INFO] - All available bookings for 317 
+2025-08-09 07:18:49,570  [INFO] - Tenant drivers 
+2025-08-09 07:18:49,570  [INFO] - Getting all drivers for 317 
+2025-08-09 21:11:50,420  [INFO] - Tenant cLogin in.... 
+2025-08-09 21:11:50,425  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 21:11:50,427  [INFO] - current_attempts = 1 
+2025-08-09 21:11:50,922  [INFO] - attempts_key has been deleted 
+2025-08-09 21:11:50,925  [INFO] - Access token expiration: 2025-08-09 22:11:50.925518 
+2025-08-09 21:11:50,961  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 21:11:51,034  [INFO] - retrieving 
+2025-08-09 21:11:51,042  [INFO] - retrieving 
+2025-08-09 21:11:51,042  [INFO] - retrieving 
+2025-08-09 21:11:51,074  [INFO] - Tenant vehicles... 
+2025-08-09 21:11:51,074  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 21:11:51,110  [INFO] - All available bookings for 317 
+2025-08-09 21:11:51,124  [INFO] - Tenant drivers 
+2025-08-09 21:11:51,125  [INFO] - Getting all drivers for 317 
+2025-08-09 21:42:04,668  [INFO] - Tenant cLogin in.... 
+2025-08-09 21:42:04,669  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 21:42:04,670  [INFO] - current_attempts = 1 
+2025-08-09 21:42:04,926  [INFO] - attempts_key has been deleted 
+2025-08-09 21:42:04,927  [INFO] - Access token expiration: 2025-08-09 22:42:04.927139 
+2025-08-09 21:42:04,935  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 21:42:05,010  [INFO] - retrieving 
+2025-08-09 21:42:05,013  [INFO] - retrieving 
+2025-08-09 21:42:05,013  [INFO] - retrieving 
+2025-08-09 21:42:05,030  [INFO] - Tenant vehicles... 
+2025-08-09 21:42:05,030  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 21:42:05,044  [INFO] - All available bookings for 317 
+2025-08-09 21:42:05,051  [INFO] - Tenant drivers 
+2025-08-09 21:42:05,051  [INFO] - Getting all drivers for 317 
+2025-08-09 22:33:02,270  [INFO] - Tenant cLogin in.... 
+2025-08-09 22:33:02,285  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 22:33:02,288  [INFO] - current_attempts = 1 
+2025-08-09 22:33:02,639  [INFO] - attempts_key has been deleted 
+2025-08-09 22:33:02,642  [INFO] - Access token expiration: 2025-08-09 23:33:02.642048 
+2025-08-09 22:33:02,689  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 22:33:02,766  [INFO] - retrieving 
+2025-08-09 22:33:02,772  [INFO] - retrieving 
+2025-08-09 22:33:02,774  [INFO] - retrieving 
+2025-08-09 22:33:02,793  [INFO] - Tenant vehicles... 
+2025-08-09 22:33:02,794  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 22:33:02,826  [INFO] - All available bookings for 317 
+2025-08-09 22:33:02,840  [INFO] - Tenant drivers 
+2025-08-09 22:33:02,841  [INFO] - Getting all drivers for 317 
+2025-08-09 22:54:08,401  [INFO] - Tenant cLogin in.... 
+2025-08-09 22:54:08,402  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 22:54:08,403  [INFO] - current_attempts = 1 
+2025-08-09 22:54:08,681  [INFO] - attempts_key has been deleted 
+2025-08-09 22:54:08,682  [INFO] - Access token expiration: 2025-08-09 23:54:08.682847 
+2025-08-09 22:54:08,690  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 22:54:08,735  [INFO] - retrieving 
+2025-08-09 22:54:08,740  [INFO] - retrieving 
+2025-08-09 22:54:08,750  [INFO] - retrieving 
+2025-08-09 22:54:08,763  [INFO] - Tenant drivers 
+2025-08-09 22:54:08,763  [INFO] - Getting all drivers for 317 
+2025-08-09 22:54:08,789  [INFO] - All available bookings for 317 
+2025-08-09 22:54:08,795  [INFO] - Tenant vehicles... 
+2025-08-09 22:54:08,795  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 22:54:26,376  [INFO] - Tenant cLogin in.... 
+2025-08-09 22:54:26,376  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 22:54:26,376  [INFO] - current_attempts = 1 
+2025-08-09 22:54:26,583  [INFO] - attempts_key has been deleted 
+2025-08-09 22:54:26,584  [INFO] - Access token expiration: 2025-08-09 23:54:26.584614 
+2025-08-09 22:54:26,584  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 22:54:26,638  [INFO] - retrieving 
+2025-08-09 22:54:26,643  [INFO] - retrieving 
+2025-08-09 22:54:26,644  [INFO] - retrieving 
+2025-08-09 22:54:26,645  [INFO] - Tenant vehicles... 
+2025-08-09 22:54:26,645  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 22:54:26,652  [INFO] - Tenant drivers 
+2025-08-09 22:54:26,652  [INFO] - Getting all drivers for 317 
+2025-08-09 22:54:26,658  [INFO] - All available bookings for 317 
+2025-08-09 22:55:25,458  [INFO] - retrieving 
+2025-08-09 22:55:25,470  [INFO] - Onboarding driver... 
+2025-08-09 22:55:25,474  [INFO] - Starting onboarding process.... 
+2025-08-09 22:55:25,503  [INFO] - Onboarding process complete... 
+2025-08-09 22:55:25,524  [INFO] - retrieving 
+2025-08-09 22:55:25,525  [INFO] - retrieving 
+2025-08-09 22:55:25,526  [INFO] - retrieving 
+2025-08-09 22:55:25,532  [INFO] - Tenant vehicles... 
+2025-08-09 22:55:25,533  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 22:55:25,537  [INFO] - Tenant drivers 
+2025-08-09 22:55:25,537  [INFO] - Getting all drivers for 317 
+2025-08-09 22:55:25,543  [INFO] - All available bookings for 317 
+2025-08-09 22:59:24,260  [INFO] - Registration begins.... 
+2025-08-09 22:59:24,261  [INFO] - Creating account... 
+2025-08-09 22:59:24,405  [INFO] - Driver has already been registered.... 
+2025-08-09 23:00:11,030  [INFO] - Registration begins.... 
+2025-08-09 23:00:11,030  [INFO] - Creating account... 
+2025-08-09 23:00:11,037  [INFO] -  current time between 0:04:45.574144  
+2025-08-09 23:00:11,044  [INFO] - registeration started... 
+2025-08-09 23:00:11,278  [INFO] - Vehicle_config has been created 
+2025-08-09 23:00:11,278  [INFO] - Vehic;e data loaded success fully 
+2025-08-09 23:00:11,303  [INFO] - Vehicle config updated 
+2025-08-09 23:00:11,311  [INFO] - Vehicle has been registered... 
+2025-08-09 23:00:11,324  [INFO] - Logger driver succesfully registered 
+2025-08-09 23:00:28,798  [INFO] - Tenant cLogin in.... 
+2025-08-09 23:00:28,799  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 23:00:28,799  [INFO] - current_attempts = 1 
+2025-08-09 23:00:29,015  [INFO] - attempts_key has been deleted 
+2025-08-09 23:00:29,016  [INFO] - Access token expiration: 2025-08-10 00:00:29.016278 
+2025-08-09 23:00:29,017  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 23:00:29,085  [INFO] - retrieving 
+2025-08-09 23:00:29,094  [INFO] - retrieving 
+2025-08-09 23:00:29,097  [INFO] - retrieving 
+2025-08-09 23:00:29,099  [INFO] - Tenant drivers 
+2025-08-09 23:00:29,100  [INFO] - Getting all drivers for 317 
+2025-08-09 23:00:29,109  [INFO] - All available bookings for 317 
+2025-08-09 23:00:29,112  [INFO] - Tenant vehicles... 
+2025-08-09 23:00:29,113  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:17:04,451  [INFO] - Tenant cLogin in.... 
+2025-08-09 23:17:04,453  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 23:17:04,453  [INFO] - current_attempts = 1 
+2025-08-09 23:17:04,715  [INFO] - attempts_key has been deleted 
+2025-08-09 23:17:04,716  [INFO] - Access token expiration: 2025-08-10 00:17:04.716749 
+2025-08-09 23:17:04,729  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 23:17:04,774  [INFO] - retrieving 
+2025-08-09 23:17:04,774  [INFO] - retrieving 
+2025-08-09 23:17:04,783  [INFO] - retrieving 
+2025-08-09 23:17:04,802  [INFO] - Tenant vehicles... 
+2025-08-09 23:17:04,802  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:17:04,814  [INFO] - All available bookings for 317 
+2025-08-09 23:17:04,819  [INFO] - Tenant drivers 
+2025-08-09 23:17:04,819  [INFO] - Getting all drivers for 317 
+2025-08-09 23:18:01,324  [INFO] - Tenant cLogin in.... 
+2025-08-09 23:18:01,325  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-09 23:18:01,325  [INFO] - current_attempts = 1 
+2025-08-09 23:18:01,527  [INFO] - attempts_key has been deleted 
+2025-08-09 23:18:01,528  [INFO] - Access token expiration: 2025-08-10 00:18:01.528673 
+2025-08-09 23:18:01,531  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 23:19:33,618  [INFO] - retrieving 
+2025-08-09 23:19:33,624  [INFO] - Tenant's info 
+2025-08-09 23:19:36,760  [INFO] - retrieving 
+2025-08-09 23:19:36,772  [INFO] - Tenant drivers 
+2025-08-09 23:19:36,773  [INFO] - Getting all drivers for 317 
+2025-08-09 23:21:18,715  [INFO] - Tenant cLogin in.... 
+2025-08-09 23:21:18,716  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 23:21:18,718  [INFO] - current_attempts = 1 
+2025-08-09 23:21:18,929  [INFO] - attempts_key has been deleted 
+2025-08-09 23:21:18,930  [INFO] - Access token expiration: 2025-08-10 00:21:18.930527 
+2025-08-09 23:21:18,932  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 23:21:19,013  [INFO] - retrieving 
+2025-08-09 23:21:19,019  [INFO] - retrieving 
+2025-08-09 23:21:19,019  [INFO] - retrieving 
+2025-08-09 23:21:19,024  [INFO] - Tenant vehicles... 
+2025-08-09 23:21:19,024  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:21:19,032  [INFO] - Tenant drivers 
+2025-08-09 23:21:19,032  [INFO] - Getting all drivers for 317 
+2025-08-09 23:21:19,039  [INFO] - All available bookings for 317 
+2025-08-09 23:38:48,836  [INFO] - Tenant cLogin in.... 
+2025-08-09 23:38:48,839  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 23:38:48,841  [INFO] - current_attempts = 1 
+2025-08-09 23:38:49,097  [INFO] - attempts_key has been deleted 
+2025-08-09 23:38:49,099  [INFO] - Access token expiration: 2025-08-10 00:38:49.099014 
+2025-08-09 23:38:49,121  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 23:38:49,305  [INFO] - retrieving 
+2025-08-09 23:38:49,306  [INFO] - retrieving 
+2025-08-09 23:38:49,310  [INFO] - retrieving 
+2025-08-09 23:38:49,339  [INFO] - Tenant drivers 
+2025-08-09 23:38:49,339  [INFO] - Getting all drivers for 317 
+2025-08-09 23:38:49,379  [INFO] - All available bookings for 317 
+2025-08-09 23:38:49,386  [INFO] - Tenant vehicles... 
+2025-08-09 23:38:49,386  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:40:59,290  [INFO] - Tenant cLogin in.... 
+2025-08-09 23:40:59,290  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 23:40:59,290  [INFO] - current_attempts = 1 
+2025-08-09 23:40:59,491  [INFO] - attempts_key has been deleted 
+2025-08-09 23:40:59,496  [INFO] - Access token expiration: 2025-08-10 00:40:59.496540 
+2025-08-09 23:40:59,497  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 23:40:59,544  [INFO] - retrieving 
+2025-08-09 23:40:59,551  [INFO] - retrieving 
+2025-08-09 23:40:59,558  [INFO] - retrieving 
+2025-08-09 23:40:59,560  [INFO] - Tenant vehicles... 
+2025-08-09 23:40:59,560  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:40:59,573  [INFO] - Tenant drivers 
+2025-08-09 23:40:59,574  [INFO] - Getting all drivers for 317 
+2025-08-09 23:40:59,586  [INFO] - All available bookings for 317 
+2025-08-09 23:43:13,689  [INFO] - Tenant cLogin in.... 
+2025-08-09 23:43:13,689  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-09 23:43:13,689  [INFO] - current_attempts = 1 
+2025-08-09 23:43:13,976  [INFO] - attempts_key has been deleted 
+2025-08-09 23:43:13,979  [INFO] - Access token expiration: 2025-08-10 00:43:13.979279 
+2025-08-09 23:43:13,988  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-09 23:43:14,039  [INFO] - retrieving 
+2025-08-09 23:43:14,048  [INFO] - retrieving 
+2025-08-09 23:43:14,053  [INFO] - retrieving 
+2025-08-09 23:43:14,078  [INFO] - Tenant drivers 
+2025-08-09 23:43:14,079  [INFO] - Getting all drivers for 317 
+2025-08-09 23:43:14,105  [INFO] - Tenant vehicles... 
+2025-08-09 23:43:14,105  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:43:14,112  [INFO] - All available bookings for 317 
+2025-08-09 23:43:18,710  [INFO] - retrieving 
+2025-08-09 23:43:18,711  [INFO] - retrieving 
+2025-08-09 23:43:18,712  [INFO] - retrieving 
+2025-08-09 23:43:18,718  [INFO] - All available bookings for 317 
+2025-08-09 23:43:18,720  [INFO] - Tenant drivers 
+2025-08-09 23:43:18,720  [INFO] - Getting all drivers for 317 
+2025-08-09 23:43:18,727  [INFO] - Tenant vehicles... 
+2025-08-09 23:43:18,727  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:44:31,977  [INFO] - retrieving 
+2025-08-09 23:44:31,980  [INFO] - retrieving 
+2025-08-09 23:44:31,981  [INFO] - retrieving 
+2025-08-09 23:44:31,990  [INFO] - Tenant vehicles... 
+2025-08-09 23:44:31,991  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:44:31,997  [INFO] - Tenant drivers 
+2025-08-09 23:44:31,997  [INFO] - Getting all drivers for 317 
+2025-08-09 23:44:32,007  [INFO] - All available bookings for 317 
+2025-08-09 23:44:36,889  [INFO] - retrieving 
+2025-08-09 23:44:36,890  [INFO] - retrieving 
+2025-08-09 23:44:36,891  [INFO] - retrieving 
+2025-08-09 23:44:36,901  [INFO] - All available bookings for 317 
+2025-08-09 23:44:36,904  [INFO] - Tenant vehicles... 
+2025-08-09 23:44:36,904  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:44:36,909  [INFO] - Tenant drivers 
+2025-08-09 23:44:36,910  [INFO] - Getting all drivers for 317 
+2025-08-09 23:52:31,128  [INFO] - retrieving 
+2025-08-09 23:52:31,128  [INFO] - retrieving 
+2025-08-09 23:52:31,132  [INFO] - retrieving 
+2025-08-09 23:52:31,173  [INFO] - Tenant vehicles... 
+2025-08-09 23:52:31,173  [INFO] - Getting vehicles for tenant: 317 
+2025-08-09 23:52:31,182  [INFO] - All available bookings for 317 
+2025-08-09 23:52:31,187  [INFO] - Tenant drivers 
+2025-08-09 23:52:31,187  [INFO] - Getting all drivers for 317 
+2025-08-10 00:01:06,888  [INFO] - retrieving 
+2025-08-10 00:01:06,889  [INFO] - retrieving 
+2025-08-10 00:01:06,892  [INFO] - retrieving 
+2025-08-10 00:01:06,961  [INFO] - Tenant vehicles... 
+2025-08-10 00:01:06,963  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 00:01:06,982  [INFO] - Tenant drivers 
+2025-08-10 00:01:06,983  [INFO] - Getting all drivers for 317 
+2025-08-10 00:01:07,000  [INFO] - All available bookings for 317 
+2025-08-10 00:01:17,384  [INFO] - Tenant cLogin in.... 
+2025-08-10 00:01:17,391  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-10 00:01:17,394  [INFO] - current_attempts = 1 
+2025-08-10 00:01:17,656  [INFO] - attempts_key has been deleted 
+2025-08-10 00:01:17,659  [INFO] - Access token expiration: 2025-08-10 01:01:17.659677 
+2025-08-10 00:01:17,662  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-10 00:01:17,727  [INFO] - retrieving 
+2025-08-10 00:01:17,728  [INFO] - retrieving 
+2025-08-10 00:01:17,729  [INFO] - retrieving 
+2025-08-10 00:01:17,736  [INFO] - Tenant drivers 
+2025-08-10 00:01:17,737  [INFO] - Getting all drivers for 317 
+2025-08-10 00:01:17,747  [INFO] - Tenant vehicles... 
+2025-08-10 00:01:17,747  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 00:01:17,752  [INFO] - All available bookings for 317 
+2025-08-10 00:19:30,839  [INFO] - retrieving 
+2025-08-10 00:19:30,839  [INFO] - retrieving 
+2025-08-10 00:19:30,840  [INFO] - retrieving 
+2025-08-10 00:19:30,894  [INFO] - Tenant drivers 
+2025-08-10 00:19:30,894  [INFO] - Getting all drivers for 317 
+2025-08-10 00:19:30,921  [INFO] - All available bookings for 317 
+2025-08-10 00:19:30,929  [INFO] - Tenant vehicles... 
+2025-08-10 00:19:30,929  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 00:20:59,048  [INFO] - retrieving 
+2025-08-10 00:20:59,051  [INFO] - retrieving 
+2025-08-10 00:20:59,052  [INFO] - retrieving 
+2025-08-10 00:20:59,059  [INFO] - All available bookings for 317 
+2025-08-10 00:20:59,062  [INFO] - Tenant drivers 
+2025-08-10 00:20:59,062  [INFO] - Getting all drivers for 317 
+2025-08-10 00:20:59,067  [INFO] - Tenant vehicles... 
+2025-08-10 00:20:59,068  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 00:41:45,043  [INFO] - retrieving 
+2025-08-10 00:41:45,044  [INFO] - retrieving 
+2025-08-10 00:41:45,047  [INFO] - retrieving 
+2025-08-10 00:41:45,092  [INFO] - Tenant drivers 
+2025-08-10 00:41:45,093  [INFO] - Getting all drivers for 317 
+2025-08-10 00:41:45,114  [INFO] - All available bookings for 317 
+2025-08-10 00:41:45,120  [INFO] - Tenant vehicles... 
+2025-08-10 00:41:45,120  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 00:44:51,687  [INFO] - retrieving 
+2025-08-10 00:44:51,689  [INFO] - retrieving 
+2025-08-10 00:44:51,691  [INFO] - retrieving 
+2025-08-10 00:44:51,705  [INFO] - Tenant drivers 
+2025-08-10 00:44:51,706  [INFO] - Getting all drivers for 317 
+2025-08-10 00:44:51,715  [INFO] - Tenant vehicles... 
+2025-08-10 00:44:51,715  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 00:44:51,721  [INFO] - All available bookings for 317 
+2025-08-10 01:01:28,361  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:01:28,363  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-10 01:01:28,364  [INFO] - current_attempts = 1 
+2025-08-10 01:01:28,640  [INFO] - attempts_key has been deleted 
+2025-08-10 01:01:28,646  [INFO] - Access token expiration: 2025-08-10 02:01:28.646689 
+2025-08-10 01:01:28,661  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-10 01:01:28,734  [INFO] - retrieving 
+2025-08-10 01:01:28,741  [INFO] - retrieving 
+2025-08-10 01:01:28,744  [INFO] - retrieving 
+2025-08-10 01:01:28,763  [INFO] - Tenant drivers 
+2025-08-10 01:01:28,763  [INFO] - Getting all drivers for 317 
+2025-08-10 01:01:28,795  [INFO] - Tenant vehicles... 
+2025-08-10 01:01:28,795  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:01:28,801  [INFO] - All available bookings for 317 
+2025-08-10 01:01:34,419  [INFO] - retrieving 
+2025-08-10 01:01:34,423  [INFO] - retrieving 
+2025-08-10 01:01:34,426  [INFO] - retrieving 
+2025-08-10 01:01:34,430  [INFO] - Tenant vehicles... 
+2025-08-10 01:01:34,431  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:01:34,442  [INFO] - All available bookings for 317 
+2025-08-10 01:01:34,443  [INFO] - Tenant drivers 
+2025-08-10 01:01:34,443  [INFO] - Getting all drivers for 317 
+2025-08-10 01:01:43,922  [INFO] - retrieving 
+2025-08-10 01:01:43,924  [INFO] - retrieving 
+2025-08-10 01:01:43,925  [INFO] - retrieving 
+2025-08-10 01:01:43,935  [INFO] - All available bookings for 317 
+2025-08-10 01:01:43,937  [INFO] - Tenant drivers 
+2025-08-10 01:01:43,937  [INFO] - Getting all drivers for 317 
+2025-08-10 01:01:43,942  [INFO] - Tenant vehicles... 
+2025-08-10 01:01:43,942  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:01:50,139  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:01:50,139  [INFO] -  login_attempts:b6305c1937ad146031b9b9c6b82526f4 
+2025-08-10 01:01:50,140  [INFO] - current_attempts = 1 
+2025-08-10 01:01:50,373  [INFO] - attempts_key has been deleted 
+2025-08-10 01:01:50,374  [INFO] - Access token expiration: 2025-08-10 02:01:50.374369 
+2025-08-10 01:01:50,376  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQxMSIsInJvbGUiOiJ0ZW5hbnQifQ.VBj1PKdSgXmD7SJ1hMdVxYOt4Yw3-STKwXAtq2aD7Uo 
+2025-08-10 01:01:50,419  [INFO] - retrieving 
+2025-08-10 01:01:50,422  [INFO] - retrieving 
+2025-08-10 01:01:50,422  [INFO] - retrieving 
+2025-08-10 01:01:50,427  [INFO] - All available bookings for 411 
+2025-08-10 01:01:50,428  [INFO] - There are no bookings for tenant 411 
+2025-08-10 01:01:50,429  [INFO] - Tenant drivers 
+2025-08-10 01:01:50,429  [INFO] - Getting all drivers for 411 
+2025-08-10 01:01:50,430  [INFO] - There are no drivers for tenant 411 
+2025-08-10 01:01:50,432  [INFO] - Tenant vehicles... 
+2025-08-10 01:01:50,433  [INFO] - Getting vehicles for tenant: 411 
+2025-08-10 01:01:50,433  [INFO] - There are no vehicles for tenant 411 
+2025-08-10 01:02:12,941  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:02:12,941  [INFO] -  login_attempts:b6305c1937ad146031b9b9c6b82526f4 
+2025-08-10 01:02:12,942  [INFO] - current_attempts = 1 
+2025-08-10 01:02:13,169  [INFO] - attempts_key has been deleted 
+2025-08-10 01:02:13,169  [INFO] - Access token expiration: 2025-08-10 02:02:13.169636 
+2025-08-10 01:02:13,170  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQxMSIsInJvbGUiOiJ0ZW5hbnQifQ.VBj1PKdSgXmD7SJ1hMdVxYOt4Yw3-STKwXAtq2aD7Uo 
+2025-08-10 01:02:13,201  [INFO] - retrieving 
+2025-08-10 01:02:13,343  [INFO] - retrieving 
+2025-08-10 01:02:13,344  [INFO] - retrieving 
+2025-08-10 01:02:13,356  [INFO] - Tenant drivers 
+2025-08-10 01:02:13,356  [INFO] - Getting all drivers for 411 
+2025-08-10 01:02:13,359  [INFO] - There are no drivers for tenant 411 
+2025-08-10 01:02:13,359  [INFO] - Tenant vehicles... 
+2025-08-10 01:02:13,360  [INFO] - Getting vehicles for tenant: 411 
+2025-08-10 01:02:13,363  [INFO] - There are no vehicles for tenant 411 
+2025-08-10 01:02:13,364  [INFO] - All available bookings for 411 
+2025-08-10 01:02:13,365  [INFO] - There are no bookings for tenant 411 
+2025-08-10 01:20:11,023  [INFO] - retrieving 
+2025-08-10 01:20:11,024  [INFO] - retrieving 
+2025-08-10 01:20:11,024  [INFO] - retrieving 
+2025-08-10 01:20:11,048  [INFO] - Token refreshed... 
+2025-08-10 01:20:11,096  [INFO] - retrieving 
+2025-08-10 01:20:11,098  [INFO] - retrieving 
+2025-08-10 01:20:12,429  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:20:12,429  [INFO] -  login_attempts:b6305c1937ad146031b9b9c6b82526f4 
+2025-08-10 01:20:12,430  [INFO] - current_attempts = 1 
+2025-08-10 01:20:12,723  [INFO] - attempts_key has been deleted 
+2025-08-10 01:20:12,724  [INFO] - Access token expiration: 2025-08-10 02:20:12.724864 
+2025-08-10 01:20:12,725  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQxMSIsInJvbGUiOiJ0ZW5hbnQifQ.VBj1PKdSgXmD7SJ1hMdVxYOt4Yw3-STKwXAtq2aD7Uo 
+2025-08-10 01:20:12,729  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:20:12,730  [INFO] -  login_attempts:b6305c1937ad146031b9b9c6b82526f4 
+2025-08-10 01:20:12,730  [INFO] - current_attempts = 1 
+2025-08-10 01:20:12,969  [INFO] - attempts_key has been deleted 
+2025-08-10 01:20:12,971  [INFO] - Access token expiration: 2025-08-10 02:20:12.971574 
+2025-08-10 01:20:12,972  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQxMSIsInJvbGUiOiJ0ZW5hbnQifQ.VBj1PKdSgXmD7SJ1hMdVxYOt4Yw3-STKwXAtq2aD7Uo 
+2025-08-10 01:20:12,979  [INFO] - retrieving 
+2025-08-10 01:20:12,979  [INFO] - retrieving 
+2025-08-10 01:20:12,980  [INFO] - retrieving 
+2025-08-10 01:20:12,996  [INFO] - All available bookings for 411 
+2025-08-10 01:20:13,002  [INFO] - There are no bookings for tenant 411 
+2025-08-10 01:20:13,004  [INFO] - Tenant vehicles... 
+2025-08-10 01:20:13,004  [INFO] - Getting vehicles for tenant: 411 
+2025-08-10 01:20:13,010  [INFO] - There are no vehicles for tenant 411 
+2025-08-10 01:20:13,013  [INFO] - Tenant drivers 
+2025-08-10 01:20:13,013  [INFO] - Getting all drivers for 411 
+2025-08-10 01:20:13,025  [INFO] - There are no drivers for tenant 411 
+2025-08-10 01:20:13,721  [INFO] - retrieving 
+2025-08-10 01:20:13,721  [INFO] - retrieving 
+2025-08-10 01:20:13,721  [INFO] - retrieving 
+2025-08-10 01:20:13,731  [INFO] - Tenant drivers 
+2025-08-10 01:20:13,732  [INFO] - Getting all drivers for 411 
+2025-08-10 01:20:13,733  [INFO] - There are no drivers for tenant 411 
+2025-08-10 01:20:13,734  [INFO] - Tenant vehicles... 
+2025-08-10 01:20:13,734  [INFO] - Getting vehicles for tenant: 411 
+2025-08-10 01:20:13,735  [INFO] - There are no vehicles for tenant 411 
+2025-08-10 01:20:13,739  [INFO] - All available bookings for 411 
+2025-08-10 01:20:13,741  [INFO] - There are no bookings for tenant 411 
+2025-08-10 01:20:15,713  [INFO] - retrieving 
+2025-08-10 01:20:15,718  [INFO] - retrieving 
+2025-08-10 01:20:15,718  [INFO] - retrieving 
+2025-08-10 01:20:15,727  [INFO] - All available bookings for 411 
+2025-08-10 01:20:15,729  [INFO] - There are no bookings for tenant 411 
+2025-08-10 01:20:15,730  [INFO] - Tenant drivers 
+2025-08-10 01:20:15,730  [INFO] - Getting all drivers for 411 
+2025-08-10 01:20:15,731  [INFO] - There are no drivers for tenant 411 
+2025-08-10 01:20:15,736  [INFO] - Tenant vehicles... 
+2025-08-10 01:20:15,736  [INFO] - Getting vehicles for tenant: 411 
+2025-08-10 01:20:15,737  [INFO] - There are no vehicles for tenant 411 
+2025-08-10 01:20:16,532  [INFO] - retrieving 
+2025-08-10 01:20:16,532  [INFO] - retrieving 
+2025-08-10 01:20:16,534  [INFO] - retrieving 
+2025-08-10 01:20:16,540  [INFO] - Tenant vehicles... 
+2025-08-10 01:20:16,540  [INFO] - Getting vehicles for tenant: 411 
+2025-08-10 01:20:16,541  [INFO] - There are no vehicles for tenant 411 
+2025-08-10 01:20:16,545  [INFO] - Tenant drivers 
+2025-08-10 01:20:16,545  [INFO] - Getting all drivers for 411 
+2025-08-10 01:20:16,546  [INFO] - There are no drivers for tenant 411 
+2025-08-10 01:20:16,547  [INFO] - All available bookings for 411 
+2025-08-10 01:20:16,548  [INFO] - There are no bookings for tenant 411 
+2025-08-10 01:20:28,276  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:20:28,277  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-10 01:20:28,277  [INFO] - current_attempts = 1 
+2025-08-10 01:20:28,499  [INFO] - attempts_key has been deleted 
+2025-08-10 01:20:28,500  [INFO] - Access token expiration: 2025-08-10 02:20:28.500256 
+2025-08-10 01:20:28,500  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-10 01:20:28,553  [INFO] - retrieving 
+2025-08-10 01:20:28,554  [INFO] - retrieving 
+2025-08-10 01:20:28,561  [INFO] - Tenant vehicles... 
+2025-08-10 01:20:28,561  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:20:28,580  [INFO] - retrieving 
+2025-08-10 01:20:28,584  [INFO] - Tenant drivers 
+2025-08-10 01:20:28,584  [INFO] - Getting all drivers for 317 
+2025-08-10 01:20:28,755  [INFO] - All available bookings for 317 
+2025-08-10 01:20:31,697  [INFO] - retrieving 
+2025-08-10 01:20:31,699  [INFO] - retrieving 
+2025-08-10 01:20:31,699  [INFO] - retrieving 
+2025-08-10 01:20:31,707  [INFO] - Tenant vehicles... 
+2025-08-10 01:20:31,708  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:20:31,715  [INFO] - All available bookings for 317 
+2025-08-10 01:20:31,718  [INFO] - Tenant drivers 
+2025-08-10 01:20:31,718  [INFO] - Getting all drivers for 317 
+2025-08-10 01:21:37,317  [INFO] - retrieving 
+2025-08-10 01:21:37,324  [INFO] - retrieving 
+2025-08-10 01:21:37,325  [INFO] - retrieving 
+2025-08-10 01:21:37,333  [INFO] - Tenant vehicles... 
+2025-08-10 01:21:37,333  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:21:37,339  [INFO] - Tenant drivers 
+2025-08-10 01:21:37,339  [INFO] - Getting all drivers for 317 
+2025-08-10 01:21:37,348  [INFO] - All available bookings for 317 
+2025-08-10 01:46:03,162  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:46:03,163  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-10 01:46:03,164  [INFO] - current_attempts = 1 
+2025-08-10 01:46:03,471  [INFO] - attempts_key has been deleted 
+2025-08-10 01:46:03,476  [INFO] - Access token expiration: 2025-08-10 02:46:03.476195 
+2025-08-10 01:46:03,495  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-10 01:46:03,565  [INFO] - retrieving 
+2025-08-10 01:46:03,571  [INFO] - retrieving 
+2025-08-10 01:46:03,572  [INFO] - retrieving 
+2025-08-10 01:46:03,584  [INFO] - Tenant drivers 
+2025-08-10 01:46:03,585  [INFO] - Getting all drivers for 317 
+2025-08-10 01:46:03,617  [INFO] - Tenant vehicles... 
+2025-08-10 01:46:03,617  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:46:03,631  [INFO] - All available bookings for 317 
+2025-08-10 01:46:09,155  [INFO] - retrieving 
+2025-08-10 01:46:09,155  [INFO] - retrieving 
+2025-08-10 01:46:09,155  [INFO] - retrieving 
+2025-08-10 01:46:09,163  [INFO] - Tenant vehicles... 
+2025-08-10 01:46:09,163  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:46:09,167  [INFO] - Tenant drivers 
+2025-08-10 01:46:09,167  [INFO] - Getting all drivers for 317 
+2025-08-10 01:46:09,171  [INFO] - All available bookings for 317 
+2025-08-10 01:46:23,630  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:46:23,630  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-10 01:46:23,631  [INFO] - current_attempts = 1 
+2025-08-10 01:46:23,834  [INFO] - attempts_key has been deleted 
+2025-08-10 01:46:23,834  [INFO] - Access token expiration: 2025-08-10 02:46:23.834774 
+2025-08-10 01:46:23,835  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-10 01:46:23,891  [INFO] - retrieving 
+2025-08-10 01:46:23,892  [INFO] - retrieving 
+2025-08-10 01:46:23,892  [INFO] - retrieving 
+2025-08-10 01:46:23,897  [INFO] - All available bookings for 317 
+2025-08-10 01:46:23,901  [INFO] - Tenant vehicles... 
+2025-08-10 01:46:23,901  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:46:23,905  [INFO] - Tenant drivers 
+2025-08-10 01:46:23,905  [INFO] - Getting all drivers for 317 
+2025-08-10 01:47:23,632  [INFO] - retrieving 
+2025-08-10 01:47:23,635  [INFO] - retrieving 
+2025-08-10 01:47:23,638  [INFO] - retrieving 
+2025-08-10 01:47:23,647  [INFO] - Tenant drivers 
+2025-08-10 01:47:23,647  [INFO] - Getting all drivers for 317 
+2025-08-10 01:47:23,652  [INFO] - All available bookings for 317 
+2025-08-10 01:47:23,654  [INFO] - Tenant vehicles... 
+2025-08-10 01:47:23,654  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:49:19,333  [INFO] - retrieving 
+2025-08-10 01:49:19,336  [INFO] - retrieving 
+2025-08-10 01:49:19,338  [INFO] - retrieving 
+2025-08-10 01:49:19,472  [INFO] - Tenant vehicles... 
+2025-08-10 01:49:19,473  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:49:19,480  [INFO] - Tenant drivers 
+2025-08-10 01:49:19,481  [INFO] - Getting all drivers for 317 
+2025-08-10 01:49:19,489  [INFO] - All available bookings for 317 
+2025-08-10 01:50:23,243  [INFO] - Tenant cLogin in.... 
+2025-08-10 01:50:23,243  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-10 01:50:23,244  [INFO] - current_attempts = 1 
+2025-08-10 01:50:23,485  [INFO] - attempts_key has been deleted 
+2025-08-10 01:50:23,485  [INFO] - Access token expiration: 2025-08-10 02:50:23.485482 
+2025-08-10 01:50:23,486  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-10 01:50:23,527  [INFO] - retrieving 
+2025-08-10 01:50:23,529  [INFO] - retrieving 
+2025-08-10 01:50:23,531  [INFO] - retrieving 
+2025-08-10 01:50:23,536  [INFO] - Tenant drivers 
+2025-08-10 01:50:23,536  [INFO] - Getting all drivers for 317 
+2025-08-10 01:50:23,542  [INFO] - Tenant vehicles... 
+2025-08-10 01:50:23,542  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 01:50:23,545  [INFO] - All available bookings for 317 
+2025-08-10 02:58:59,067  [INFO] - retrieving 
+2025-08-10 02:58:59,112  [INFO] - retrieving 
+2025-08-10 02:58:59,114  [INFO] - retrieving 
+2025-08-10 02:58:59,144  [INFO] - Token refreshed... 
+2025-08-10 02:58:59,271  [INFO] - retrieving 
+2025-08-10 02:58:59,288  [INFO] - retrieving 
+2025-08-10 02:59:00,554  [INFO] - Tenant cLogin in.... 
+2025-08-10 02:59:00,563  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-10 02:59:00,565  [INFO] - current_attempts = 1 
+2025-08-10 02:59:00,941  [INFO] - attempts_key has been deleted 
+2025-08-10 02:59:00,945  [INFO] - Access token expiration: 2025-08-10 03:59:00.944430 
+2025-08-10 02:59:00,946  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMxNyIsInJvbGUiOiJ0ZW5hbnQifQ.omXtk3bAUKVigMBguhFh6FJCdbFl5XcY0X00lm59sMk 
+2025-08-10 02:59:00,996  [INFO] - retrieving 
+2025-08-10 02:59:01,001  [INFO] - retrieving 
+2025-08-10 02:59:01,003  [INFO] - retrieving 
+2025-08-10 02:59:01,044  [INFO] - Tenant vehicles... 
+2025-08-10 02:59:01,044  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 02:59:01,072  [INFO] - Tenant drivers 
+2025-08-10 02:59:01,072  [INFO] - Getting all drivers for 317 
+2025-08-10 02:59:01,093  [INFO] - All available bookings for 317 
+2025-08-10 02:59:26,754  [INFO] - retrieving 
+2025-08-10 02:59:26,758  [INFO] - retrieving 
+2025-08-10 02:59:26,761  [INFO] - retrieving 
+2025-08-10 02:59:26,765  [INFO] - Tenant drivers 
+2025-08-10 02:59:26,766  [INFO] - Getting all drivers for 317 
+2025-08-10 02:59:26,771  [INFO] - Tenant vehicles... 
+2025-08-10 02:59:26,771  [INFO] - Getting vehicles for tenant: 317 
+2025-08-10 02:59:26,779  [INFO] - All available bookings for 317 
+2025-08-12 17:07:14,538  [INFO] - Tenant cLogin in.... 
+2025-08-12 17:07:14,548  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-12 17:07:14,551  [INFO] - current_attempts = 1 
+2025-08-12 17:07:20,256  [INFO] - Tenant cLogin in.... 
+2025-08-12 17:07:20,256  [INFO] -  login_attempts:645522fa6c4a6a99cf705a6538635c3a 
+2025-08-12 17:07:20,257  [INFO] - current_attempts = 2 
+2025-08-12 17:11:36,212  [INFO] - Tenant cLogin in.... 
+2025-08-12 17:11:36,215  [INFO] -  login_attempts:8ab2a97443cd1b465bb2658e2c3e6b8d 
+2025-08-12 17:11:36,216  [INFO] - current_attempts = 1 
+2025-08-12 17:11:41,005  [INFO] - Tenant cLogin in.... 
+2025-08-12 17:11:41,005  [INFO] -  login_attempts:8ab2a97443cd1b465bb2658e2c3e6b8d 
+2025-08-12 17:11:41,006  [INFO] - current_attempts = 2 
+2025-08-12 17:14:59,856  [INFO] - Tenants created 
+2025-08-12 17:15:01,155  [INFO] - Customer has been created cus_Sr3ufm1ZBuwwKn 
+2025-08-12 17:15:04,509  [INFO] - Express account has been created [acct_1RvLmrR4e7ZgxAFa] for admin@royalrides.com 
+2025-08-12 17:15:04,898  [INFO] - new tenant_id 420 
+2025-08-12 17:15:04,928  [INFO] - New tenant vehicle settings table has been set 
+2025-08-12 17:15:05,746  [INFO] - Tenants created 
+2025-08-12 17:15:05,980  [INFO] - Customer has been created cus_Sr3u5gGofv25Eb 
+2025-08-12 17:15:08,745  [INFO] - Express account has been created [acct_1RvLmwBxwUBXVF0l] for admin@royalrides.com 
+2025-08-12 17:15:28,149  [INFO] - Tenant cLogin in.... 
+2025-08-12 17:15:28,149  [INFO] -  login_attempts:8ab2a97443cd1b465bb2658e2c3e6b8d 
+2025-08-12 17:15:28,150  [INFO] - current_attempts = 3 
+2025-08-12 17:15:28,152  [INFO] - To many failed login attempts. Try again in 68 seconds. 
+2025-08-12 17:20:34,784  [INFO] - Tenant cLogin in.... 
+2025-08-12 17:20:34,785  [INFO] -  login_attempts:8ab2a97443cd1b465bb2658e2c3e6b8d 
+2025-08-12 17:20:34,786  [INFO] - current_attempts = 1 
+2025-08-12 17:20:35,094  [INFO] - attempts_key has been deleted 
+2025-08-12 17:20:35,147  [INFO] - Access token expiration: 2025-08-12 18:20:35.147572 
+2025-08-12 17:20:35,156  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-12 17:27:20,704  [INFO] - retrieving 
+2025-08-12 17:30:35,656  [INFO] - retrieving 
+2025-08-12 17:30:35,695  [INFO] - royalrides get customer 
+2025-08-12 17:34:13,805  [INFO] - retrieving 
+2025-08-12 17:34:13,858  [INFO] - royalrides get customer 
+2025-08-12 17:35:41,298  [INFO] - retrieving 
+2025-08-12 17:35:41,329  [INFO] - royalrides get customer 
+2025-08-12 22:41:24,208  [INFO] - Tenant cLogin in.... 
+2025-08-12 22:41:24,212  [INFO] -  login_attempts:d4cd23d8e48a4639628f0168c725ebbd 
+2025-08-12 22:41:24,214  [INFO] - current_attempts = 1 
+2025-08-12 22:41:26,972  [INFO] - Tenant cLogin in.... 
+2025-08-12 22:41:26,973  [INFO] -  login_attempts:d4cd23d8e48a4639628f0168c725ebbd 
+2025-08-12 22:41:26,976  [INFO] - current_attempts = 2 
+2025-08-12 22:41:27,129  [INFO] - Tenant cLogin in.... 
+2025-08-12 22:41:27,129  [INFO] -  login_attempts:d4cd23d8e48a4639628f0168c725ebbd 
+2025-08-12 22:41:27,130  [INFO] - current_attempts = 3 
+2025-08-12 22:41:27,134  [INFO] - To many failed login attempts. Try again in 297 seconds. 
+2025-08-12 22:41:27,298  [INFO] - Tenant cLogin in.... 
+2025-08-12 22:41:27,299  [INFO] -  login_attempts:d4cd23d8e48a4639628f0168c725ebbd 
+2025-08-12 22:41:27,299  [INFO] - current_attempts = 4 
+2025-08-12 22:41:27,299  [INFO] - To many failed login attempts. Try again in 297 seconds. 
+2025-08-12 22:41:27,509  [INFO] - Tenant cLogin in.... 
+2025-08-12 22:41:27,509  [INFO] -  login_attempts:d4cd23d8e48a4639628f0168c725ebbd 
+2025-08-12 22:41:27,509  [INFO] - current_attempts = 5 
+2025-08-12 22:41:27,510  [INFO] - To many failed login attempts. Try again in 297 seconds. 
+2025-08-12 22:44:01,897  [INFO] - Tenant Login in.... 
+2025-08-12 22:44:01,898  [INFO] -  login_attempts:75ef8c8b839bc156e10f101dc88e2f28 
+2025-08-12 22:44:01,901  [INFO] - current_attempts = 1 
+2025-08-12 22:44:02,152  [INFO] - attempts_key has been deleted 
+2025-08-12 22:44:02,155  [INFO] - Access token expiration: 2025-08-12 23:44:02.155507 
+2025-08-12 22:44:02,191  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-12 22:44:02,326  [INFO] - retrieving 
+2025-08-12 22:44:02,346  [INFO] - Tenant drivers 
+2025-08-12 22:44:02,346  [INFO] - Getting all drivers for 420 
+2025-08-12 22:44:02,346  [INFO] - retrieving 
+2025-08-12 22:44:02,357  [INFO] - There are no drivers for tenant 420 
+2025-08-12 22:44:02,365  [INFO] - retrieving 
+2025-08-12 22:44:02,369  [INFO] - Tenant vehicles... 
+2025-08-12 22:44:02,369  [INFO] - Getting vehicles for tenant: 420 
+2025-08-12 22:44:02,376  [INFO] - There are no vehicles for tenant 420 
+2025-08-12 22:44:02,379  [INFO] - All available bookings for 420 
+2025-08-12 22:44:02,388  [INFO] - There are no bookings for tenant 420 
+2025-08-12 22:50:35,432  [INFO] - retrieving 
+2025-08-12 22:50:35,435  [INFO] - retrieving 
+2025-08-12 22:50:35,435  [INFO] - retrieving 
+2025-08-12 22:50:35,535  [INFO] - Tenant drivers 
+2025-08-12 22:50:35,536  [INFO] - Getting all drivers for 420 
+2025-08-12 22:50:35,542  [INFO] - There are no drivers for tenant 420 
+2025-08-12 22:50:35,548  [INFO] - All available bookings for 420 
+2025-08-12 22:50:35,552  [INFO] - There are no bookings for tenant 420 
+2025-08-12 22:50:35,552  [INFO] - Tenant vehicles... 
+2025-08-12 22:50:35,553  [INFO] - Getting vehicles for tenant: 420 
+2025-08-12 22:50:35,557  [INFO] - There are no vehicles for tenant 420 
+2025-08-12 22:55:21,809  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:21,810  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:21,810  [INFO] - current_attempts = 1 
+2025-08-12 22:55:23,122  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:23,122  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:23,123  [INFO] - current_attempts = 2 
+2025-08-12 22:55:23,693  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:23,693  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:23,694  [INFO] - current_attempts = 3 
+2025-08-12 22:55:23,695  [INFO] - To many failed login attempts. Try again in 298 seconds. 
+2025-08-12 22:55:29,768  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:29,768  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:29,770  [INFO] - current_attempts = 4 
+2025-08-12 22:55:29,770  [INFO] - To many failed login attempts. Try again in 292 seconds. 
+2025-08-12 22:55:30,019  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:30,019  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:30,019  [INFO] - current_attempts = 5 
+2025-08-12 22:55:30,020  [INFO] - To many failed login attempts. Try again in 292 seconds. 
+2025-08-12 22:55:30,148  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:30,149  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:30,149  [INFO] - current_attempts = 6 
+2025-08-12 22:55:30,149  [INFO] - To many failed login attempts. Try again in 292 seconds. 
+2025-08-12 22:55:30,386  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:30,387  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:30,387  [INFO] - current_attempts = 7 
+2025-08-12 22:55:30,388  [INFO] - To many failed login attempts. Try again in 291 seconds. 
+2025-08-12 22:55:30,729  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:30,729  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:30,729  [INFO] - current_attempts = 8 
+2025-08-12 22:55:30,730  [INFO] - To many failed login attempts. Try again in 291 seconds. 
+2025-08-12 22:55:30,989  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:30,990  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:30,990  [INFO] - current_attempts = 9 
+2025-08-12 22:55:30,991  [INFO] - To many failed login attempts. Try again in 291 seconds. 
+2025-08-12 22:55:31,162  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:31,163  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:31,163  [INFO] - current_attempts = 10 
+2025-08-12 22:55:31,164  [INFO] - To many failed login attempts. Try again in 291 seconds. 
+2025-08-12 22:55:31,385  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:31,385  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:31,385  [INFO] - current_attempts = 11 
+2025-08-12 22:55:31,388  [INFO] - To many failed login attempts. Try again in 290 seconds. 
+2025-08-12 22:55:32,373  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:32,373  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:32,374  [INFO] - current_attempts = 12 
+2025-08-12 22:55:32,374  [INFO] - To many failed login attempts. Try again in 289 seconds. 
+2025-08-12 22:55:32,540  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:32,540  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:32,541  [INFO] - current_attempts = 13 
+2025-08-12 22:55:32,541  [INFO] - To many failed login attempts. Try again in 289 seconds. 
+2025-08-12 22:55:32,762  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:32,762  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:32,764  [INFO] - current_attempts = 14 
+2025-08-12 22:55:32,764  [INFO] - To many failed login attempts. Try again in 289 seconds. 
+2025-08-12 22:55:40,207  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:40,208  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:40,208  [INFO] - current_attempts = 15 
+2025-08-12 22:55:40,208  [INFO] - To many failed login attempts. Try again in 282 seconds. 
+2025-08-12 22:55:40,360  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:40,361  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:40,363  [INFO] - current_attempts = 16 
+2025-08-12 22:55:40,364  [INFO] - To many failed login attempts. Try again in 281 seconds. 
+2025-08-12 22:55:40,480  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:40,481  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:40,481  [INFO] - current_attempts = 17 
+2025-08-12 22:55:40,481  [INFO] - To many failed login attempts. Try again in 281 seconds. 
+2025-08-12 22:55:40,622  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:40,622  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:40,622  [INFO] - current_attempts = 18 
+2025-08-12 22:55:40,623  [INFO] - To many failed login attempts. Try again in 281 seconds. 
+2025-08-12 22:55:40,777  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:40,777  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:40,777  [INFO] - current_attempts = 19 
+2025-08-12 22:55:40,778  [INFO] - To many failed login attempts. Try again in 281 seconds. 
+2025-08-12 22:55:40,980  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:40,980  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:40,980  [INFO] - current_attempts = 20 
+2025-08-12 22:55:40,981  [INFO] - To many failed login attempts. Try again in 281 seconds. 
+2025-08-12 22:55:41,130  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:41,131  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:41,131  [INFO] - current_attempts = 21 
+2025-08-12 22:55:41,131  [INFO] - To many failed login attempts. Try again in 281 seconds. 
+2025-08-12 22:55:41,287  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:41,287  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:41,287  [INFO] - current_attempts = 22 
+2025-08-12 22:55:41,288  [INFO] - To many failed login attempts. Try again in 281 seconds. 
+2025-08-12 22:55:41,483  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:41,484  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:41,484  [INFO] - current_attempts = 23 
+2025-08-12 22:55:41,484  [INFO] - To many failed login attempts. Try again in 280 seconds. 
+2025-08-12 22:55:41,582  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:41,582  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:41,582  [INFO] - current_attempts = 24 
+2025-08-12 22:55:41,582  [INFO] - To many failed login attempts. Try again in 280 seconds. 
+2025-08-12 22:55:41,749  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:41,749  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:41,750  [INFO] - current_attempts = 25 
+2025-08-12 22:55:41,750  [INFO] - To many failed login attempts. Try again in 280 seconds. 
+2025-08-12 22:55:41,890  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:41,890  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:41,890  [INFO] - current_attempts = 26 
+2025-08-12 22:55:41,891  [INFO] - To many failed login attempts. Try again in 280 seconds. 
+2025-08-12 22:55:42,055  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:42,056  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:42,056  [INFO] - current_attempts = 27 
+2025-08-12 22:55:42,056  [INFO] - To many failed login attempts. Try again in 280 seconds. 
+2025-08-12 22:55:42,234  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:42,234  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:42,234  [INFO] - current_attempts = 28 
+2025-08-12 22:55:42,235  [INFO] - To many failed login attempts. Try again in 280 seconds. 
+2025-08-12 22:55:42,451  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:42,451  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:42,451  [INFO] - current_attempts = 29 
+2025-08-12 22:55:42,451  [INFO] - To many failed login attempts. Try again in 279 seconds. 
+2025-08-12 22:55:43,358  [INFO] - Tenant Login in.... 
+2025-08-12 22:55:43,358  [INFO] -  login_attempts:be6de3631c88817080583167dd22b760 
+2025-08-12 22:55:43,358  [INFO] - current_attempts = 30 
+2025-08-12 22:55:43,359  [INFO] - To many failed login attempts. Try again in 278 seconds. 
+2025-08-12 22:56:49,239  [INFO] - Tenant Login in.... 
+2025-08-12 22:56:49,251  [INFO] -  login_attempts:75ef8c8b839bc156e10f101dc88e2f28 
+2025-08-12 22:56:49,255  [INFO] - current_attempts = 1 
+2025-08-12 22:56:50,035  [INFO] - attempts_key has been deleted 
+2025-08-12 22:56:50,048  [INFO] - Access token expiration: 2025-08-12 23:56:50.044388 
+2025-08-12 22:56:50,596  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-12 22:56:50,941  [INFO] - retrieving 
+2025-08-12 22:56:51,008  [INFO] - retrieving 
+2025-08-12 22:56:51,013  [INFO] - retrieving 
+2025-08-12 22:56:51,303  [INFO] - Tenant drivers 
+2025-08-12 22:56:51,304  [INFO] - Getting all drivers for 420 
+2025-08-12 22:56:51,354  [INFO] - There are no drivers for tenant 420 
+2025-08-12 22:56:51,400  [INFO] - All available bookings for 420 
+2025-08-12 22:56:51,421  [INFO] - There are no bookings for tenant 420 
+2025-08-12 22:56:51,424  [INFO] - Tenant vehicles... 
+2025-08-12 22:56:51,424  [INFO] - Getting vehicles for tenant: 420 
+2025-08-12 22:56:51,457  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 04:09:33,114  [INFO] - Tenant Login in.... 
+2025-08-13 04:09:33,117  [INFO] -  login_attempts:07784c93a894dd121467153f183cb0c3 
+2025-08-13 04:09:33,118  [INFO] - current_attempts = 1 
+2025-08-13 04:09:33,570  [INFO] - attempts_key has been deleted 
+2025-08-13 04:09:33,574  [INFO] - Access token expiration: 2025-08-13 05:09:33.574064 
+2025-08-13 04:09:33,578  [INFO] - Tenant Login in.... 
+2025-08-13 04:09:33,584  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-13 04:09:33,584  [INFO] -  login_attempts:07784c93a894dd121467153f183cb0c3 
+2025-08-13 04:09:33,587  [INFO] - current_attempts = 1 
+2025-08-13 04:09:33,994  [INFO] - attempts_key has been deleted 
+2025-08-13 04:09:33,999  [INFO] - Access token expiration: 2025-08-13 05:09:33.998985 
+2025-08-13 04:09:34,001  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-13 04:09:34,009  [INFO] - retrieving 
+2025-08-13 04:09:34,010  [INFO] - retrieving 
+2025-08-13 04:09:34,011  [INFO] - retrieving 
+2025-08-13 04:09:34,023  [INFO] - Tenant Login in.... 
+2025-08-13 04:09:34,025  [INFO] -  login_attempts:07784c93a894dd121467153f183cb0c3 
+2025-08-13 04:09:34,026  [INFO] - current_attempts = 1 
+2025-08-13 04:09:34,041  [INFO] - Tenant vehicles... 
+2025-08-13 04:09:34,042  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 04:09:34,397  [INFO] - attempts_key has been deleted 
+2025-08-13 04:09:34,398  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 04:09:34,400  [INFO] - Tenant drivers 
+2025-08-13 04:09:34,400  [INFO] - Access token expiration: 2025-08-13 05:09:34.400624 
+2025-08-13 04:09:34,400  [INFO] - Getting all drivers for 420 
+2025-08-13 04:09:34,401  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-13 04:09:34,414  [INFO] - There are no drivers for tenant 420 
+2025-08-13 04:09:34,415  [INFO] - All available bookings for 420 
+2025-08-13 04:09:34,424  [INFO] - There are no bookings for tenant 420 
+2025-08-13 05:11:42,839  [INFO] - Tenant Login in.... 
+2025-08-13 05:11:42,842  [INFO] -  login_attempts:75ef8c8b839bc156e10f101dc88e2f28 
+2025-08-13 05:11:42,843  [INFO] - current_attempts = 1 
+2025-08-13 05:11:43,250  [INFO] - attempts_key has been deleted 
+2025-08-13 05:11:43,253  [INFO] - Access token expiration: 2025-08-13 06:11:43.253224 
+2025-08-13 05:11:43,260  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-13 05:11:43,314  [INFO] - retrieving 
+2025-08-13 05:11:43,323  [INFO] - retrieving 
+2025-08-13 05:11:43,323  [INFO] - retrieving 
+2025-08-13 05:11:43,342  [INFO] - Tenant drivers 
+2025-08-13 05:11:43,342  [INFO] - Getting all drivers for 420 
+2025-08-13 05:11:43,593  [INFO] - There are no drivers for tenant 420 
+2025-08-13 05:11:43,597  [INFO] - Tenant vehicles... 
+2025-08-13 05:11:43,597  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 05:11:43,645  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 05:11:43,658  [INFO] - All available bookings for 420 
+2025-08-13 05:11:43,669  [INFO] - There are no bookings for tenant 420 
+2025-08-13 05:12:22,741  [INFO] - retrieving 
+2025-08-13 05:12:22,742  [INFO] - retrieving 
+2025-08-13 05:12:22,744  [INFO] - retrieving 
+2025-08-13 05:12:22,757  [INFO] - Tenant drivers 
+2025-08-13 05:12:22,757  [INFO] - Getting all drivers for 420 
+2025-08-13 05:12:21,897  [INFO] - There are no drivers for tenant 420 
+2025-08-13 05:12:21,898  [INFO] - All available bookings for 420 
+2025-08-13 05:12:21,899  [INFO] - There are no bookings for tenant 420 
+2025-08-13 05:12:21,907  [INFO] - Tenant vehicles... 
+2025-08-13 05:12:21,907  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 05:12:21,911  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 05:35:23,085  [INFO] - Tenant Login in.... 
+2025-08-13 05:35:23,087  [INFO] -  login_attempts:75ef8c8b839bc156e10f101dc88e2f28 
+2025-08-13 05:35:23,088  [INFO] - current_attempts = 1 
+2025-08-13 05:35:23,497  [INFO] - attempts_key has been deleted 
+2025-08-13 05:35:23,500  [INFO] - Access token expiration: 2025-08-13 06:35:23.500184 
+2025-08-13 05:35:23,511  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-13 05:35:23,569  [INFO] - retrieving 
+2025-08-13 05:35:23,572  [INFO] - retrieving 
+2025-08-13 05:35:23,574  [INFO] - retrieving 
+2025-08-13 05:35:23,598  [INFO] - Tenant drivers 
+2025-08-13 05:35:23,599  [INFO] - Getting all drivers for 420 
+2025-08-13 05:35:23,605  [INFO] - There are no drivers for tenant 420 
+2025-08-13 05:35:23,612  [INFO] - All available bookings for 420 
+2025-08-13 05:35:23,618  [INFO] - There are no bookings for tenant 420 
+2025-08-13 05:35:23,627  [INFO] - Tenant vehicles... 
+2025-08-13 05:35:23,627  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 05:35:23,633  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 05:35:41,958  [INFO] - retrieving 
+2025-08-13 05:35:41,964  [INFO] - retrieving 
+2025-08-13 05:35:41,967  [INFO] - retrieving 
+2025-08-13 05:35:41,983  [INFO] - All available bookings for 420 
+2025-08-13 05:35:41,985  [INFO] - There are no bookings for tenant 420 
+2025-08-13 05:35:41,986  [INFO] - Tenant vehicles... 
+2025-08-13 05:35:41,986  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 05:35:41,988  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 05:35:41,990  [INFO] - Tenant drivers 
+2025-08-13 05:35:41,991  [INFO] - Getting all drivers for 420 
+2025-08-13 05:35:41,994  [INFO] - There are no drivers for tenant 420 
+2025-08-13 18:31:57,599  [INFO] - Tenant Login in.... 
+2025-08-13 18:31:57,603  [INFO] -  login_attempts:75ef8c8b839bc156e10f101dc88e2f28 
+2025-08-13 18:31:57,604  [INFO] - current_attempts = 1 
+2025-08-13 18:31:58,005  [INFO] - attempts_key has been deleted 
+2025-08-13 18:31:58,007  [INFO] - Access token expiration: 2025-08-13 19:31:58.007377 
+2025-08-13 18:31:58,027  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-13 18:31:58,106  [INFO] - retrieving 
+2025-08-13 18:31:58,113  [INFO] - retrieving 
+2025-08-13 18:31:58,114  [INFO] - retrieving 
+2025-08-13 18:31:58,140  [INFO] - Tenant drivers 
+2025-08-13 18:31:58,140  [INFO] - Getting all drivers for 420 
+2025-08-13 18:31:58,153  [INFO] - There are no drivers for tenant 420 
+2025-08-13 18:31:58,157  [INFO] - All available bookings for 420 
+2025-08-13 18:31:58,166  [INFO] - There are no bookings for tenant 420 
+2025-08-13 18:31:58,169  [INFO] - Tenant vehicles... 
+2025-08-13 18:31:58,169  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 18:31:58,177  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 18:32:06,003  [INFO] - retrieving 
+2025-08-13 18:32:06,011  [INFO] - retrieving 
+2025-08-13 18:32:06,018  [INFO] - retrieving 
+2025-08-13 18:32:06,028  [INFO] - Tenant drivers 
+2025-08-13 18:32:06,028  [INFO] - Getting all drivers for 420 
+2025-08-13 18:32:06,029  [INFO] - There are no drivers for tenant 420 
+2025-08-13 18:32:06,031  [INFO] - Tenant vehicles... 
+2025-08-13 18:32:06,031  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 18:32:06,034  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 18:32:06,035  [INFO] - All available bookings for 420 
+2025-08-13 18:32:06,038  [INFO] - There are no bookings for tenant 420 
+2025-08-13 18:32:20,238  [INFO] - retrieving 
+2025-08-13 18:32:20,246  [INFO] - retrieving 
+2025-08-13 18:32:20,247  [INFO] - retrieving 
+2025-08-13 18:32:20,257  [INFO] - Tenant vehicles... 
+2025-08-13 18:32:20,258  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 18:32:20,260  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 18:32:20,261  [INFO] - Tenant drivers 
+2025-08-13 18:32:20,261  [INFO] - Getting all drivers for 420 
+2025-08-13 18:32:20,263  [INFO] - There are no drivers for tenant 420 
+2025-08-13 18:32:20,264  [INFO] - All available bookings for 420 
+2025-08-13 18:32:20,265  [INFO] - There are no bookings for tenant 420 
+2025-08-13 18:32:41,559  [INFO] - retrieving 
+2025-08-13 18:32:41,564  [INFO] - retrieving 
+2025-08-13 18:32:41,568  [INFO] - retrieving 
+2025-08-13 18:32:41,582  [INFO] - Tenant drivers 
+2025-08-13 18:32:41,582  [INFO] - Getting all drivers for 420 
+2025-08-13 18:32:41,585  [INFO] - There are no drivers for tenant 420 
+2025-08-13 18:32:41,586  [INFO] - All available bookings for 420 
+2025-08-13 18:32:41,588  [INFO] - There are no bookings for tenant 420 
+2025-08-13 18:32:41,588  [INFO] - Tenant vehicles... 
+2025-08-13 18:32:41,589  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 18:32:41,590  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 19:23:22,621  [INFO] - Public test started 
+2025-08-13 19:41:13,247  [INFO] - Public test started 
+2025-08-13 19:43:36,777  [INFO] - Public test started 
+2025-08-13 19:55:27,377  [INFO] - Public test started 
+2025-08-13 21:37:59,471  [INFO] - Tenant Login in.... 
+2025-08-13 21:37:59,495  [INFO] -  login_attempts:75ef8c8b839bc156e10f101dc88e2f28 
+2025-08-13 21:37:59,503  [INFO] - current_attempts = 1 
+2025-08-13 21:38:00,030  [INFO] - attempts_key has been deleted 
+2025-08-13 21:38:00,037  [INFO] - Access token expiration: 2025-08-13 22:38:00.034438 
+2025-08-13 21:38:00,157  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQyMCIsInJvbGUiOiJ0ZW5hbnQifQ.7rZzFWk1W4uVFlPSY6fHM6uz888zM86jjUGG-vDgV_I 
+2025-08-13 21:38:00,237  [INFO] - retrieving 
+2025-08-13 21:38:00,241  [INFO] - retrieving 
+2025-08-13 21:38:00,241  [INFO] - retrieving 
+2025-08-13 21:38:00,262  [INFO] - Tenant vehicles... 
+2025-08-13 21:38:00,263  [INFO] - Getting vehicles for tenant: 420 
+2025-08-13 21:38:00,268  [INFO] - There are no vehicles for tenant 420 
+2025-08-13 21:38:00,272  [INFO] - Tenant drivers 
+2025-08-13 21:38:00,272  [INFO] - Getting all drivers for 420 
+2025-08-13 21:38:00,279  [INFO] - There are no drivers for tenant 420 
+2025-08-13 21:38:00,280  [INFO] - All available bookings for 420 
+2025-08-13 21:38:00,288  [INFO] - There are no bookings for tenant 420 

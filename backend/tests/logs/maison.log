@@ -1,0 +1,178 @@
+2025-08-11 21:48:35,782  [INFO] - Tenant cLogin in.... 
+2025-08-11 21:48:35,784  [INFO] -  login_attempts:64d500832dbaf1105308c3dc994f6b81 
+2025-08-11 21:48:35,784  [INFO] - current_attempts = 1 
+2025-08-11 21:48:39,323  [INFO] - Tenant cLogin in.... 
+2025-08-11 21:48:39,324  [INFO] -  login_attempts:9ef5b44d362efd254961d30578460b10 
+2025-08-11 21:48:39,324  [INFO] - current_attempts = 1 
+2025-08-11 22:08:10,936  [INFO] - Tenant cLogin in.... 
+2025-08-11 22:08:10,937  [INFO] -  login_attempts:64d500832dbaf1105308c3dc994f6b81 
+2025-08-11 22:08:10,938  [INFO] - current_attempts = 1 
+2025-08-11 22:08:18,436  [INFO] - Tenant cLogin in.... 
+2025-08-11 22:08:18,437  [INFO] -  login_attempts:9ef5b44d362efd254961d30578460b10 
+2025-08-11 22:08:18,437  [INFO] - current_attempts = 1 
+2025-08-11 22:57:33,553  [INFO] - Tenant cLogin in.... 
+2025-08-11 22:57:33,555  [INFO] -  login_attempts:27b8c30341e2ccab74baa6979f7f372f 
+2025-08-11 22:57:33,556  [INFO] - current_attempts = 1 
+2025-08-11 22:57:33,774  [INFO] - attempts_key has been deleted 
+2025-08-11 22:57:33,785  [INFO] - Access token expiration: 2025-08-11 23:57:33.785856 
+2025-08-11 22:57:33,815  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2xlIjoidGVuYW50In0.gG0UlSV5Tx6MckW3tAW7ORXca9rxTOVVJwHWb6ieiAE 
+2025-08-11 22:57:34,128  [INFO] - Tenant cLogin in.... 
+2025-08-11 22:57:34,128  [INFO] -  login_attempts:27b8c30341e2ccab74baa6979f7f372f 
+2025-08-11 22:57:34,129  [INFO] - current_attempts = 1 
+2025-08-11 22:57:34,397  [INFO] - Tenant cLogin in.... 
+2025-08-11 22:57:34,397  [INFO] -  login_attempts:64d500832dbaf1105308c3dc994f6b81 
+2025-08-11 22:57:34,398  [INFO] - current_attempts = 1 
+2025-08-11 22:57:34,878  [INFO] - Driver driver2@test.com logged in.... 
+2025-08-11 22:57:34,879  [INFO] -  login_attempts:9555215c10bbfb5c4e2a352eb53f1a52 
+2025-08-11 22:57:34,879  [INFO] - current_attempts = 1 
+2025-08-11 22:57:35,075  [INFO] - attempts_key has been deleted 
+2025-08-11 22:57:35,076  [INFO] - Access token expiration: 2025-08-11 23:57:35.076043 
+2025-08-11 22:57:35,076  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJyb2xlIjoiZHJpdmVyIiwidGVuYW50X2lkIjoiMSJ9.v9XmK9GGOJdiohNjGciD6VIWsFj6qYPeN7u_a_3A-zY 
+2025-08-11 22:57:35,535  [INFO] - Driver driver3@test.com logged in.... 
+2025-08-11 22:57:35,535  [INFO] -  login_attempts:a379ca4f57283f8bfd3a732ca37ea3f0 
+2025-08-11 22:57:35,535  [INFO] - current_attempts = 1 
+2025-08-11 22:57:36,221  [INFO] - User user2@test.com logged in.... 
+2025-08-11 22:57:36,221  [INFO] -  login_attempts:99b1f88e0d231afac8c1ff0d4cc060ea 
+2025-08-11 22:57:36,222  [INFO] - current_attempts = 1 
+2025-08-11 22:57:36,450  [INFO] - attempts_key has been deleted 
+2025-08-11 22:57:36,451  [INFO] - Access token expiration: 2025-08-11 23:57:36.451646 
+2025-08-11 22:57:36,452  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJyb2xlIjoicmlkZXIiLCJ0ZW5hbnRfaWQiOiIxIn0.LjZYgtk5VAKAdzppRyA1ohAlCAqdDF1uQ36zmKbl8V0 
+2025-08-11 22:57:37,132  [INFO] - User user3@test.com logged in.... 
+2025-08-11 22:57:37,132  [INFO] -  login_attempts:b9816fa8196f49aef0bdb5847b6172ab 
+2025-08-11 22:57:37,132  [INFO] - current_attempts = 1 
+2025-08-11 22:57:37,578  [INFO] - Tenant cLogin in.... 
+2025-08-11 22:57:37,579  [INFO] -  login_attempts:27b8c30341e2ccab74baa6979f7f372f 
+2025-08-11 22:57:37,579  [INFO] - current_attempts = 2 
+2025-08-11 22:57:37,805  [INFO] - attempts_key has been deleted 
+2025-08-11 22:57:37,806  [INFO] - Access token expiration: 2025-08-11 23:57:37.806244 
+2025-08-11 22:57:37,806  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2xlIjoidGVuYW50In0.gG0UlSV5Tx6MckW3tAW7ORXca9rxTOVVJwHWb6ieiAE 
+2025-08-11 22:57:37,813  [INFO] - Token refreshed... 
+2025-08-11 22:57:38,956  [INFO] - Tenant cLogin in.... 
+2025-08-11 22:57:38,957  [INFO] -  login_attempts:9ef5b44d362efd254961d30578460b10 
+2025-08-11 22:57:38,957  [INFO] - current_attempts = 1 
+2025-08-11 23:02:44,567  [INFO] - Tenant cLogin in.... 
+2025-08-11 23:02:44,567  [INFO] -  login_attempts:27b8c30341e2ccab74baa6979f7f372f 
+2025-08-11 23:02:44,568  [INFO] - current_attempts = 1 
+2025-08-11 23:02:44,788  [INFO] - attempts_key has been deleted 
+2025-08-11 23:02:44,789  [INFO] - Access token expiration: 2025-08-12 00:02:44.789427 
+2025-08-11 23:02:44,794  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2xlIjoidGVuYW50In0.gG0UlSV5Tx6MckW3tAW7ORXca9rxTOVVJwHWb6ieiAE 
+2025-08-11 23:02:45,097  [INFO] - Tenant cLogin in.... 
+2025-08-11 23:02:45,098  [INFO] -  login_attempts:27b8c30341e2ccab74baa6979f7f372f 
+2025-08-11 23:02:45,098  [INFO] - current_attempts = 1 
+2025-08-11 23:02:45,341  [INFO] - Tenant cLogin in.... 
+2025-08-11 23:02:45,341  [INFO] -  login_attempts:64d500832dbaf1105308c3dc994f6b81 
+2025-08-11 23:02:45,341  [INFO] - current_attempts = 1 
+2025-08-11 23:02:45,794  [INFO] - Driver driver2@test.com logged in.... 
+2025-08-11 23:02:45,795  [INFO] -  login_attempts:9555215c10bbfb5c4e2a352eb53f1a52 
+2025-08-11 23:02:45,795  [INFO] - current_attempts = 1 
+2025-08-11 23:02:46,015  [INFO] - attempts_key has been deleted 
+2025-08-11 23:02:46,015  [INFO] - Access token expiration: 2025-08-12 00:02:46.015941 
+2025-08-11 23:02:46,016  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJyb2xlIjoiZHJpdmVyIiwidGVuYW50X2lkIjoiMSJ9.v9XmK9GGOJdiohNjGciD6VIWsFj6qYPeN7u_a_3A-zY 
+2025-08-11 23:02:46,470  [INFO] - Driver driver3@test.com logged in.... 
+2025-08-11 23:02:46,471  [INFO] -  login_attempts:a379ca4f57283f8bfd3a732ca37ea3f0 
+2025-08-11 23:02:46,471  [INFO] - current_attempts = 1 
+2025-08-11 23:02:47,135  [INFO] - User user2@test.com logged in.... 
+2025-08-11 23:02:47,135  [INFO] -  login_attempts:99b1f88e0d231afac8c1ff0d4cc060ea 
+2025-08-11 23:02:47,136  [INFO] - current_attempts = 1 
+2025-08-11 23:02:47,361  [INFO] - attempts_key has been deleted 
+2025-08-11 23:02:47,362  [INFO] - Access token expiration: 2025-08-12 00:02:47.362650 
+2025-08-11 23:02:47,366  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJyb2xlIjoicmlkZXIiLCJ0ZW5hbnRfaWQiOiIxIn0.LjZYgtk5VAKAdzppRyA1ohAlCAqdDF1uQ36zmKbl8V0 
+2025-08-11 23:02:47,814  [INFO] - User user3@test.com logged in.... 
+2025-08-11 23:02:47,815  [INFO] -  login_attempts:b9816fa8196f49aef0bdb5847b6172ab 
+2025-08-11 23:02:47,815  [INFO] - current_attempts = 1 
+2025-08-11 23:02:48,601  [INFO] - Tenant cLogin in.... 
+2025-08-11 23:02:48,601  [INFO] -  login_attempts:9ef5b44d362efd254961d30578460b10 
+2025-08-11 23:02:48,601  [INFO] - current_attempts = 1 
+2025-08-11 23:03:14,496  [INFO] - Tenant cLogin in.... 
+2025-08-11 23:03:14,496  [INFO] -  login_attempts:27b8c30341e2ccab74baa6979f7f372f 
+2025-08-11 23:03:14,497  [INFO] - current_attempts = 2 
+2025-08-11 23:03:14,718  [INFO] - attempts_key has been deleted 
+2025-08-11 23:03:14,720  [INFO] - Access token expiration: 2025-08-12 00:03:14.720038 
+2025-08-11 23:03:14,726  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2xlIjoidGVuYW50In0.gG0UlSV5Tx6MckW3tAW7ORXca9rxTOVVJwHWb6ieiAE 
+2025-08-11 23:03:15,066  [INFO] - Tenant cLogin in.... 
+2025-08-11 23:03:15,067  [INFO] -  login_attempts:27b8c30341e2ccab74baa6979f7f372f 
+2025-08-11 23:03:15,068  [INFO] - current_attempts = 1 
+2025-08-11 23:03:15,307  [INFO] - Tenant cLogin in.... 
+2025-08-11 23:03:15,307  [INFO] -  login_attempts:64d500832dbaf1105308c3dc994f6b81 
+2025-08-11 23:03:15,308  [INFO] - current_attempts = 2 
+2025-08-11 23:03:15,776  [INFO] - Driver driver2@test.com logged in.... 
+2025-08-11 23:03:15,776  [INFO] -  login_attempts:9555215c10bbfb5c4e2a352eb53f1a52 
+2025-08-11 23:03:15,777  [INFO] - current_attempts = 1 
+2025-08-11 23:03:16,003  [INFO] - attempts_key has been deleted 
+2025-08-11 23:03:16,004  [INFO] - Access token expiration: 2025-08-12 00:03:16.004784 
+2025-08-11 23:03:16,005  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJyb2xlIjoiZHJpdmVyIiwidGVuYW50X2lkIjoiMSJ9.v9XmK9GGOJdiohNjGciD6VIWsFj6qYPeN7u_a_3A-zY 
+2025-08-11 23:03:16,473  [INFO] - Driver driver3@test.com logged in.... 
+2025-08-11 23:03:16,473  [INFO] -  login_attempts:a379ca4f57283f8bfd3a732ca37ea3f0 
+2025-08-11 23:03:16,473  [INFO] - current_attempts = 2 
+2025-08-11 23:03:17,156  [INFO] - User user2@test.com logged in.... 
+2025-08-11 23:03:17,156  [INFO] -  login_attempts:99b1f88e0d231afac8c1ff0d4cc060ea 
+2025-08-11 23:03:17,157  [INFO] - current_attempts = 1 
+2025-08-11 23:03:17,358  [INFO] - attempts_key has been deleted 
+2025-08-11 23:03:17,359  [INFO] - Access token expiration: 2025-08-12 00:03:17.359001 
+2025-08-11 23:03:17,359  [INFO] - refresh token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJyb2xlIjoicmlkZXIiLCJ0ZW5hbnRfaWQiOiIxIn0.LjZYgtk5VAKAdzppRyA1ohAlCAqdDF1uQ36zmKbl8V0 
+2025-08-11 23:03:17,820  [INFO] - User user3@test.com logged in.... 
+2025-08-11 23:03:17,821  [INFO] -  login_attempts:b9816fa8196f49aef0bdb5847b6172ab 
+2025-08-11 23:03:17,821  [INFO] - current_attempts = 2 
+2025-08-11 23:03:18,067  [INFO] - Tenant cLogin in.... 
+2025-08-11 23:03:18,067  [INFO] -  login_attempts:9ef5b44d362efd254961d30578460b10 
+2025-08-11 23:03:18,067  [INFO] - current_attempts = 2 
+2025-08-11 23:07:14,490  [INFO] - Access token expiration: 2025-08-12 00:07:14.489987 
+2025-08-11 23:07:14,778  [INFO] - Access token expiration: 2025-08-12 00:07:14.778582 
+2025-08-11 23:07:15,077  [INFO] - Access token expiration: 2025-08-12 00:07:15.077395 
+2025-08-11 23:07:15,350  [INFO] - Access token expiration: 2025-08-12 00:07:15.350491 
+2025-08-11 23:07:15,598  [INFO] - Access token expiration: 2025-08-12 00:07:15.598563 
+2025-08-11 23:07:16,122  [INFO] - Access token expiration: 2025-08-12 00:07:16.122842 
+2025-08-11 23:07:16,350  [INFO] - Access token expiration: 2025-08-12 00:07:16.350587 
+2025-08-11 23:07:16,612  [INFO] - Access token expiration: 2025-08-12 00:07:16.612556 
+2025-08-11 23:07:16,872  [INFO] - Access token expiration: 2025-08-12 00:07:16.871966 
+2025-08-11 23:07:17,117  [INFO] - Access token expiration: 2025-08-12 00:07:17.117209 
+2025-08-11 23:07:17,367  [INFO] - Access token expiration: 2025-08-12 00:07:17.367563 
+2025-08-11 23:07:17,631  [INFO] - Access token expiration: 2025-08-12 00:07:17.630988 
+2025-08-11 23:07:15,282  [INFO] - Access token expiration: 2025-08-12 00:07:15.282369 
+2025-08-11 23:07:15,801  [INFO] - Access token expiration: 2025-08-12 00:07:15.801401 
+2025-08-11 23:07:16,043  [INFO] - Access token expiration: 2025-08-12 00:07:16.043472 
+2025-08-11 23:07:16,304  [INFO] - Access token expiration: 2025-08-12 00:07:16.304172 
+2025-08-11 23:07:16,549  [INFO] - Access token expiration: 2025-08-12 00:07:16.549133 
+2025-08-11 23:07:16,817  [INFO] - Access token expiration: 2025-08-12 00:07:16.817480 
+2025-08-11 23:07:17,090  [INFO] - Access token expiration: 2025-08-12 00:07:17.090072 
+2025-08-11 23:07:17,343  [INFO] - Access token expiration: 2025-08-12 00:07:17.343481 
+2025-08-11 23:31:27,378  [INFO] - Access token expiration: 2025-08-12 00:31:27.378266 
+2025-08-11 23:31:27,742  [INFO] - Access token expiration: 2025-08-12 00:31:27.742506 
+2025-08-11 23:31:28,037  [INFO] - Access token expiration: 2025-08-12 00:31:28.037592 
+2025-08-11 23:31:28,345  [INFO] - Access token expiration: 2025-08-12 00:31:28.345252 
+2025-08-11 23:31:28,660  [INFO] - Access token expiration: 2025-08-12 00:31:28.660806 
+2025-08-11 23:31:29,276  [INFO] - Access token expiration: 2025-08-12 00:31:29.276485 
+2025-08-11 23:31:29,517  [INFO] - Access token expiration: 2025-08-12 00:31:29.517006 
+2025-08-11 23:31:29,790  [INFO] - Access token expiration: 2025-08-12 00:31:29.790821 
+2025-08-11 23:31:30,047  [INFO] - Access token expiration: 2025-08-12 00:31:30.046996 
+2025-08-11 23:31:30,321  [INFO] - Access token expiration: 2025-08-12 00:31:30.321222 
+2025-08-11 23:31:30,564  [INFO] - Access token expiration: 2025-08-12 00:31:30.564941 
+2025-08-11 23:31:30,829  [INFO] - Access token expiration: 2025-08-12 00:31:30.829730 
+2025-08-11 23:31:31,070  [INFO] - Access token expiration: 2025-08-12 00:31:31.070786 
+2025-08-11 23:31:31,628  [INFO] - Access token expiration: 2025-08-12 00:31:31.628218 
+2025-08-11 23:31:31,891  [INFO] - Access token expiration: 2025-08-12 00:31:31.891470 
+2025-08-11 23:31:32,177  [INFO] - Access token expiration: 2025-08-12 00:31:32.177671 
+2025-08-11 23:31:32,455  [INFO] - Access token expiration: 2025-08-12 00:31:32.455131 
+2025-08-11 23:31:32,756  [INFO] - Access token expiration: 2025-08-12 00:31:32.756698 
+2025-08-11 23:31:33,041  [INFO] - Access token expiration: 2025-08-12 00:31:33.041932 
+2025-08-11 23:31:33,291  [INFO] - Access token expiration: 2025-08-12 00:31:33.291143 
+2025-08-11 23:52:04,292  [INFO] - Access token expiration: 2025-08-12 00:52:04.292296 
+2025-08-11 23:52:04,618  [INFO] - Access token expiration: 2025-08-12 00:52:04.618706 
+2025-08-11 23:52:04,873  [INFO] - Access token expiration: 2025-08-12 00:52:04.873906 
+2025-08-11 23:52:05,158  [INFO] - Access token expiration: 2025-08-12 00:52:05.158027 
+2025-08-11 23:52:05,421  [INFO] - Access token expiration: 2025-08-12 00:52:05.421490 
+2025-08-11 23:52:05,967  [INFO] - Access token expiration: 2025-08-12 00:52:05.967283 
+2025-08-11 23:52:06,203  [INFO] - Access token expiration: 2025-08-12 00:52:06.203700 
+2025-08-11 23:52:06,582  [INFO] - Access token expiration: 2025-08-12 00:52:06.581996 
+2025-08-11 23:52:06,862  [INFO] - Access token expiration: 2025-08-12 00:52:06.862622 
+2025-08-11 23:52:07,126  [INFO] - Access token expiration: 2025-08-12 00:52:07.126589 
+2025-08-11 23:52:07,380  [INFO] - Access token expiration: 2025-08-12 00:52:07.380082 
+2025-08-11 23:52:07,620  [INFO] - Access token expiration: 2025-08-12 00:52:07.620617 
+2025-08-11 23:52:07,867  [INFO] - Access token expiration: 2025-08-12 00:52:07.867575 
+2025-08-11 23:52:08,376  [INFO] - Access token expiration: 2025-08-12 00:52:08.376084 
+2025-08-11 23:52:08,622  [INFO] - Access token expiration: 2025-08-12 00:52:08.622642 
+2025-08-11 23:52:08,893  [INFO] - Access token expiration: 2025-08-12 00:52:08.893795 
+2025-08-11 23:52:09,160  [INFO] - Access token expiration: 2025-08-12 00:52:09.160416 
+2025-08-11 23:52:09,416  [INFO] - Access token expiration: 2025-08-12 00:52:09.416455 
+2025-08-11 23:52:09,666  [INFO] - Access token expiration: 2025-08-12 00:52:09.666219 
+2025-08-11 23:52:09,915  [INFO] - Access token expiration: 2025-08-12 00:52:09.915447 

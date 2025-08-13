@@ -1,84 +1,247 @@
-#!/usr/bin/env python3
+
 """
-CLI tool for testing Ride Booking System API flows
+Ride Sharing System CLI Tool
+A comprehensive command-line interface to simulate frontend interactions
+with the ride-sharing backend API.
 """
 
 import requests
 import json
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 import getpass
 from urllib.parse import urljoin
+import sys
+import os
+from dataclasses import dataclass
+from enum import Enum
+import re
+
+class UserRole(Enum):
+    RIDER = "rider"
+    DRIVER = "driver"
+    TENANT = "tenant"
+    ADMIN = "admin"
+
+class ServiceType(Enum):
+    AIRPORT = "airport"
+    HOURLY = "hourly"
+    DROP_OFF = "dropoff"
+
+class PaymentType(Enum):
+    CASH = "cash"
+    CARD = "card"
+    ZELLE = "zelle"
+
+class DriverType(Enum):
+    OUTSOURCED = "outsourced"
+    IN_HOUSE = "in_house"
+
+@dataclass
+class CurrentUser:
+    email: str
+    role: str
+    id: Optional[int] = None
+    tenant_id: Optional[int] = None
+    full_name: Optional[str] = None
 
 class RideBookingAPI:
     def __init__(self, base_url: str = "http://localhost:8000"):
-        self.base_url = base_url
+        self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
-        self.current_user = None
-        self.access_token = None
+        self.current_user: Optional[CurrentUser] = None
+        self.access_token: Optional[str] = None
         
     def set_auth_token(self, token: str):
         """Set authentication token for API calls"""
         self.access_token = token
         self.session.headers.update({"Authorization": f"Bearer {token}"})
     
+    def _make_request(self, method: str, endpoint: str, **kwargs) -> requests.Response:
+        """Make HTTP request with error handling"""
+        url = urljoin(f"{self.base_url}/", endpoint.lstrip('/'))
+        try:
+            response = self.session.request(method, url, **kwargs)
+            return response
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error: {e}")
+    
     def login(self, email: str, password: str, role: str) -> Dict:
         """Login user based on role"""
         login_endpoints = {
-            "rider": "/login/user",
-            "driver": "/login/driver", 
-            "tenant": "/login/tenants"
+            "rider": "/api/v1/login/user",
+            "driver": "/api/v1/login/driver", 
+            "tenant": "/api/v1/login/tenants"
         }
         
         endpoint = login_endpoints.get(role.lower())
         if not endpoint:
             raise ValueError(f"Invalid role: {role}")
             
-        url = urljoin(self.base_url, endpoint)
         data = {
             "username": email,
             "password": password
         }
         
-        response = self.session.post(url, data=data)
+        response = self._make_request("POST", endpoint, data=data)
         if response.status_code == 200:
             result = response.json()
             self.set_auth_token(result["access_token"])
+            self.current_user = CurrentUser(email=email, role=role)
             return result
         else:
             raise Exception(f"Login failed: {response.status_code} - {response.text}")
     
+    # Tenant operations
     def create_tenant(self, tenant_data: Dict) -> Dict:
         """Create new tenant"""
-        url = urljoin(self.base_url, "/tenant/add")
-        response = self.session.post(url, json=tenant_data)
+        response = self._make_request("POST", "/api/v1/tenant/add", json=tenant_data)
         if response.status_code == 201:
             return response.json()
         else:
             raise Exception(f"Failed to create tenant: {response.status_code} - {response.text}")
     
+    def get_tenant_info(self) -> Dict:
+        """Get current tenant information"""
+        response = self._make_request("GET", "/api/v1/tenant/")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to get tenant info: {response.status_code} - {response.text}")
+    
+    def get_tenant_drivers(self) -> List[Dict]:
+        """Get all drivers for current tenant"""
+        response = self._make_request("GET", "/api/v1/tenant/drivers")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to get drivers: {response.status_code} - {response.text}")
+    
+    def get_tenant_vehicles(self, driver_id: Optional[int] = None, assigned_only: bool = False) -> List[Dict]:
+        """Get vehicles for current tenant"""
+        params = {}
+        if driver_id:
+            params["driver_id"] = driver_id
+        if assigned_only:
+            params["assigned_drivers"] = True
+            
+        response = self._make_request("GET", "/api/v1/tenant/vehicles", params=params)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to get vehicles: {response.status_code} - {response.text}")
+    
+    def get_tenant_bookings(self, status: Optional[str] = None) -> List[Dict]:
+        """Get bookings for current tenant"""
+        params = {}
+        if status:
+            params["booking_status"] = status
+            
+        response = self._make_request("GET", "/api/v1/tenant/bookings", params=params)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to get bookings: {response.status_code} - {response.text}")
+    
+    def onboard_driver(self, driver_data: Dict) -> Dict:
+        """Onboard new driver"""
+        response = self._make_request("POST", "/api/v1/tenant/onboard", json=driver_data)
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise Exception(f"Failed to onboard driver: {response.status_code} - {response.text}")
+    
+    def assign_driver_to_ride(self, rider_id: int, driver_id: int) -> Dict:
+        """Assign driver to a ride"""
+        payload = {"driver_id": driver_id}
+        response = self._make_request("PATCH", f"/api/v1/tenant/assign_driver/{rider_id}", json=payload)
+        if response.status_code == 202:
+            return response.json()
+        else:
+            raise Exception(f"Failed to assign driver: {response.status_code} - {response.text}")
+    
+    def assign_driver_to_vehicle(self, vehicle_id: int, driver_id: int) -> Dict:
+        """Assign driver to a vehicle"""
+        payload = {"driver_id": driver_id}
+        response = self._make_request("PATCH", f"/api/v1/tenant/assign_driver_vehicle/{vehicle_id}", json=payload)
+        if response.status_code == 202:
+            return response.json()
+        else:
+            raise Exception(f"Failed to assign driver to vehicle: {response.status_code} - {response.text}")
+    
+    # User operations
     def create_user(self, user_data: Dict) -> Dict:
         """Create new user/rider"""
-        url = urljoin(self.base_url, "/users/add")
-        response = self.session.post(url, json=user_data)
+        response = self._make_request("POST", "/api/v1/users/add", json=user_data)
         if response.status_code == 201:
             return response.json()
         else:
             raise Exception(f"Failed to create user: {response.status_code} - {response.text}")
     
-    def create_driver(self, driver_data: Dict) -> Dict:
-        """Create new driver"""
-        url = urljoin(self.base_url, "/driver/create")
-        response = self.session.post(url, json=driver_data)
+    def get_user_info(self) -> Dict:
+        """Get current user information"""
+        response = self._make_request("GET", "/api/v1/users/")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to get user info: {response.status_code} - {response.text}")
+    
+    # Driver operations
+    def register_driver(self, driver_data: Dict) -> Dict:
+        """Register driver with token"""
+        response = self._make_request("PATCH", "/api/v1/driver/register", json=driver_data)
+        if response.status_code == 202:
+            return response.json()
+        else:
+            raise Exception(f"Failed to register driver: {response.status_code} - {response.text}")
+    
+    def get_driver_info(self) -> Dict:
+        """Get current driver information"""
+        response = self._make_request("GET", "/api/v1/driver/info")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to get driver info: {response.status_code} - {response.text}")
+    
+    def get_available_rides(self, status: str = "pending") -> List[Dict]:
+        """Get available rides for driver"""
+        params = {"booking_status": status}
+        response = self._make_request("GET", "/api/v1/driver/rides/available", params=params)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to get available rides: {response.status_code} - {response.text}")
+    
+    def respond_to_ride(self, booking_id: int, action: str) -> Dict:
+        """Confirm or cancel a ride"""
+        params = {"action": action}
+        response = self._make_request("PATCH", f"/api/v1/driver/ride/{booking_id}/decision", params=params)
+        if response.status_code == 202:
+            return response.json()
+        else:
+            raise Exception(f"Failed to respond to ride: {response.status_code} - {response.text}")
+    
+    # Booking operations
+    def book_ride(self, booking_data: Dict) -> Dict:
+        """Book a ride"""
+        response = self._make_request("POST", "/api/v1/bookings/set", json=booking_data)
         if response.status_code == 201:
             return response.json()
         else:
-            raise Exception(f"Failed to create driver: {response.status_code} - {response.text}")
+            raise Exception(f"Failed to book ride: {response.status_code} - {response.text}")
     
+    def get_user_bookings(self) -> List[Dict]:
+        """Get user's bookings"""
+        response = self._make_request("GET", "/api/v1/bookings/")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to get bookings: {response.status_code} - {response.text}")
+    
+    # Vehicle operations
     def get_vehicles(self) -> List[Dict]:
         """Get available vehicles"""
-        url = urljoin(self.base_url, "/vehicles/")
-        response = self.session.get(url)
+        response = self._make_request("GET", "/api/v1/vehicles/")
         if response.status_code == 200:
             return response.json()
         else:
@@ -86,448 +249,543 @@ class RideBookingAPI:
     
     def add_vehicle(self, vehicle_data: Dict) -> Dict:
         """Add new vehicle"""
-        url = urljoin(self.base_url, "/vehicles/add")
-        response = self.session.post(url, json=vehicle_data)
+        response = self._make_request("POST", "/api/v1/vehicles/add", json=vehicle_data)
         if response.status_code == 201:
             return response.json()
         else:
             raise Exception(f"Failed to add vehicle: {response.status_code} - {response.text}")
     
-    def book_ride(self, booking_data: Dict) -> Dict:
-        """Book a ride"""
-        url = urljoin(self.base_url, "/bookings/set")
-        response = self.session.post(url, json=booking_data)
+    def set_vehicle_rates(self, rate_data: Dict) -> Dict:
+        """Set vehicle category rates"""
+        response = self._make_request("PATCH", "/api/v1/vehicles/set_rates", json=rate_data)
         if response.status_code == 201:
             return response.json()
         else:
-            raise Exception(f"Failed to book ride: {response.status_code} - {response.text}")
+            raise Exception(f"Failed to set vehicle rates: {response.status_code} - {response.text}")
     
-    def get_bookings(self) -> List[Dict]:
-        """Get user's bookings"""
-        url = urljoin(self.base_url, "/bookings/")
-        response = self.session.get(url)
+    def get_vehicle_rates(self) -> List[Dict]:
+        """Get vehicle category rates"""
+        response = self._make_request("GET", "/api/v1/vehicles/vehicle_rates")
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception(f"Failed to get bookings: {response.status_code} - {response.text}")
-    
-    def get_tenant_drivers(self) -> List[Dict]:
-        """Get drivers for tenant"""
-        url = urljoin(self.base_url, "/tenant/drivers")
-        response = self.session.get(url)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise Exception(f"Failed to get drivers: {response.status_code} - {response.text}")
+            raise Exception(f"Failed to get vehicle rates: {response.status_code} - {response.text}")
 
-def display_menu():
-    print("\n" + "="*60)
-    print("🚗 RIDE BOOKING SYSTEM CLI")
-    print("="*60)
-    print("1. Login")
-    print("2. Create Tenant")
-    print("3. Create User/Rider")
-    print("4. Create Driver")
-    print("5. Add Vehicle")
-    print("6. View Vehicles")
-    print("7. Book Ride")
-    print("8. View Bookings")
-    print("9. View Tenant Drivers")
-    print("10. Logout")
-    print("11. Exit")
-    print("-" * 60)
-
-def login_flow(api: RideBookingAPI):
-    print("\n🔐 Login")
-    print("-" * 30)
+class RideBookingCLI:
+    def __init__(self):
+        self.api = RideBookingAPI()
+        self.running = True
     
-    email = input("Email: ").strip()
-    password = getpass.getpass("Password: ")
+    def clear_screen(self):
+        """Clear terminal screen"""
+        os.system('cls' if os.name == 'nt' else 'clear')
     
-    print("Select role:")
-    print("1. Rider")
-    print("2. Driver") 
-    print("3. Tenant")
+    def print_header(self, title: str):
+        """Print formatted header"""
+        print("=" * 60)
+        print(f" {title.center(56)} ")
+        print("=" * 60)
     
-    role_choice = input("Enter choice (1-3): ").strip()
-    role_map = {"1": "rider", "2": "driver", "3": "tenant"}
+    def print_menu(self, options: List[str], title: str = "Menu"):
+        """Print menu options"""
+        self.print_header(title)
+        for i, option in enumerate(options, 1):
+            print(f"{i}. {option}")
+        print("0. Back/Exit")
+        print("-" * 60)
     
-    if role_choice not in role_map:
-        print("❌ Invalid role selection!")
-        return
+    def get_choice(self, max_option: int) -> int:
+        """Get user choice with validation"""
+        while True:
+            try:
+                choice = int(input("Enter your choice: "))
+                if 0 <= choice <= max_option:
+                    return choice
+                else:
+                    print(f"Please enter a number between 0 and {max_option}")
+            except ValueError:
+                print("Please enter a valid number")
     
-    role = role_map[role_choice]
+    def get_input(self, prompt: str, required: bool = True) -> str:
+        """Get user input with validation"""
+        while True:
+            value = input(prompt).strip()
+            if not required or value:
+                return value
+            print("This field is required. Please enter a value.")
     
-    try:
-        result = api.login(email, password, role)
-        print(f"✅ Login successful as {role}!")
-        print(f"Access Token: {result['access_token'][:50]}...")
-        api.current_user = {"email": email, "role": role}
-    except Exception as e:
-        print(f"❌ Login failed: {e}")
-
-def create_tenant_flow(api: RideBookingAPI):
-    print("\n🏢 Create Tenant")
-    print("-" * 30)
+    def get_password(self, prompt: str = "Password: ") -> str:
+        """Get password input"""
+        return getpass.getpass(prompt)
     
-    tenant_data = {
-        "email": input("Email: ").strip(),
-        "first_name": input("First Name: ").strip(),
-        "last_name": input("Last Name: ").strip(),
-        "password": getpass.getpass("Password: "),
-        "phone_no": input("Phone Number: ").strip(),
-        "company_name": input("Company Name: ").strip(),
-        "slug": input("Company Slug: ").strip(),
-        "city": input("City: ").strip(),
-        "address": input("Address (optional): ").strip() or None,
-        "logo_url": input("Logo URL (optional): ").strip() or None,
-        "drivers_count": input("How many drivers do you have: ").strip() or 0
-    }
+    def validate_email(self, email: str) -> bool:
+        """Validate email format"""
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(pattern, email) is not None
     
-    try:
-        result = api.create_tenant(tenant_data)
-        print(f"✅ Tenant created successfully!")
-        print(f"Tenant ID: {result['id']}")
-        print(f"Company: {result['company_name']}")
-    except Exception as e:
-        print(f"❌ Failed to create tenant: {e}")
-
-def create_user_flow(api: RideBookingAPI):
-    print("\n👤 Create User/Rider")
-    print("-" * 30)
+    def get_email(self, prompt: str = "Email: ") -> str:
+        """Get and validate email input"""
+        while True:
+            email = self.get_input(prompt)
+            if self.validate_email(email):
+                return email.lower()
+            print("Please enter a valid email address")
     
-    try:
-        tenant_id = int(input("Tenant ID: ").strip())
-    except ValueError:
-        print("❌ Invalid tenant ID!")
-        return
+    def get_phone(self, prompt: str = "Phone: ") -> str:
+        """Get and validate phone input"""
+        while True:
+            phone = self.get_input(prompt)
+            if re.match(r'^\+?[\d\s\-\(\)]+$', phone):
+                return phone
+            print("Please enter a valid phone number")
     
-    user_data = {
-        "email": input("Email: ").strip(),
-        "first_name": input("First Name: ").strip(),
-        "last_name": input("Last Name: ").strip(),
-        "password": getpass.getpass("Password: "),
-        "phone_no": input("Phone Number: ").strip(),
-        "tenant_id": tenant_id,
-        "address": input("Address (optional): ").strip() or None,
-        "city": input("City (optional): ").strip() or None,
-        "state": input("State (optional): ").strip() or None,
-        "country": input("Country (optional): ").strip() or None,
-        "postal_code": input("Postal Code (optional): ").strip() or None
-    }
+    def validate_password(self, password: str) -> bool:
+        """Validate password strength"""
+        if len(password) < 8:
+            return False
+        if not re.search(r'[A-Z]', password):
+            return False
+        if not re.search(r'[a-z]', password):
+            return False
+        if not re.search(r'\d', password):
+            return False
+        return True
     
-    try:
-        result = api.create_user(user_data)
-        print(f"✅ User created successfully!")
-        print(f"User ID: {result['id']}")
-        print(f"Name: {result['first_name']} {result['last_name']}")
-    except Exception as e:
-        print(f"❌ Failed to create user: {e}")
-
-def create_driver_flow(api: RideBookingAPI):
-    print("\n🚙 Create Driver")
-    print("-" * 30)
+    def get_strong_password(self, prompt: str = "Password: ") -> str:
+        """Get password with strength validation"""
+        while True:
+            password = self.get_password(prompt)
+            if self.validate_password(password):
+                return password
+            print("Password must be at least 8 characters and contain uppercase, lowercase, and number")
     
-    try:
-        tenant_id = int(input("Tenant ID: ").strip())
-    except ValueError:
-        print("❌ Invalid tenant ID!")
-        return
-    
-    driver_data = {
-        "tenant_id": tenant_id,
-        "email": input("Email: ").strip(),
-        "first_name": input("First Name: ").strip(),
-        "last_name": input("Last Name: ").strip(),
-        "password": getpass.getpass("Password: "),
-        "phone_no": input("Phone Number: ").strip(),
-        "completed_rides": 0,
-        "license_number": input("License Number (optional): ").strip() or None,
-        "state": input("State (optional): ").strip() or None,
-        "postal_code": input("Postal Code (optional): ").strip() or None,
-        "is_active": True,
-        "status": "available"
-    }
-    
-    try:
-        result = api.create_driver(driver_data)
-        print(f"✅ Driver created successfully!")
-        print(f"Driver ID: {result['id']}")
-        print(f"Name: {result['first_name']} {result['last_name']}")
-    except Exception as e:
-        print(f"❌ Failed to create driver: {e}")
-
-def add_vehicle_flow(api: RideBookingAPI):
-    print("\n🚗 Add Vehicle")
-    print("-" * 30)
-    
-    if not api.access_token:
-        print("❌ Please login first!")
-        return
-    
-    try:
-        tenant_id = int(input("Tenant ID: ").strip())
-    except ValueError:
-        print("❌ Invalid tenant ID!")
-        return
-    
-    vehicle_data = {
-        "name": input("Vehicle Name: ").strip(),
-        "model": input("Model: ").strip(),
-        "year": None,
-        "license_plate": input("License Plate (optional): ").strip() or None,
-        "color": input("Color (optional): ").strip() or None,
-        "seating_capacity": None,
-        "status": "available"
-    }
-    
-    # Optional fields
-    year_input = input("Year (optional): ").strip()
-    if year_input:
+    def format_datetime(self, dt_str: str) -> str:
+        """Format datetime string for display"""
         try:
-            vehicle_data["year"] = int(year_input)
-        except ValueError:
-            print("⚠️  Invalid year, skipping...")
+            dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+            return dt.strftime("%Y-%m-%d %H:%M")
+        except:
+            return dt_str
     
-    capacity_input = input("Seating Capacity (optional): ").strip()
-    if capacity_input:
-        try:
-            vehicle_data["seating_capacity"] = int(capacity_input)
-        except ValueError:
-            print("⚠️  Invalid capacity, skipping...")
+    def get_datetime_input(self, prompt: str) -> str:
+        """Get datetime input from user"""
+        print(f"{prompt}")
+        print("Format: YYYY-MM-DD HH:MM (e.g., 2024-12-25 14:30)")
+        while True:
+            dt_str = self.get_input("DateTime: ")
+            try:
+                # Parse and validate
+                dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+                # Return in ISO format
+                return dt.isoformat()
+            except ValueError:
+                print("Invalid format. Please use YYYY-MM-DD HH:MM")
     
-    try:
-        result = api.add_vehicle(vehicle_data)
-        print(f"✅ Vehicle added successfully!")
-        print(f"Vehicle ID: {result['id']}")
-        print(f"Name: {result['name']} - {result['model']}")
-    except Exception as e:
-        print(f"❌ Failed to add vehicle: {e}")
-
-def view_vehicles_flow(api: RideBookingAPI):
-    print("\n🚗 Available Vehicles")
-    print("-" * 30)
-    
-    if not api.access_token:
-        print("❌ Please login first!")
-        return
-    
-    try:
-        vehicles = api.get_vehicles()
-        if not vehicles:
-            print("📭 No vehicles found.")
+    def display_table(self, data: List[Dict], headers: List[str], keys: List[str]):
+        """Display data in table format"""
+        if not data:
+            print("No data available")
             return
         
-        for vehicle in vehicles:
-            print(f"ID: {vehicle['id']} | Name: {vehicle['name']} | Model: {vehicle['model']}")
-            print(f"  Status: {vehicle['status']} | Capacity: {vehicle.get('seating_capacity', 'N/A')}")
-            print(f"  License: {vehicle.get('license_plate', 'N/A')} | Color: {vehicle.get('color', 'N/A')}")
-            print("-" * 50)
-    except Exception as e:
-        print(f"❌ Failed to get vehicles: {e}")
-
-def book_ride_flow(api: RideBookingAPI):
-    print("\n📅 Book a Ride")
-    print("-" * 30)
-    
-    if not api.access_token:
-        print("❌ Please login first!")
-        return
-    
-    if api.current_user and api.current_user.get("role") != "rider":
-        print("❌ Only riders can book rides!")
-        return
-    
-    try:
-        driver_id = int(input("Driver ID: ").strip())
-        vehicle_id = int(input("Vehicle ID: ").strip())
-    except ValueError:
-        print("❌ Invalid ID format!")
-        return
-    
-    print("\nService Types:")
-    print("1. airport")
-    print("2. hourly") 
-    print("3. dropoff")
-    
-    service_choice = input("Select service type (1-3): ").strip()
-    service_map = {"1": "airport", "2": "hourly", "3": "dropoff"}
-    
-    if service_choice not in service_map:
-        print("❌ Invalid service type!")
-        return
-    
-    service_type = service_map[service_choice]
-    
-    print("\nPayment Methods:")
-    print("1. cash")
-    print("2. card")
-    
-    payment_choice = input("Select payment method (1-2): ").strip()
-    payment_map = {"1": "cash", "2": "card"}
-    
-    if payment_choice not in payment_map:
-        print("❌ Invalid payment method!")
-        return
-    
-    payment_method = payment_map[payment_choice]
-    
-    # Get booking details
-    pickup_location = input("Pickup Location: ").strip()
-    dropoff_location = input("Dropoff Location (optional for airport): ").strip() or None
-    city = input("City: ").strip()
-    notes = input("Notes: ").strip()
-    
-    # Time input
-    print("\nPickup Time (format: YYYY-MM-DD HH:MM):")
-    pickup_time_str = input("Pickup Time: ").strip()
-    
-    dropoff_time_str = None
-    if service_type != "airport":
-        dropoff_time_str = input("Dropoff Time (optional): ").strip() or None
-    
-    try:
-        pickup_time = datetime.strptime(pickup_time_str, "%Y-%m-%d %H:%M")
-        dropoff_time = None
-        if dropoff_time_str:
-            dropoff_time = datetime.strptime(dropoff_time_str, "%Y-%m-%d %H:%M")
-        else:
-            # Default to 1 hour later
-            dropoff_time = pickup_time + timedelta(hours=1)
-    except ValueError:
-        print("❌ Invalid time format! Use YYYY-MM-DD HH:MM")
-        return
-    
-    booking_data = {
-        "driver_id": driver_id,
-        "vehicle_id": vehicle_id,
-        "service_type": service_type,
-        "pickup_location": pickup_location,
-        "pickup_time": pickup_time.isoformat(),
-        "dropoff_location": dropoff_location,
-        "dropoff_time": dropoff_time.isoformat(),
-        "payment_method": payment_method,
-        "city": city,
-        "notes": notes
-    }
-    
-    try:
-        result = api.book_ride(booking_data)
-        print(f"✅ Ride booked successfully!")
-        print(f"Booking ID: {result['id']}")
-        print(f"Service: {result['service_type']}")
-        print(f"Pickup: {result['pickup_location']} at {result['pickup_time']}")
-        print(f"Status: {result['booking_status']}")
-    except Exception as e:
-        print(f"❌ Failed to book ride: {e}")
-
-def view_bookings_flow(api: RideBookingAPI):
-    print("\n📋 Your Bookings")
-    print("-" * 30)
-    
-    if not api.access_token:
-        print("❌ Please login first!")
-        return
-    
-    try:
-        bookings = api.get_bookings()
-        if not bookings:
-            print("📭 No bookings found.")
-            return
+        # Calculate column widths
+        widths = []
+        for i, header in enumerate(headers):
+            key = keys[i]
+            max_width = len(header)
+            for item in data:
+                value_str = str(item.get(key, ''))
+                max_width = max(max_width, len(value_str))
+            widths.append(min(max_width, 30))  # Cap at 30 chars
         
-        for booking in bookings:
-            print(f"ID: {booking['id']} | Service: {booking['service_type']}")
-            print(f"  Pickup: {booking['pickup_location']} at {booking['pickup_time']}")
-            print(f"  Dropoff: {booking.get('dropoff_location', 'N/A')} at {booking.get('dropoff_time', 'N/A')}")
-            print(f"  Status: {booking['booking_status']} | Payment: {booking['payment_method']}")
-            print(f"  Price: ${booking.get('estimated_price', 'N/A')}")
-            print("-" * 50)
-    except Exception as e:
-        print(f"❌ Failed to get bookings: {e}")
-
-def view_tenant_drivers_flow(api: RideBookingAPI):
-    print("\n👥 Tenant Drivers")
-    print("-" * 30)
-    
-    if not api.access_token:
-        print("❌ Please login first!")
-        return
-    
-    if api.current_user and api.current_user.get("role") != "tenant":
-        print("❌ Only tenants can view their drivers!")
-        return
-    
-    try:
-        drivers = api.get_tenant_drivers()
-        if not drivers:
-            print("📭 No drivers found.")
-            return
+        # Print header
+        header_row = " | ".join(h.ljust(w) for h, w in zip(headers, widths))
+        print(header_row)
+        print("-" * len(header_row))
         
-        for driver in drivers:
-            print(f"ID: {driver['id']} | Name: {driver['first_name']} {driver['last_name']}")
-            print(f"  Email: {driver['email']} | Phone: {driver['phone_no']}")
-            print(f"  Status: {driver['status']} | Completed Rides: {driver['completed_rides']}")
-            print(f"  Active: {driver['is_active']}")
-            print("-" * 50)
-    except Exception as e:
-        print(f"❌ Failed to get drivers: {e}")
-
-def main():
-    print("🚀 Welcome to the Ride Booking System CLI!")
-    print("This tool helps you test your FastAPI backend.")
+        # Print data rows
+        for item in data:
+            row_data = []
+            for i, key in enumerate(keys):
+                value = item.get(key, '')
+                if 'time' in key.lower() or 'date' in key.lower():
+                    value = self.format_datetime(str(value)) if value else ''
+                value_str = str(value)[:widths[i]]  # Truncate if too long
+                row_data.append(value_str.ljust(widths[i]))
+            print(" | ".join(row_data))
     
-    base_url = input("Enter API base URL (default: http://localhost:8000): ").strip()
-    if not base_url:
-        base_url = "http://localhost:8000"
-    
-    api = RideBookingAPI(base_url)
-    
-    while True:
-        display_menu()
-        
-        if api.current_user:
-            print(f"👤 Logged in as: {api.current_user['email']} ({api.current_user['role']})")
-        
-        try:
-            choice = input("Enter your choice (1-11): ").strip()
+    def main_menu(self):
+        """Display main menu"""
+        while self.running:
+            self.clear_screen()
             
-            if choice == '1':
-                login_flow(api)
-            elif choice == '2':
-                create_tenant_flow(api)
-            elif choice == '3':
-                create_user_flow(api)
-            elif choice == '4':
-                create_driver_flow(api)
-            elif choice == '5':
-                add_vehicle_flow(api)
-            elif choice == '6':
-                view_vehicles_flow(api)
-            elif choice == '7':
-                book_ride_flow(api)
-            elif choice == '8':
-                view_bookings_flow(api)
-            elif choice == '9':
-                view_tenant_drivers_flow(api)
-            elif choice == '10':
-                api.access_token = None
-                api.current_user = None
-                api.session.headers.pop("Authorization", None)
-                print("✅ Logged out successfully!")
-            elif choice == '11':
-                print("\n👋 Thank you for using the Ride Booking System CLI!")
-                break
+            if self.api.current_user:
+                title = f"Ride Booking System - Logged in as {self.api.current_user.role.title()}"
+                options = [
+                    "Dashboard",
+                    "Logout",
+                    "Exit"
+                ]
             else:
-                print("❌ Invalid choice! Please enter 1-11.")
-                
-        except KeyboardInterrupt:
-            print("\n\n👋 Goodbye!")
-            break
-        except Exception as e:
-            print(f"❌ An error occurred: {e}")
+                title = "Ride Booking System - Welcome"
+                options = [
+                    "Login",
+                    "Register Tenant",
+                    "Register User",
+                    "Register Driver (with token)",
+                    "Exit"
+                ]
+            
+            self.print_menu(options, title)
+            choice = self.get_choice(len(options))
+            
+            if choice == 0 or (choice == len(options) and not self.api.current_user):
+                self.running = False
+            elif not self.api.current_user:
+                if choice == 1:
+                    self.login_menu()
+                elif choice == 2:
+                    self.register_tenant()
+                elif choice == 3:
+                    self.register_user()
+                elif choice == 4:
+                    self.register_driver()
+            else:
+                if choice == 1:
+                    self.dashboard()
+                elif choice == 2:
+                    self.logout()
+                elif choice == 3:
+                    self.running = False
+    
+    def login_menu(self):
+        """Login menu"""
+        self.clear_screen()
+        roles = ["Rider", "Driver", "Tenant", "Admin"]
+        self.print_menu(roles, "Login - Select Role")
+        choice = self.get_choice(len(roles))
         
-        # Pause before showing menu again
+        if choice == 0:
+            return
+        
+        role = roles[choice - 1].lower()
+        if role == "admin":
+            print("Admin login not implemented yet")
+            input("Press Enter to continue...")
+            return
+        
+        print(f"\nLogin as {role.title()}")
+        email = self.get_email()
+        password = self.get_password()
+        
+        try:
+            result = self.api.login(email, password, role)
+            print(f"Login successful! Welcome {email}")
+            input("Press Enter to continue...")
+        except Exception as e:
+            print(f"Login failed: {e}")
+            input("Press Enter to continue...")
+    
+    def logout(self):
+        """Logout current user"""
+        self.api.current_user = None
+        self.api.access_token = None
+        self.api.session.headers.pop("Authorization", None)
+        print("Logged out successfully!")
+        input("Press Enter to continue...")
+    
+    def register_tenant(self):
+        """Register new tenant"""
+        self.clear_screen()
+        self.print_header("Register New Tenant")
+        
+        try:
+            tenant_data = {
+                "email": self.get_email(),
+                "first_name": self.get_input("First Name: "),
+                "last_name": self.get_input("Last Name: "),
+                "password": self.get_strong_password(),
+                "phone_no": self.get_phone(),
+                "company_name": self.get_input("Company Name: "),
+                "slug": self.get_input("Company Slug (lowercase, hyphens only): "),
+                "city": self.get_input("City: "),
+                "drivers_count": 0
+            }
+            
+            # Optional fields
+            logo_url = self.get_input("Logo URL (optional): ", required=False)
+            if logo_url:
+                tenant_data["logo_url"] = logo_url
+            
+            address = self.get_input("Address (optional): ", required=False)
+            if address:
+                tenant_data["address"] = address
+            
+            result = self.api.create_tenant(tenant_data)
+            print(f"Tenant created successfully! ID: {result['id']}")
+            
+        except Exception as e:
+            print(f"Failed to create tenant: {e}")
+        
+        input("Press Enter to continue...")
+    
+    def register_user(self):
+        """Register new user"""
+        self.clear_screen()
+        self.print_header("Register New User")
+        
+        try:
+            tenant_id = int(self.get_input("Tenant ID: "))
+            
+            user_data = {
+                "email": self.get_email(),
+                "first_name": self.get_input("First Name: "),
+                "last_name": self.get_input("Last Name: "),
+                "password": self.get_strong_password(),
+                "phone_no": self.get_phone(),
+                "tenant_id": tenant_id
+            }
+            
+            # Optional fields
+            for field in ["address", "city", "state", "country", "postal_code"]:
+                value = self.get_input(f"{field.title()} (optional): ", required=False)
+                if value:
+                    user_data[field] = value
+            
+            result = self.api.create_user(user_data)
+            print(f"User created successfully! ID: {result['id']}")
+            
+        except Exception as e:
+            print(f"Failed to create user: {e}")
+        
+        input("Press Enter to continue...")
+    
+    def register_driver(self):
+        """Register driver with token"""
+        self.clear_screen()
+        self.print_header("Register Driver (with token)")
+        
+        try:
+            driver_data = {
+                "driver_token": self.get_input("Driver Token: "),
+                "email": self.get_email(),
+                "first_name": self.get_input("First Name: "),
+                "last_name": self.get_input("Last Name: "),
+                "password": self.get_strong_password(),
+                "phone_no": self.get_phone(),
+                "license_number": self.get_input("License Number: ")
+            }
+            
+            # Optional fields
+            state = self.get_input("State (optional): ", required=False)
+            if state:
+                driver_data["state"] = state
+            
+            postal_code = self.get_input("Postal Code (optional): ", required=False)
+            if postal_code:
+                driver_data["postal_code"] = postal_code
+            
+            # Check if outsourced driver needs vehicle
+            add_vehicle = input("Add vehicle for outsourced driver? (y/n): ").lower() == 'y'
+            if add_vehicle:
+                vehicle_data = {
+                    "make": self.get_input("Vehicle Make: "),
+                    "model": self.get_input("Vehicle Model: "),
+                    "year": int(self.get_input("Vehicle Year: ")),
+                    "license_plate": self.get_input("License Plate: "),
+                    "color": self.get_input("Color (optional): ", required=False)
+                }
+                driver_data["vehicle"] = vehicle_data
+            
+            result = self.api.register_driver(driver_data)
+            print(f"Driver registered successfully! ID: {result['id']}")
+            
+        except Exception as e:
+            print(f"Failed to register driver: {e}")
+        
+        input("Press Enter to continue...")
+    
+    def dashboard(self):
+        """Role-specific dashboard"""
+        if not self.api.current_user:
+            return
+        
+        role = self.api.current_user.role
+        if role == "tenant":
+            self.tenant_dashboard()
+        elif role == "driver":
+            self.driver_dashboard()
+        elif role == "rider":
+            self.rider_dashboard()
+    
+    def tenant_dashboard(self):
+        """Tenant dashboard"""
+        while True:
+            self.clear_screen()
+            options = [
+                "View Company Info",
+                "Manage Drivers",
+                "Manage Vehicles", 
+                "View Bookings",
+                "Onboard New Driver",
+                "Vehicle Rate Settings"
+            ]
+            
+            self.print_menu(options, "Tenant Dashboard")
+            choice = self.get_choice(len(options))
+            
+            if choice == 0:
+                return
+            elif choice == 1:
+                self.view_company_info()
+            elif choice == 2:
+                self.manage_drivers()
+            elif choice == 3:
+                self.manage_vehicles()
+            elif choice == 4:
+                self.view_tenant_bookings()
+            elif choice == 5:
+                self.onboard_driver()
+            elif choice == 6:
+                self.manage_vehicle_rates()
+    
+    def view_company_info(self):
+        """View company information"""
+        self.clear_screen()
+        self.print_header("Company Information")
+        
+        try:
+            info = self.api.get_tenant_info()
+            
+            print(f"Company: {info['company_name']}")
+            print(f"Email: {info['email']}")
+            print(f"Owner: {info['first_name']} {info['last_name']}")
+            print(f"Phone: {info['phone_no']}")
+            print(f"City: {info['city']}")
+            print(f"Slug: {info['slug']}")
+            print(f"Plan: {info['plan']}")
+            print(f"Active: {info['is_active']}")
+            print(f"Verified: {info['is_verified']}")
+            print(f"Drivers Count: {info['drivers_count']}")
+            print(f"Created: {self.format_datetime(info['created_on'])}")
+            
+        except Exception as e:
+            print(f"Error: {e}")
+        
         input("\nPress Enter to continue...")
+    
+    def manage_drivers(self):
+        """Manage drivers"""
+        while True:
+            self.clear_screen()
+            options = [
+                "View All Drivers",
+                "Assign Driver to Ride",
+                "Assign Driver to Vehicle"
+            ]
+            
+            self.print_menu(options, "Driver Management")
+            choice = self.get_choice(len(options))
+            
+            if choice == 0:
+                return
+            elif choice == 1:
+                self.view_drivers()
+            elif choice == 2:
+                self.assign_driver_to_ride()
+            elif choice == 3:
+                self.assign_driver_to_vehicle()
+    
+    def view_drivers(self):
+        """View all drivers"""
+        self.clear_screen()
+        self.print_header("All Drivers")
+        
+        try:
+            drivers = self.api.get_tenant_drivers()
+            
+            headers = ["ID", "Name", "Email", "Type", "Status", "Rides", "Active"]
+            keys = ["id", "full_name", "email", "driver_type", "status", "completed_rides", "is_active"]
+            
+            # Add full_name for display
+            for driver in drivers:
+                driver["full_name"] = f"{driver['first_name']} {driver['last_name']}"
+            
+            self.display_table(drivers, headers, keys)
+            
+        except Exception as e:
+            print(f"Error: {e}")
+        
+        input("\nPress Enter to continue...")
+    
+    def assign_driver_to_ride(self):
+        """Assign driver to a ride"""
+        self.clear_screen()
+        self.print_header("Assign Driver to Ride")
+        
+        try:
+            # Show pending bookings
+            bookings = self.api.get_tenant_bookings("pending")
+            if not bookings:
+                print("No pending bookings found")
+                input("Press Enter to continue...")
+                return
+            
+            print("Pending Bookings:")
+            headers = ["ID", "Pickup", "Time", "Service"]
+            keys = ["id", "pickup_location", "pickup_time", "service_type"]
+            self.display_table(bookings, headers, keys)
+            
+            ride_id = int(self.get_input("\nEnter Ride ID: "))
+            
+            # Show available drivers
+            drivers = self.api.get_tenant_drivers()
+            print("\nAvailable Drivers:")
+            headers = ["ID", "Name", "Type", "Status"]
+            keys = ["id", "full_name", "driver_type", "status"]
+            
+            for driver in drivers:
+                driver["full_name"] = f"{driver['first_name']} {driver['last_name']}"
+            
+            self.display_table(drivers, headers, keys)
+            
+            driver_id = int(self.get_input("\nEnter Driver ID: "))
+            
+            result = self.api.assign_driver_to_ride(ride_id, driver_id)
+            print(f"Success: {result['msg']}")
+            
+        except Exception as e:
+            print(f"Error: {e}")
+        
+        input("\nPress Enter to continue...")
+    
+    def assign_driver_to_vehicle(self):
+        """Assign driver to vehicle"""
+        self.clear_screen()
+        self.print_header("Assign Driver to Vehicle")
+        
+        try:
+            # Show unassigned vehicles
+            vehicles = self.api.get_tenant_vehicles()
+            unassigned = [v for v in vehicles if not v.get('driver_id')]
+            
+            if not unassigned:
+                print("No unassigned vehicles found")
+                input("Press Enter to continue...")
+                return
+            
+            print("Unassigned Vehicles:")
+            headers = ["ID", "Make", "Model", "Year", "Plate"]
+            keys = ["id", "make", "model", "year", "license_plate"]
+            self.display_table(unassigned, headers, keys)
+            
+            vehicle_id = int(self.get_input("\nEnter Vehicle ID: "))
+            
+            # Show available drivers
+            drivers = self.api.get_tenant_drivers()
+            print(f"Driver {drivers}")
+        except Exception as e :
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
-    main()
+    cli = RideBookingCLI()
+    cli.main_menu()

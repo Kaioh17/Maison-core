@@ -11,9 +11,9 @@ export async function getDriverInfo() {
   return data
 }
 
-export async function getAvailableRides(booking_status = 'pending') {
+export async function getAvailableRides(params?: { city?: string; service_type?: string }) {
   const { data } = await http.get<StandardResponse<BookingResponse[]>>('/v1/driver/rides/available', {
-    params: { booking_status },
+    params,
   })
   return data
 }

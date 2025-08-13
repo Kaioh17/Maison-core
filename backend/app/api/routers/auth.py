@@ -34,7 +34,7 @@ def login( request: Request,
 
     try:
 
-        logger.info("Tenant cLogin in....")
+        logger.info("Tenant Login in....")
         
         #retrieve client ip
         client_ip = get_remote_address(request)

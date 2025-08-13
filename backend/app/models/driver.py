@@ -7,7 +7,7 @@ from app.models.base import Base
 
 id_seq =  Sequence('id_seq', start= 150)
 
-
+ 
 
 class Drivers(Base):
     __tablename__ = "drivers"

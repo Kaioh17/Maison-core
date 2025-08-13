@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 import re
 
@@ -16,7 +16,7 @@ class UserBase(BaseModel):
     postal_code:  Optional[str] = None
     tenant_id:  int
     
-    @validator('email')
+    @field_validator('email')
     def validate_email(cls, v):
         return v.lower()
 class UserCreate(UserBase):
@@ -24,7 +24,7 @@ class UserCreate(UserBase):
 
    
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, v):
         if not re.search(r'[A-Z]', v):
             raise ValueError('Password must contain at least one uppercase letter')

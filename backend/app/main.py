@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
-from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admin
+from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admin,subscriptions, logs
 from app.db.database import engine
 from app.models import *
 # from utils import logging
+from fastapi.middleware.cors import CORSMiddleware
 
 from slowapi import Limiter,_rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -103,6 +104,18 @@ app = FastAPI(
     ]
 )
 
+# CORS for frontend (dev: Vite at 5173; docker: nginx serves same-origin and proxies /api)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 app.openapi = custom_openapi
 
 
@@ -120,6 +133,8 @@ app.include_router(bookings.router)
 app.include_router(vehicles.router)
 app.include_router(tenant_settings.router)
 app.include_router(admin.router)
+app.include_router(subscriptions.router)
+app.include_router(logs.router)
 
 
 

@@ -8,17 +8,10 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-  })
-
+  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '' })
   const navigate = useNavigate()
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, [e.target.name]: e.target.value })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,107 +25,62 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg,#ffffff,#f6f6f9)' }}>
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
-        {/* Left Branding */}
-        <div className="vstack" style={{ justifyContent: 'center' }}>
-          <div className="hstack" style={{ gap: 12, alignItems: 'center' }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#c7a024,#f3df87)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Car color="#111" size={22} />
+    <main className="bw" aria-label="Auth">
+      <div className="bw-container bw-auth">
+        <div className="bw-auth-card bw-card" role="form" aria-labelledby="auth-title">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <div style={{ width: 40, height: 40, border: '1px solid var(--bw-border-strong)', display: 'grid', placeItems: 'center', borderRadius: 2 }}>
+              <Car size={18} aria-hidden />
             </div>
-            <h1 style={{ fontSize: 36, margin: 0, background: 'linear-gradient(90deg,#111,#555)', WebkitBackgroundClip: 'text', color: 'transparent' }}>Maison</h1>
+            <h1 id="auth-title" style={{ margin: 0, fontSize: 22 }}>Maison</h1>
           </div>
-          <h2 style={{ fontSize: 48, margin: '12px 0 0 0', lineHeight: 1.1 }}>Luxury Transportation <span style={{ background: 'linear-gradient(90deg,#c7a024,#f3df87)', WebkitBackgroundClip: 'text', color: 'transparent' }}>Redefined</span></h2>
-          <p style={{ color: '#4b5563', fontSize: 18, maxWidth: 560 }}>
-            Experience premium car services with enterprise‑grade technology. Built for luxury, designed for scale.
-          </p>
-          <div className="small">Multi‑brand operations • Real‑time fleet • Premium CX</div>
-        </div>
 
-        {/* Right Auth */}
-        <div style={{ maxWidth: 460, marginLeft: 'auto' }}>
-          <div style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)', border: '1px solid #e5e7eb', borderRadius: 20, padding: 24, boxShadow: '0 10px 30px rgba(17,24,39,0.08)' }}>
-            <div style={{ textAlign: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 28, color: '#111827' }}>{isLogin ? 'Welcome Back' : 'Create Your Account'}</h3>
-              <div className="small" style={{ color: '#6b7280' }}>{isLogin ? 'Sign in to your account' : 'Create your premium account'}</div>
+          <h2 style={{ margin: 0, fontSize: 28 }}>{isLogin ? 'Welcome back' : 'Create your account'}</h2>
+          <p className="small-muted" style={{ marginTop: 6 }}>{isLogin ? 'Sign in to continue' : 'Set up your company profile'}</p>
+
+          <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
+            <label className="small-muted" htmlFor="email">Email</label>
+            <div style={{ position: 'relative', marginTop: 6, marginBottom: 12 }}>
+              <Mail size={16} aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: .7 }} />
+              <input id="email" name="email" type="email" required className="bw-input" style={{ paddingLeft: 36 }} placeholder="you@email" onChange={handleInputChange} />
             </div>
 
-            <form className="vstack" onSubmit={handleSubmit}>
-              <div>
-                <label className="small" style={{ color: '#374151' }}>Email Address</label>
-                <div style={{ position: 'relative' }}>
-                  <Mail style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} size={18} />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="input"
-                    style={{ paddingLeft: 36, background: '#fff', borderColor: '#e5e7eb', color: '#111' }}
-                    placeholder="you@email.com"
-                    required
-                  />
-                </div>
-              </div>
+            <label className="small-muted" htmlFor="password">Password</label>
+            <div style={{ position: 'relative', marginTop: 6 }}>
+              <Lock size={16} aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: .7 }} />
+              <input id="password" name="password" type={showPassword ? 'text' : 'password'} required className="bw-input" style={{ paddingLeft: 36, paddingRight: 36 }} placeholder="••••••••" onChange={handleInputChange} />
+              <button type="button" aria-label="Toggle password" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 0, color: '#fff' }}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
 
-              <div>
-                <label className="small" style={{ color: '#374151' }}>Password</label>
-                <div style={{ position: 'relative' }}>
-                  <Lock style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} size={18} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="input"
-                    style={{ paddingLeft: 36, paddingRight: 36, background: '#fff', borderColor: '#e5e7eb', color: '#111' }}
-                    placeholder="Enter your password"
-                    required
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
-                    {showPassword ? <EyeOff size={18} color="#6b7280" /> : <Eye size={18} color="#6b7280" />}
+            {!isLogin && (
+              <div style={{ marginTop: 12 }}>
+                <label className="small-muted" htmlFor="confirmPassword">Confirm password</label>
+                <div style={{ position: 'relative', marginTop: 6 }}>
+                  <Lock size={16} aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: .7 }} />
+                  <input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} className="bw-input" style={{ paddingLeft: 36, paddingRight: 36 }} placeholder="••••••••" onChange={handleInputChange} />
+                  <button type="button" aria-label="Toggle confirm password" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 0, color: '#fff' }}>
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
+            )}
 
-              {!isLogin && (
-                <div>
-                  <label className="small" style={{ color: '#374151' }}>Confirm Password</label>
-                  <div style={{ position: 'relative' }}>
-                    <Lock style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} size={18} />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className="input"
-                      style={{ paddingLeft: 36, paddingRight: 36, background: '#fff', borderColor: '#e5e7eb', color: '#111' }}
-                      placeholder="Confirm your password"
-                    />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
-                      {showConfirmPassword ? <EyeOff size={18} color="#6b7280" /> : <Eye size={18} color="#6b7280" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <button className="btn" type="submit" style={{ background: 'linear-gradient(90deg,#7e22ce,#ec4899)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
-                <ArrowRight size={16} />
-              </button>
-            </form>
+            <button className="bw-btn" style={{ width: '100%', marginTop: 16 }}>
+              <span>{isLogin ? 'Sign in' : 'Create account'}</span>
+              <ArrowRight size={16} aria-hidden />
+            </button>
 
             <div style={{ marginTop: 12, textAlign: 'center' }}>
-              <span className="small" style={{ color: '#6b7280' }}>
-                {isLogin ? "Don't have an account? " : 'Already have an account? '}
-              </span>
-              <button onClick={() => setIsLogin(!isLogin)} className="small" style={{ color: '#7e22ce', marginLeft: 4 }}>
-                {isLogin ? 'Sign up' : 'Sign in'}
+              <span className="small-muted">{isLogin ? "Don't have an account? " : 'Already registered? '}</span>
+              <button type="button" className="bw-btn-outline" style={{ padding: '4px 8px', marginLeft: 6 }} onClick={() => setIsLogin(!isLogin)}>
+                {isLogin ? 'Create one' : 'Sign in'}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
-    </div>
+    </main>
   )
 } 

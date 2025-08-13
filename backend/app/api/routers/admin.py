@@ -13,6 +13,8 @@ router = APIRouter(
     tags = ['admin']
 )   
 
+
+
 @router.delete("/delete/{tenant_id}/tenant", status_code=status.HTTP_204_NO_CONTENT)
 async def delete(tenant_id: int | None,db: Session = Depends(get_base_db)):
     tenant = await admin_services.delete_admin(db, tenant_id)

@@ -1,5 +1,6 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from ..core import deps
+
 # from app.api import core
 # import core
 # from services import helper_service
@@ -27,4 +28,6 @@ def is_driver(current_driver = Depends(deps.get_current_user)):
 def tenant_and_driver_check(tenants = Depends(is_tenants),
                      driver = Depends(is_driver)):
     return tenants, driver
+
+
 """ensure users exist"""

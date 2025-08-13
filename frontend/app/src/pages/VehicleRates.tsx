@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getVehicleRates, setVehicleRate } from '@api/vehicles'
+import { getVehicleRates, setVehicleRates } from '@api/vehicles'
 
 export default function VehicleRates() {
   const [rates, setRates] = useState<any[]>([])
@@ -16,7 +16,7 @@ export default function VehicleRates() {
 
   const submit = async () => {
     if (!form.vehicle_category || !form.vehicle_flat_rate) return
-    await setVehicleRate({ vehicle_category: form.vehicle_category, vehicle_flat_rate: Number(form.vehicle_flat_rate) })
+    await setVehicleRates({ vehicle_category: form.vehicle_category, vehicle_flat_rate: Number(form.vehicle_flat_rate) })
     setForm({ vehicle_category: '', vehicle_flat_rate: '' })
     await load()
   }

@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional
 from .vehicle_config import VehicleConfigResponse
 from .vehicle import VehicleResponse, VehicleCreate
@@ -17,7 +17,7 @@ class DriverBase(BaseModel):
     license_number: Optional[str] = None
     
 
-    @validator('email')
+    @field_validator('email')
     def validate_email(cls, v):
         return v.lower()
 
@@ -29,7 +29,7 @@ class DriverCreate(DriverBase):
     
 
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, v):
         if not re.search(r'[A-Z]', v):
             raise ValueError('Password must contain at least one uppercase letter')

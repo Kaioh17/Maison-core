@@ -1,0 +1,146 @@
+2025-08-06 13:17:02,105  [INFO] - Stripe Account: {
+  "business_profile": {
+    "annual_revenue": null,
+    "estimated_worker_count": null,
+    "mcc": null,
+    "minority_owned_business_designation": null,
+    "name": "Maison sandbox",
+    "support_address": null,
+    "support_email": null,
+    "support_phone": null,
+    "support_url": null,
+    "url": null
+  },
+  "business_type": null,
+  "capabilities": {},
+  "charges_enabled": false,
+  "controller": {
+    "type": "account"
+  },
+  "country": "US",
+  "default_currency": "usd",
+  "details_submitted": false,
+  "email": "mubskill@gmail.com",
+  "id": "acct_1RnRA7QtWPwjkVcE",
+  "object": "account",
+  "payouts_enabled": false,
+  "settings": {
+    "bacs_debit_payments": {
+      "display_name": null,
+      "service_user_number": null
+    },
+    "branding": {
+      "icon": "",
+      "logo": null,
+      "primary_color": null,
+      "secondary_color": null
+    },
+    "card_issuing": {
+      "tos_acceptance": {
+        "date": null,
+        "ip": null
+      }
+    },
+    "card_payments": {
+      "statement_descriptor_prefix": null,
+      "statement_descriptor_prefix_kana": null,
+      "statement_descriptor_prefix_kanji": null
+    },
+    "dashboard": {
+      "display_name": "Maison sandbox",
+      "timezone": "Etc/UTC"
+    },
+    "invoices": {
+      "default_account_tax_ids": null,
+      "hosted_payment_method_save": "offer"
+    },
+    "payments": {
+      "statement_descriptor": null,
+      "statement_descriptor_kana": null,
+      "statement_descriptor_kanji": null
+    },
+    "payouts": {
+      "debit_negative_balances": true,
+      "schedule": {
+        "delay_days": 2,
+        "interval": "daily"
+      },
+      "statement_descriptor": null
+    },
+    "sepa_debit_payments": {}
+  },
+  "type": "standard"
+} 
+2025-08-06 13:17:26,988  [INFO] - Stripe Account: {
+  "business_profile": {
+    "annual_revenue": null,
+    "estimated_worker_count": null,
+    "mcc": null,
+    "minority_owned_business_designation": null,
+    "name": "Maison sandbox",
+    "support_address": null,
+    "support_email": null,
+    "support_phone": null,
+    "support_url": null,
+    "url": null
+  },
+  "business_type": null,
+  "capabilities": {},
+  "charges_enabled": false,
+  "controller": {
+    "type": "account"
+  },
+  "country": "US",
+  "default_currency": "usd",
+  "details_submitted": false,
+  "email": "mubskill@gmail.com",
+  "id": "acct_1RnRA7QtWPwjkVcE",
+  "object": "account",
+  "payouts_enabled": false,
+  "settings": {
+    "bacs_debit_payments": {
+      "display_name": null,
+      "service_user_number": null
+    },
+    "branding": {
+      "icon": "",
+      "logo": null,
+      "primary_color": null,
+      "secondary_color": null
+    },
+    "card_issuing": {
+      "tos_acceptance": {
+        "date": null,
+        "ip": null
+      }
+    },
+    "card_payments": {
+      "statement_descriptor_prefix": null,
+      "statement_descriptor_prefix_kana": null,
+      "statement_descriptor_prefix_kanji": null
+    },
+    "dashboard": {
+      "display_name": "Maison sandbox",
+      "timezone": "Etc/UTC"
+    },
+    "invoices": {
+      "default_account_tax_ids": null,
+      "hosted_payment_method_save": "offer"
+    },
+    "payments": {
+      "statement_descriptor": null,
+      "statement_descriptor_kana": null,
+      "statement_descriptor_kanji": null
+    },
+    "payouts": {
+      "debit_negative_balances": true,
+      "schedule": {
+        "delay_days": 2,
+        "interval": "daily"
+      },
+      "statement_descriptor": null
+    },
+    "sepa_debit_payments": {}
+  },
+  "type": "standard"
+} 

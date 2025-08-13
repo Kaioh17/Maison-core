@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, FastAPI, Query, Response, status
+from fastapi import APIRouter, HTTPException, FastAPI, Query, Response, status, Request
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
@@ -15,14 +15,24 @@ router = APIRouter(
     prefix="/api/v1/tenant",
     tags=['Tenant']
 )
+
+
 # id = security.get_tenant_id
 # Get tenant's company info
 @router.get("/public_test", status_code=status.HTTP_200_OK)
 def public_info():
     logger.info("Public test started")
     return {"msg": "test endpoint"}
+
+@router.get("/get_client_info")
+def get_client_info(request: Request):
+    client_host = request.client.host
+    client_origin = request.base_url
+    logger.info(f"Client: {client_host}, origin: {client_origin}")
+    return {"client_host" : client_host}
+
 @router.get('/', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[tenant.TenantResponse])
-async def tenants(db: Session = Depends(get_db), current_tenants: int = Depends(deps.get_current_user)):
+async def tenants(db: Session = Depends(get_db), current_tenants = Depends(deps.get_current_user)):
     logger.info("Tenant's info")
     company = await tenants_service.get_company_info(db, current_tenants)
     return general.StandardResponse(
@@ -43,7 +53,7 @@ async def create_tenants(payload: tenant.TenantCreate, db: Session = Depends(get
 # Get all drivers for the current tenant
 @router.get('/drivers', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[driver.DriverResponse]])
 async def get_drivers(db: Session = Depends(get_db), 
-                      current_tenants: int = Depends(deps.get_current_user)):
+                      current_tenants = Depends(deps.get_current_user)):
     logger.info("Tenant drivers")
     drivers = await tenants_service.get_all_drivers(db, current_tenants)
     return general.StandardResponse(
@@ -58,7 +68,7 @@ async def get_vehicles(
     driver_id: Optional[int] = Query(None, description="Get vehicles for specific driver"),
     assigned_drivers: Optional[bool] = Query(False, description="Get only vehicles assigned to drivers"),
     db: Session = Depends(get_db),
-    current_tenants: int = Depends(deps.get_current_user)
+    current_tenants = Depends(deps.get_current_user)
 ):
     if assigned_drivers:
         logger.info("Getting vehicles assigned to drivers")
@@ -80,7 +90,7 @@ async def get_vehicles(
 async def get_bookings(
     booking_status: Optional[str] = Query(None, description="only this labels can be passed 'pending', 'confirmed', 'active', 'cancelled', 'no_show'"),
     db: Session = Depends(get_db),
-    current_tenant: int = Depends(deps.get_current_user)
+    current_tenant = Depends(deps.get_current_user)
 ):
     if booking_status:
         logger.info(f"Getting {booking_status} bookings...")
@@ -99,7 +109,7 @@ async def get_bookings(
 async def onboard_drivers(
     payload: tenant.OnboardDriver,
     db: Session = Depends(get_db),
-    current_tenant: int = Depends(deps.get_current_user)
+    current_tenant = Depends(deps.get_current_user)
 ):
     logger.info("Onboarding driver...")
     new_driver = await tenants_service.onboard_drivers(db, payload, current_tenant)
@@ -112,7 +122,7 @@ async def onboard_drivers(
 @router.patch("/riders/{rider_id}/assign-driver", status_code=status.HTTP_202_ACCEPTED)
 async def assign_driver_to_rides(payload: tenant.AssignDriver,
                         rider_id: int,db: Session = Depends(get_db),
-                        current_tenant: int = Depends(deps.get_current_user)):
+                        current_tenant = Depends(deps.get_current_user)):
      
      assigned_driver = await tenants_service.assign_driver_to_rides(payload,rider_id,db, current_tenant)
      return assigned_driver
@@ -121,7 +131,7 @@ async def assign_driver_to_rides(payload: tenant.AssignDriver,
 @router.patch("/vehicles/{vehicle_id}/assign-driver", status_code=status.HTTP_202_ACCEPTED)
 async def assign_driver_to_vehicles(payload: tenant.AssignDriver,
                         vehicle_id: int,db: Session = Depends(get_db),
-                        current_tenant: int = Depends(deps.get_current_user)):
+                        current_tenant = Depends(deps.get_current_user)):
      
      assigned_driver = await tenants_service.assign_driver_to_vehicle(payload,vehicle_id,db, current_tenant)
      return assigned_driver

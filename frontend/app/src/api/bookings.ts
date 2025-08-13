@@ -6,7 +6,7 @@ export async function createBooking(payload: CreateBooking) {
   return data
 }
 
-export async function getMyBookings() {
+export async function getBookings() {
   const { data } = await http.get<BookingResponse[]>('/v1/bookings/')
   return data
 }

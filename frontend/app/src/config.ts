@@ -1,4 +1,6 @@
-export const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+// API base URL - use environment variable or fallback to relative path for Docker
+// In Docker, nginx proxy handles /api routes and forwards them to the backend
+export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 export type UserRole = 'tenant' | 'driver' | 'rider' | 'admin';
 

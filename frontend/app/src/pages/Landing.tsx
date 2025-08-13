@@ -1,136 +1,147 @@
-import Header from '@components/Header'
 import { Link } from 'react-router-dom'
-import { Car, Users, Building2, Plane, Clock3, MapPin, ShieldCheck, Sparkles } from 'lucide-react'
 
-const NAMES = [
-  'Ava', 'Noah', 'Isabella', 'Liam', 'Sophia', 'Mason', 'Emma', 'Oliver', 'Mia', 'Ethan',
-  'Charlotte', 'James', 'Amelia', 'Benjamin', 'Harper', 'Elijah', 'Evelyn', 'Lucas', 'Abigail', 'Henry'
-]
+function Header() {
+  return (
+    <header className="bw-topnav">
+      <div className="bw-container bw-topnav-inner" role="navigation" aria-label="Main">
+        <div className="bw-brand">Maison</div>
+        <nav className="bw-nav">
+          <a href="#product">Product</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#docs">Docs</a>
+        </nav>
+        <div className="bw-cta">
+          <Link to="/login" className="bw-btn-outline" aria-label="Login">Login</Link>
+          <Link to="/signup" className="bw-btn" aria-label="Get started" style={{ color: '#000' }}>Get started</Link>
+        </div>
+        <button className="bw-menu" aria-label="Open menu">≡</button>
+      </div>
+    </header>
+  )
+}
+
+function Hero() {
+  return (
+    <section className="bw-container bw-hero" aria-labelledby="hero-title">
+      <div>
+        <h1 id="hero-title" className="bw-h1">Build. Ship. Iterate.</h1>
+        <p className="bw-sub">A clean platform that helps teams move from idea to product faster.</p>
+        <div className="hstack" style={{ display: 'flex', gap: 12 }}>
+          <Link to="/signup" className="bw-btn" style={{ color: '#000' }}>Get started</Link>
+          <a href="#demo" className="bw-btn-outline" aria-label="See demo">See demo</a>
+        </div>
+      </div>
+      <div className="bw-hero-art" aria-hidden="true">abstract · 1px</div>
+    </section>
+  )
+}
+
+function Features() {
+  const items = [
+    { title: 'Fast setup', desc: 'Spin up projects quickly with sensible defaults and tooling.', link: '#' },
+    { title: 'Collaborative', desc: 'Work together with clear roles, reviews and streamlined handoffs.', link: '#' },
+    { title: 'Secure by default', desc: 'Privacy-first architecture with hardened, least-privilege access.', link: '#' },
+  ]
+  return (
+    <section id="product" className="section bw-container" aria-label="Key features">
+      <h2>Key features</h2>
+      <div className="bw-grid-3">
+        {items.map((it) => (
+          <article key={it.title} className="bw-card" role="article">
+            <h3>{it.title}</h3>
+            <p className="small-muted" style={{ marginTop: 6 }}>{it.desc}</p>
+            <a href={it.link} className="small-muted" style={{ marginTop: 10, display: 'inline-block' }} aria-label={`${it.title} — learn more`}>
+              Learn more
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function Steps() {
+  const steps = [
+    { n: 1, t: 'Plan', d: 'Outline scope and invite your team.' },
+    { n: 2, t: 'Build', d: 'Track progress with structured reviews.' },
+    { n: 3, t: 'Ship', d: 'Publish confidently with audit trails.' },
+  ]
+  return (
+    <section className="section bw-container" aria-label="How it works">
+      <h2>How it works</h2>
+      <div className="bw-grid-3">
+        {steps.map((s) => (
+          <div key={s.n} className="bw-card" role="group" aria-label={`Step ${s.n}`}>
+            <div className="small-muted" style={{ marginBottom: 8 }}>Step {s.n}</div>
+            <h3>{s.t}</h3>
+            <p className="small-muted" style={{ marginTop: 6 }}>{s.d}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function Testimonial() {
+  return (
+    <section className="section bw-container" aria-label="Testimonial">
+      <blockquote className="bw-card" style={{ textAlign: 'center' }}>
+        <p style={{ margin: 0 }}>
+          “Clean, focused and predictable. We move from idea to release without distractions.”
+        </p>
+        <footer className="small-muted" style={{ marginTop: 8 }}>Alex M. · Product Lead</footer>
+      </blockquote>
+    </section>
+  )
+}
+
+function Footer() {
+  return (
+    <footer className="bw-footer" role="contentinfo">
+      <div className="bw-container bw-footer-grid">
+        <div>
+          <div className="bw-brand">Maison</div>
+          <p className="small-muted" style={{ marginTop: 8 }}>Minimal platform to build, ship and iterate faster.</p>
+        </div>
+        <nav aria-label="Footer Product">
+          <h3>Product</h3>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0 0' }}>
+            <li><a href="#product">Overview</a></li>
+            <li><a href="#docs">Docs</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Footer Company">
+          <h3>Company</h3>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0 0' }}>
+            <li><a href="#about">About</a></li>
+            <li><a href="#blog">Blog</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+        <form aria-label="Newsletter signup" onSubmit={(e) => e.preventDefault()}>
+          <h3>Newsletter</h3>
+          <label className="small-muted" htmlFor="email" style={{ display: 'block', marginTop: 8 }}>Email</label>
+          <input id="email" className="bw-input" type="email" placeholder="you@email" aria-required="true" />
+          <button className="bw-btn" style={{ marginTop: 8, color: '#000' }}>Subscribe</button>
+        </form>
+      </div>
+      <div className="bw-container" style={{ marginTop: 16 }}>
+        <div className="small-muted">© {new Date().getFullYear()} Maison. All rights reserved.</div>
+      </div>
+    </footer>
+  )
+}
 
 export default function Landing() {
   return (
-    <div className="container" style={{ position: 'relative' }}>
-      {/* subtle background names */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.05, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 24, padding: 24 }}>
-          {NAMES.map((n, i) => (
-            <div key={i} style={{
-              border: '1px solid rgba(212,175,55,0.25)',
-              borderRadius: 12,
-              padding: '8px 12px',
-              textAlign: 'center',
-              color: '#d4af37',
-              whiteSpace: 'nowrap',
-            }}>{n}</div>
-          ))}
-        </div>
-      </div>
-
+    <main className="bw" aria-label="Landing">
       <Header />
-
-      <div className="hero" style={{ position: 'relative' }}>
-        <span className="badge">Where luxury meets technology</span>
-        <h1>Transform Your Luxury Transportation Business with Maison</h1>
-        <p style={{ marginTop: 8 }}>
-          The complete platform built for premium car service companies. Scale your luxury transportation empire with
-          enterprise‑grade technology that grows with your business.
-        </p>
-        <div className="hstack" style={{ marginTop: 16 }}>
-          <Link to="/login" className="btn">Login</Link>
-          <Link to="/signup" className="btn secondary">Create Account</Link>
-        </div>
-      </div>
-
-      {/* Why Industry Leaders Choose Maison */}
-      <div className="grid" style={{ marginTop: 24 }}>
-        <div className="grid-12">
-          <div className="card">
-            <h2 className="hstack" style={{ gap: 8 }}><Sparkles /> Why Industry Leaders Choose Maison</h2>
-            <div className="grid" style={{ marginTop: 12 }}>
-              <div className="grid-6">
-                <div className="section">
-                  <h3>Multi‑Tenant Mastery</h3>
-                  <p className="small">
-                    Built from the ground up for transportation companies managing multiple brands, fleets, and markets.
-                    One platform, unlimited possibilities.
-                  </p>
-                </div>
-                <div className="section" style={{ marginTop: 12 }}>
-                  <h3>Three Perfect Portals</h3>
-                  <ul className="small">
-                    <li className="hstack" style={{ gap: 8 }}><Building2 /> Command Center for company administrators</li>
-                    <li className="hstack" style={{ gap: 8 }}><Users /> Driver Hub for your professional chauffeurs</li>
-                    <li className="hstack" style={{ gap: 8 }}><ShieldCheck /> Premium Experience for your discerning clientele</li>
-                  </ul>
-                </div>
-              </div>
-              <div className="grid-6">
-                <div className="section">
-                  <h3>Smart Service Types</h3>
-                  <ul className="small">
-                    <li className="hstack" style={{ gap: 8 }}><Plane /> Airport Transfers with automated city‑airport mapping</li>
-                    <li className="hstack" style={{ gap: 8 }}><Clock3 /> Hourly Services for executive travel and events</li>
-                    <li className="hstack" style={{ gap: 8 }}><MapPin /> Point‑to‑Point luxury transportation</li>
-                  </ul>
-                </div>
-                <div className="section" style={{ marginTop: 12 }}>
-                  <h3>Fleet & Security</h3>
-                  <div className="hstack" style={{ gap: 16 }}>
-                    <span className="badge"><Car /> Fleet Management</span>
-                    <span className="badge"><ShieldCheck /> JWT Auth</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Dummy visual panels */}
-      <div className="grid" style={{ marginTop: 24 }}>
-        <div className="grid-6">
-          <div className="card">
-            <h3>Fleet Intelligence</h3>
-            <p className="small">Advanced vehicle management with real‑time tracking, maintenance scheduling, and performance analytics.</p>
-            <div className="mock-img">Luxury Fleet</div>
-          </div>
-        </div>
-        <div className="grid-6">
-          <div className="card">
-            <h3>Seamless Booking Engine</h3>
-            <p className="small">Sophisticated reservation system for complex itineraries, recurring trips, and last‑minute changes.</p>
-            <div className="mock-img">Executive Transfers</div>
-          </div>
-        </div>
-        <div className="grid-6">
-          <div className="card">
-            <h3>Driver Excellence Program</h3>
-            <p className="small">Comprehensive onboarding, performance tracking, and QA for in‑house and partner drivers.</p>
-            <div className="mock-img">Chauffeur Hub</div>
-          </div>
-        </div>
-        <div className="grid-6">
-          <div className="card">
-            <h3>Real‑Time Operations</h3>
-            <p className="small">Live booking management, dispatch, and customer communications that keep business moving.</p>
-            <div className="mock-img">Control Center</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Built for scale */}
-      <div className="card" style={{ marginTop: 24 }}>
-        <h2>Built for Scale, Designed for Luxury</h2>
-        <p className="small">
-          Whether you're managing a boutique fleet or a multi‑city operation, Maison adapts to your ambitions. Our modern API architecture
-          ensures lightning‑fast performance while our intuitive interfaces keep your team productive.
-        </p>
-        <div className="hstack" style={{ marginTop: 12 }}>
-          <Link to="/signup" className="btn">Get Started</Link>
-          <Link to="/login" className="btn secondary">Login</Link>
-        </div>
-      </div>
-
-    </div>
+      <Hero />
+      <Features />
+      <Steps />
+      <Testimonial />
+      <Footer />
+    </main>
   )
-} 
+}
