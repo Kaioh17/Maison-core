@@ -12,8 +12,8 @@ RUN npm i --silent
 # Copy source
 COPY frontend/app ./
 
-# Configure API base for Vite at build time (default to /api, matched by nginx proxy)
-ARG VITE_API_BASE=/api
+# Configure API base for Vite at build time (use 'web' service name for Docker networking)
+ARG VITE_API_BASE=http://127.0.0.1:8000/api
 ENV VITE_API_BASE=${VITE_API_BASE}
 
 RUN npm run build
