@@ -5,6 +5,7 @@ import Signup from '@pages/Signup'
 import TenantDashboard from '@pages/TenantDashboard'
 import VehicleRates from '@pages/VehicleRates'
 import TenantSettings from '@pages/TenantSettings'
+import AddVehicle from '@pages/AddVehicle'
 import ProtectedRoute from '@components/ProtectedRoute'
 
 export default function App() {
@@ -35,6 +36,14 @@ export default function App() {
         element={
           <ProtectedRoute allowRoles={["tenant"]}>
             <TenantSettings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles/add"
+        element={
+          <ProtectedRoute allowRoles={["tenant"]}>
+            <AddVehicle />
           </ProtectedRoute>
         }
       />

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { UserRole } from '@config'
 import { jwtDecode } from 'jwt-decode'
 
@@ -8,36 +9,101 @@ type AuthState = {
   accessToken: string | null
   role: UserRole | null
   userId: string | null
+  tenantId: string | null
+  isAuthenticated: boolean
   setAccessToken: (token: string) => void
   login: (args: { token: string }) => void
   logout: () => void
   getUserId: () => string | null
+  getTenantId: () => string | null
+  checkAuthStatus: () => boolean
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  accessToken: null,
-  role: null,
-  userId: null,
-  setAccessToken: (token) => {
-    let role: UserRole | null = null
-    let userId: string | null = null
-    try {
-      const decoded = jwtDecode<TokenPayload>(token)
-      role = decoded.role
-      userId = decoded.id
-    } catch {}
-    set({ accessToken: token, role, userId })
-  },
-  login: ({ token }) => {
-    let role: UserRole | null = null
-    let userId: string | null = null
-    try {
-      const decoded = jwtDecode<TokenPayload>(token)
-      role = decoded.role
-      userId = decoded.id
-    } catch {}
-    set({ accessToken: token, role, userId })
-  },
-  logout: () => set({ accessToken: null, role: null, userId: null }),
-  getUserId: () => get().userId,
-})) 
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      accessToken: null,
+      role: null,
+      userId: null,
+      tenantId: null,
+      isAuthenticated: false,
+      setAccessToken: (token) => {
+        let role: UserRole | null = null
+        let userId: string | null = null
+        let tenantId: string | null = null
+        try {
+          const decoded = jwtDecode<TokenPayload>(token)
+          role = decoded.role
+          userId = decoded.id
+          tenantId = decoded.tenant_id || null
+        } catch {}
+        set({ 
+          accessToken: token, 
+          role, 
+          userId, 
+          tenantId,
+          isAuthenticated: !!token 
+        })
+      },
+      login: ({ token }) => {
+        let role: UserRole | null = null
+        let userId: string | null = null
+        let tenantId: string | null = null
+        try {
+          const decoded = jwtDecode<TokenPayload>(token)
+          role = decoded.role
+          userId = decoded.id
+          tenantId = decoded.tenant_id || null
+        } catch {}
+        set({ 
+          accessToken: token, 
+          role, 
+          userId, 
+          tenantId,
+          isAuthenticated: true 
+        })
+      },
+      logout: () => set({ 
+        accessToken: null, 
+        role: null, 
+        userId: null, 
+        tenantId: null,
+        isAuthenticated: false 
+      }),
+      getUserId: () => get().userId,
+      getTenantId: () => get().tenantId,
+      checkAuthStatus: () => {
+        const state = get()
+        if (!state.accessToken) return false
+        
+        try {
+          const decoded = jwtDecode<TokenPayload>(state.accessToken)
+          const currentTime = Date.now() / 1000
+          
+          // Check if token is expired (assuming exp field exists)
+          if (decoded.exp && decoded.exp < currentTime) {
+            // Token is expired, clear it
+            get().logout()
+            return false
+          }
+          
+          return true
+        } catch {
+          // Invalid token, clear it
+          get().logout()
+          return false
+        }
+      }
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        accessToken: state.accessToken,
+        role: state.role,
+        userId: state.userId,
+        tenantId: state.tenantId,
+        isAuthenticated: state.isAuthenticated
+      })
+    }
+  )
+) 

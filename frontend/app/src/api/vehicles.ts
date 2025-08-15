@@ -20,13 +20,28 @@ export async function getVehicleRates() {
   return data
 }
 
+export async function getVehicleCategories() {
+  const { data } = await http.get<VehicleCategoryResponse[]>('/v1/vehicles/category')
+  return data
+}
+
+export async function createVehicleCategory(payload: VehicleCategoryCreate) {
+  const { data } = await http.post<VehicleCategoryResponse>('/v1/vehicles/create_category', payload)
+  return data
+}
+
 export type VehicleCreate = {
   make: string
   model: string
   year?: number
   license_plate?: string
   color?: string
+  status?: string
+  vehicle_category: string
+  vehicle_flat_rate: number
+  seating_capacity: number
 }
+
 export type VehicleResponse = {
   tenant_id: number
   id: number
@@ -49,6 +64,7 @@ export type VehicleRate = {
   vehicle_category: string
   vehicle_flat_rate: number
 }
+
 export type VehicleCategoryRateResponse = {
   id: number
   tenant_id: number
@@ -59,3 +75,18 @@ export type VehicleCategoryRateResponse = {
 }
 
 export type VehicleCategoryRateCreate = VehicleRate 
+
+export type VehicleCategoryCreate = {
+  vehicle_category: string
+  vehicle_flat_rate: number
+  seating_capacity: number
+}
+
+export type VehicleCategoryResponse = {
+  id: number
+  tenant_id: number
+  vehicle_category: string
+  vehicle_flat_rate: number
+  created_on: string
+  updated_on?: string | null
+} 

@@ -1,26 +1,32 @@
 import { useEffect, useState } from 'react'
 import type React from 'react'
 import { getTenantInfo, getTenantDrivers, getTenantVehicles, getTenantBookings, onboardDriver, assignDriverToVehicle, type TenantResponse, type DriverResponse, type VehicleResponse, type BookingResponse, type OnboardDriver } from '@api/tenant'
+import { getVehicleRates, getVehicleCategories, createVehicleCategory, setVehicleRates } from '@api/vehicles'
 import { useAuthStore } from '@store/auth'
 import { useNavigate } from 'react-router-dom'
 import { Car, Users, Calendar, Settings, TrendingUp, DollarSign, Clock, MapPin, User, Phone, Mail, Plus, Edit, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { API_BASE } from '@config'
 
 type TabType = 'overview' | 'drivers' | 'bookings' | 'vehicles' | 'settings'
 
 export default function TenantDashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>('overview')
-  const [info, setInfo] = useState<TenantResponse | null>(null)
+  const { accessToken, role } = useAuthStore()
+  const navigate = useNavigate()
+  const [info, setInfo] = useState<any>(null)
   const [drivers, setDrivers] = useState<DriverResponse[]>([])
   const [vehicles, setVehicles] = useState<VehicleResponse[]>([])
   const [bookings, setBookings] = useState<BookingResponse[]>([])
+  const [vehicleCategories, setVehicleCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [editingRates, setEditingRates] = useState<{ [key: string]: number }>({})
+  const [savingRates, setSavingRates] = useState<{ [key: string]: boolean }>({})
   const [newDriver, setNewDriver] = useState<OnboardDriver>({ first_name: '', last_name: '', email: '', driver_type: 'outsourced' })
   const [assign, setAssign] = useState<{ vehicleId: string; driverId: string }>({ vehicleId: '', driverId: '' })
   const [showAddDriver, setShowAddDriver] = useState(false)
   const [showAssignDriver, setShowAssignDriver] = useState(false)
-  const navigate = useNavigate()
-  const { accessToken, role } = useAuthStore()
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
 
   // Debug authentication state
   useEffect(() => {
@@ -32,91 +38,70 @@ export default function TenantDashboard() {
     setError(null)
     try {
       console.log('Starting to load dashboard data...')
-      console.log('Auth State:', { accessToken, role, userId: useAuthStore.getState().getUserId() })
-      console.log('API Base URL:', import.meta.env.VITE_API_BASE || 'http://localhost:8000/api')
       
-      console.log('Making API calls...')
       const tenantInfoPromise = getTenantInfo()
       const driversPromise = getTenantDrivers()
       const vehiclesPromise = getTenantVehicles()
       const bookingsPromise = getTenantBookings()
+      const vehicleCategoriesPromise = getVehicleCategories()
       
-      console.log('Waiting for all promises to resolve...')
-      const [i, d, v, b] = await Promise.all([
+      const [i, d, v, b, vc] = await Promise.all([
         tenantInfoPromise,
         driversPromise,
         vehiclesPromise,
         bookingsPromise,
+        vehicleCategoriesPromise,
       ])
-      
-      console.log('=== API RESPONSES ===')
-      console.log('Tenant Info Response (full):', JSON.stringify(i, null, 2))
-      console.log('Tenant Drivers Response (full):', JSON.stringify(d, null, 2))
-      console.log('Tenant Vehicles Response (full):', JSON.stringify(v, null, 2))
-      console.log('Tenant Bookings Response (full):', JSON.stringify(b, null, 2))
-      
-      console.log('=== RESPONSE STRUCTURE ANALYSIS ===')
-      console.log('Tenant Info - has data property?', 'data' in i)
-      console.log('Tenant Info - data type:', typeof i.data)
-      console.log('Tenant Info - data value:', i.data)
       
       if (i.data) {
         setInfo(i.data)
-        console.log('✅ Tenant info set successfully:', i.data)
       } else {
-        console.error('❌ No tenant data in response:', i)
-        console.error('Response structure:', Object.keys(i))
+        console.error('No tenant data in response:', i)
         setError('Failed to load tenant information - no data in response')
       }
       
       // Handle drivers - empty array is valid
       if (d.data !== undefined) {
         setDrivers(d.data || [])
-        console.log('✅ Drivers set successfully:', d.data || [])
       } else {
-        console.error('❌ No drivers data in response:', d)
+        console.error('No drivers data in response:', d)
         setError('Failed to load drivers information - no data in response')
       }
       
       // Handle vehicles - empty array is valid
       if (v.data !== undefined) {
         setVehicles(v.data || [])
-        console.log('✅ Vehicles set successfully:', v.data || [])
       } else {
-        console.error('❌ No vehicles data in response:', v)
+        console.error('No vehicles data in response:', v)
         setError('Failed to load vehicles information - no data in response')
       }
       
       // Handle bookings - empty array is valid
       if (b.data !== undefined) {
         setBookings(b.data || [])
-        console.log('✅ Bookings set successfully:', b.data || [])
       } else {
-        console.error('❌ No bookings data in response:', b)
+        console.error('No bookings data in response:', b)
         setError('Failed to load bookings information - no data in response')
       }
       
+      // Handle vehicle categories
+      if (vc.data !== undefined) {
+        setVehicleCategories(vc.data || [])
+      } else if (vc && Array.isArray(vc)) {
+        // Handle case where response is directly an array
+        setVehicleCategories(vc)
+      } else {
+        setVehicleCategories([])
+      }
+      
     } catch (error: any) {
-      console.error('❌ Failed to load dashboard data:', error)
-      console.error('Error name:', error.name)
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
+      console.error('Failed to load dashboard data:', error)
       
       if (error.response) {
-        console.error('Error response:', error.response.data)
-        console.error('Error status:', error.response.status)
-        console.error('Error headers:', error.response.headers)
         setError(`Failed to load data: ${error.response.status} - ${error.response.data?.detail || 'Unknown error'}`)
       } else if (error.request) {
-        console.error('No response received:', error.request)
-        console.error('Request details:', {
-          method: error.request.method,
-          url: error.request.url,
-          headers: error.request.headers
-        })
         setError('No response from server. Please check your connection and try again.')
       } else {
-        console.error('Error setting up request:', error.message)
         setError('Failed to load dashboard data. Please check your connection and try again.')
       }
     } finally {
@@ -154,6 +139,67 @@ export default function TenantDashboard() {
     }
   }
 
+  const saveVehicleRate = async (categoryName: string, newRate: number) => {
+    try {
+      setSavingRates(prev => {
+        try {
+          return { ...prev, [categoryName]: true }
+        } catch (e) {
+          console.error('Error updating saving state:', e)
+          return prev
+        }
+      })
+      
+      const payload = {
+        vehicle_category: categoryName,
+        vehicle_flat_rate: newRate
+      }
+      
+      const result = await setVehicleRates(payload)
+      
+      // Update local state to reflect the change
+      setVehicleCategories(prev => {
+        try {
+          return prev.map(cat => 
+            cat.vehicle_category === categoryName 
+              ? { ...cat, vehicle_flat_rate: newRate }
+              : cat
+          )
+        } catch (e) {
+          console.error('Error updating vehicle categories state:', e)
+          return prev
+        }
+      })
+      
+      // Clear the editing state for this category
+      setEditingRates(prev => {
+        try {
+          const newState = { ...prev }
+          delete newState[categoryName]
+          return newState
+        } catch (e) {
+          console.error('Error clearing editing state:', e)
+          return prev
+        }
+      })
+      
+      alert(`Successfully updated ${categoryName} rate to $${newRate}`)
+    } catch (error: any) {
+      console.error(`Failed to update ${categoryName} rate:`, error)
+      alert(`Failed to update ${categoryName} rate. Please try again.`)
+    } finally {
+      // Safely reset saving state
+      setSavingRates(prev => {
+        try {
+          return { ...prev, [categoryName]: false }
+        } catch (e) {
+          console.error('Error resetting saving state:', e)
+          return prev
+        }
+      })
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'completed': return 'text-green-500'
@@ -174,6 +220,39 @@ export default function TenantDashboard() {
     }
   }
 
+  const getVehicleRate = (category: string) => {
+    // Check if vehicleCategories is an array and has items
+    if (!vehicleCategories || !Array.isArray(vehicleCategories) || vehicleCategories.length === 0) {
+      // Return default rates if no API data available
+      const defaultRates: { [key: string]: number } = {
+        'sedan': 25.00,
+        'suv': 35.00,
+        'luxury': 50.00,
+        'van': 40.00,
+        'truck': 45.00,
+        'motorcycle': 20.00
+      }
+      return defaultRates[category] || 0
+    }
+    
+    // Look for the category in vehicleCategories
+    const categoryData = vehicleCategories.find(cat => cat.vehicle_category === category)
+    if (categoryData && categoryData.vehicle_flat_rate > 0) {
+      return categoryData.vehicle_flat_rate
+    }
+    
+    // Return default rates if no API data available
+    const defaultRates: { [key: string]: number } = {
+      'sedan': 25.00,
+      'suv': 35.00,
+      'luxury': 50.00,
+      'van': 40.00,
+      'truck': 45.00,
+      'motorcycle': 20.00
+    }
+    return defaultRates[category] || 0
+  }
+
   const tabs: Array<{ id: TabType; label: string; icon: React.ComponentType<{ className?: string }> }> = [
     { id: 'overview', label: 'Overview', icon: TrendingUp },
     { id: 'drivers', label: 'Drivers', icon: Users },
@@ -186,42 +265,6 @@ export default function TenantDashboard() {
     return (
       <div className="bw bw-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
         <div className="bw-loading">Loading dashboard...</div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="bw bw-container" style={{ padding: '24px 0' }}>
-        <div className="bw-header" style={{ marginBottom: 32 }}>
-          <div className="bw-header-content">
-            <h1 style={{ fontSize: 32, margin: 0 }}>Dashboard</h1>
-            <div className="bw-header-actions">
-              <button 
-                className="bw-btn-outline" 
-                onClick={() => useAuthStore.getState().logout()}
-                style={{ marginLeft: 16 }}
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bw-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
-          <div style={{ color: '#ef4444', marginBottom: '16px' }}>
-            <AlertCircle className="w-12 h-12 mx-auto" />
-          </div>
-          <h3 style={{ margin: '0 0 16px 0', color: '#ef4444' }}>Error Loading Dashboard</h3>
-          <p style={{ margin: '0 0 24px 0', color: '#6b7280' }}>{error}</p>
-          <button 
-            className="bw-btn" 
-            onClick={load}
-            style={{ color: '#000' }}
-          >
-            Try Again
-          </button>
-        </div>
       </div>
     )
   }
@@ -256,6 +299,46 @@ export default function TenantDashboard() {
             style={{ color: '#000' }}
           >
             Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Error boundary for the component
+  if (error) {
+    return (
+      <div className="bw bw-container" style={{ padding: '24px 0' }}>
+        <div className="bw-header" style={{ marginBottom: 32 }}>
+          <div className="bw-header-content">
+            <h1 style={{ fontSize: 32, margin: 0 }}>Dashboard</h1>
+            <div className="bw-header-actions">
+              <button 
+                className="bw-btn-outline" 
+                onClick={() => useAuthStore.getState().logout()}
+                style={{ marginLeft: 16 }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bw-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <div style={{ color: '#ef4444', marginBottom: '16px' }}>
+            <AlertCircle className="w-12 h-12 mx-auto" />
+          </div>
+          <h3 style={{ margin: '0 0 16px 0', color: '#ef4444' }}>Error Loading Dashboard</h3>
+          <p style={{ margin: '0 0 24px 0', color: '#6b7280' }}>{error}</p>
+          <button 
+            className="bw-btn" 
+            onClick={() => {
+              setError(null)
+              load()
+            }}
+            style={{ color: '#000' }}
+          >
+            Try Again
           </button>
         </div>
       </div>
@@ -578,6 +661,14 @@ export default function TenantDashboard() {
                 <Plus className="w-4 h-4" />
                 Assign Driver
               </button>
+              <button 
+                className="bw-btn" 
+                onClick={() => navigate('/vehicles/add')}
+                style={{ color: '#000', marginLeft: 16 }}
+              >
+                <Plus className="w-4 h-4" />
+                Add Vehicle
+              </button>
             </div>
 
             <div className="bw-card">
@@ -599,51 +690,67 @@ export default function TenantDashboard() {
                     <div className="bw-empty-subtext">Add vehicles to your fleet to start accepting rides</div>
                   </div>
                 ) : (
-                  vehicles.map((vehicle) => (
-                    <div key={vehicle.id} className="bw-table-row">
-                      <div className="bw-table-cell">
-                        <div className="bw-vehicle-info">
-                          <div className="bw-vehicle-icon">
-                            <Car className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <div className="bw-vehicle-name">
-                              {vehicle.year} {vehicle.make} {vehicle.model}
+                  vehicles.map((vehicle) => {
+                    // Debug logging to see vehicle structure
+                    console.log('Vehicle data:', vehicle)
+                    console.log('Vehicle config:', vehicle.vehicle_config)
+                    console.log('Vehicle rate:', vehicle.vehicle_config?.vehicle_flat_rate)
+                    
+                    return (
+                      <div key={vehicle.id} className="bw-table-row">
+                        <div className="bw-table-cell">
+                          <div className="bw-vehicle-info">
+                            <div className="bw-vehicle-icon">
+                              <Car className="w-5 h-5" />
                             </div>
-                            <div className="bw-vehicle-details">
-                              {vehicle.color} • {vehicle.license_plate}
+                            <div>
+                              <div className="bw-vehicle-name">
+                                {vehicle.year} {vehicle.make} {vehicle.model}
+                              </div>
+                              <div className="bw-vehicle-details">
+                                {vehicle.color} • {vehicle.license_plate}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="bw-table-cell">
-                        <span className="bw-badge bw-badge-secondary">
-                          {vehicle.vehicle_config?.vehicle_category}
-                        </span>
-                      </div>
-                      <div className="bw-table-cell">
-                        {vehicle.vehicle_config?.seating_capacity} seats
-                      </div>
-                      <div className="bw-table-cell">
-                        ${vehicle.vehicle_config?.vehicle_flat_rate}
-                      </div>
-                      <div className="bw-table-cell">
-                        <span className={`bw-badge ${vehicle.status === 'active' ? 'bw-badge-success' : 'bw-badge-warning'}`}>
-                          {vehicle.status || 'Unknown'}
-                        </span>
-                      </div>
-                      <div className="bw-table-cell">
-                        <div className="bw-actions">
-                          <button className="bw-btn-icon">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button className="bw-btn-icon bw-btn-icon-danger">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <div className="bw-table-cell">
+                          <span className="bw-badge bw-badge-secondary">
+                            {vehicle.vehicle_config?.vehicle_category}
+                          </span>
+                        </div>
+                        <div className="bw-table-cell">
+                          {vehicle.vehicle_config?.seating_capacity} seats
+                        </div>
+                        <div className="bw-table-cell">
+                          {(() => {
+                            const rate = getVehicleRate(vehicle.vehicle_config?.vehicle_category)
+                            if (rate > 0) {
+                              return `$${rate.toFixed(2)}`
+                            } else if (vehicle.vehicle_config?.vehicle_flat_rate && vehicle.vehicle_config.vehicle_flat_rate > 0) {
+                              return `$${vehicle.vehicle_config.vehicle_flat_rate.toFixed(2)}`
+                            } else {
+                              return <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Not set</span>
+                            }
+                          })()}
+                        </div>
+                        <div className="bw-table-cell">
+                          <span className={`bw-badge ${vehicle.status === 'active' ? 'bw-badge-success' : 'bw-badge-warning'}`}>
+                            {vehicle.status || 'Unknown'}
+                          </span>
+                        </div>
+                        <div className="bw-table-cell">
+                          <div className="bw-actions">
+                            <button className="bw-btn-icon">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button className="bw-btn-icon bw-btn-icon-danger">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </div>
@@ -710,6 +817,199 @@ export default function TenantDashboard() {
                     </span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="bw-card">
+              <h4 style={{ margin: '0 0 16px 0' }}>Vehicle Settings</h4>
+              <div style={{ marginBottom: 16 }}>
+                <p className="small-muted" style={{ margin: 0 }}>
+                  Configure default rates and settings for different vehicle categories
+                </p>
+              </div>
+              
+              {/* Add New Category Section */}
+              <div style={{ 
+                marginBottom: 24, 
+                padding: '16px', 
+                backgroundColor: '#f8fafc', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '4px' 
+              }}>
+                <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#374151' }}>Add New Category</h5>
+                <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: '1fr 1fr 1fr auto' }}>
+                  <input
+                    type="text"
+                    placeholder="Category name (e.g., electric)"
+                    className="bw-input"
+                    style={{ fontSize: '14px' }}
+                    id="newCategoryName"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Base rate ($)"
+                    className="bw-input"
+                    style={{ fontSize: '14px' }}
+                    id="newCategoryRate"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    placeholder="Seating capacity"
+                    className="bw-input"
+                    style={{ fontSize: '14px' }}
+                    id="newCategoryCapacity"
+                  />
+                  <button
+                    className="bw-btn"
+                    style={{ fontSize: '14px', padding: '8px 16px' }}
+                    disabled={addingCategory}
+                    onClick={async () => {
+                      const nameInput = document.getElementById('newCategoryName') as HTMLInputElement
+                      const rateInput = document.getElementById('newCategoryRate') as HTMLInputElement
+                      const capacityInput = document.getElementById('newCategoryCapacity') as HTMLInputElement
+                      
+                      const name = nameInput.value.trim()
+                      const rate = parseFloat(rateInput.value) || 0
+                      const capacity = parseInt(capacityInput.value) || 1
+                      
+                      if (name && rate > 0 && capacity > 0) {
+                        setAddingCategory(true)
+                        try {
+                          await createVehicleCategory({ 
+                            vehicle_category: name, 
+                            vehicle_flat_rate: rate, 
+                            seating_capacity: capacity 
+                          })
+                          
+                          // Clear inputs after successful creation
+                          nameInput.value = ''
+                          rateInput.value = ''
+                          capacityInput.value = ''
+                          
+                          alert('New category added successfully!')
+                          await load() // Refresh data
+                        } catch (error) {
+                          console.error('Failed to add new category:', error)
+                          alert('Failed to add new category. Please try again.')
+                        } finally {
+                          setAddingCategory(false)
+                        }
+                      } else {
+                        alert('Please fill all fields with valid values')
+                      }
+                    }}
+                  >
+                    {addingCategory ? (
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
+                    Add
+                  </button>
+                </div>
+              </div>
+              
+              <div className="bw-table">
+                <div className="bw-table-header">
+                  <div className="bw-table-cell">Vehicle Category</div>
+                  <div className="bw-table-cell">Base Rate ($)</div>
+                  <div className="bw-table-cell">Actions</div>
+                </div>
+                
+                {/* Dynamic vehicle categories from API */}
+                {vehicleCategories.length > 0 ? (
+                  vehicleCategories.map((category) => {
+                    const defaultRate = getVehicleRate(category.vehicle_category)
+                    const currentRate = editingRates[category.vehicle_category] !== undefined 
+                      ? editingRates[category.vehicle_category] 
+                      : (category.vehicle_flat_rate > 0 ? category.vehicle_flat_rate : defaultRate)
+                    const isSaving = savingRates[category.vehicle_category] || false
+                    
+                    return (
+                      <div key={category.id} className="bw-table-row">
+                        <div className="bw-table-cell">
+                          <span className="bw-badge bw-badge-secondary" style={{ textTransform: 'capitalize' }}>
+                            {category.vehicle_category}
+                          </span>
+                        </div>
+                        <div className="bw-table-cell">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>$</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={currentRate}
+                              className="bw-input"
+                              style={{ width: '80px', padding: '4px 8px', fontSize: '14px' }}
+                              data-category={category.vehicle_category}
+                              onChange={(e) => {
+                                const newRate = parseFloat(e.target.value) || 0
+                                setEditingRates(prev => ({ ...prev, [category.vehicle_category]: newRate }))
+                              }}
+                              disabled={isSaving}
+                            />
+                          </div>
+                        </div>
+                        <div className="bw-table-cell">
+                          <div className="bw-actions">
+                            <button 
+                              className="bw-btn-outline" 
+                              style={{ fontSize: '12px', padding: '4px 8px' }}
+                              disabled={isSaving}
+                              onClick={() => {
+                                const newRate = parseFloat(document.querySelector(`input[data-category="${category.vehicle_category}"]`)?.value || '0') || 0
+                                if (newRate > 0) {
+                                  saveVehicleRate(category.vehicle_category, newRate)
+                                } else {
+                                  alert('Please enter a valid rate greater than 0')
+                                }
+                              }}
+                            >
+                              {isSaving ? (
+                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                'Save'
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : (
+                  // Empty state when no categories are available
+                  <div className="bw-empty-state">
+                    <div className="bw-empty-icon">
+                      <Car className="w-8 h-8" />
+                    </div>
+                    <div className="bw-empty-text">No vehicle categories yet</div>
+                    <div className="bw-empty-subtext">
+                      Add your first vehicle category above to get started
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div style={{ marginTop: 16, padding: '16px', backgroundColor: '#f3f4f6', borderRadius: '4px' }}>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#374151' }}>How it works:</h5>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#6b7280' }}>
+                  <li>These are default rates for new vehicles of each category</li>
+                  <li>Individual vehicles can override these defaults</li>
+                  <li>Changes apply to new vehicles, not existing ones</li>
+                  <li>Rates are in USD and apply per ride</li>
+                  <li>Add custom categories specific to your business needs</li>
+                </ul>
               </div>
             </div>
           </div>

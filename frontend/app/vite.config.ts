@@ -6,21 +6,9 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 export default defineConfig({
 	plugins: [react(), tsconfigPaths()],
 	server: {
-		port: 5173,
+		port: 3000,
 		proxy: {
-			// Local dev: forward API calls to FastAPI running on localhost
-			'/api': {
-				target: 'http://localhost:8000',
-				changeOrigin: true,
-				secure: false,
-			},
-			// Docker dev: if frontend resolves 'web' service, forward '/v1' to backend '/api/v1'
-			'/v1': {
-				target: 'http://web:8000',
-				changeOrigin: true,
-				secure: false,
-				rewrite: (path) => `/api${path}`,
-			},
+			'/api': 'http://localhost:8000',
 		},
 	},
-}) 
+})

@@ -40,6 +40,10 @@ export default function Signup() {
     }
   }
 
+  const handleBackToLogin = () => {
+    navigate('/login')
+  }
+
   return (
     <main className="bw" aria-label="Create account">
       <div className="bw-container bw-auth">
@@ -86,6 +90,18 @@ export default function Signup() {
             {message && <div className="small-muted" style={{ color: '#b3ffcb' }}>{message}</div>}
 
             <button className="bw-btn" type="submit" style={{ color: '#000' }}>Create account</button>
+
+            <div style={{ marginTop: 12, textAlign: 'center' }}>
+              <span className="small-muted">Already have an account? </span>
+              <button 
+                type="button" 
+                className="bw-btn-outline" 
+                style={{ padding: '4px 8px', marginLeft: 6 }} 
+                onClick={handleBackToLogin}
+              >
+                Sign in
+              </button>
+            </div>
           </form>
         </div>
       </div>
