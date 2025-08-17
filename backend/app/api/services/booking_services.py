@@ -4,6 +4,7 @@ from app.utils import db_error_handler
 from app.utils.logging import logger
 from datetime import timedelta, datetime
 from sqlalchemy.exc import *
+from app.schemas.booking import BookingResponse
 
 from app.models import tenant_setting
 
@@ -90,15 +91,22 @@ async def book_ride(payload, db, current_rider):
         #check for overlaps
         _bookings_overlap(db, payload)
 
+
+
         
 
         db.add(new_ride)
+       
         db.commit()
         db.refresh(new_ride)
 
+        driver_full_name = await _get_driver_fullname(driver_id = new_ride.driver_id, db=db)
+       
         logger.info(f"A new ride has been set for {current_rider.full_name}")
-        return new_ride
 
+        return {"driver_fullname": driver_full_name,
+                **new_ride.__dict__}
+        # return new_ride
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
       
@@ -111,13 +119,37 @@ async def get_booked_rides(db, current_user):
 
         if not rows:
             raise ValueError("Role not in settings")
-
+        
+        logger.info("All bookings..")
         booked_rides = db.query(booking.Bookings).filter(rows == current_user.id).all()
 
         if not booked_rides:
             raise HTTPException(status_code=404, detail = "There are no scheduled rides available")
+        
+        # driver_full_name = await _get_driver_fullname(driver_id = booked_rides.driver_id, db=db)
+        # return booked_rides
 
-        return booked_rides
+        result = []
+        for ride in booked_rides:
+            # driver_full_name = None
+            if ride.driver_id:
+                driver_full_name = await _get_driver_fullname(driver_id=ride.driver_id, db=db)
+                logger.info(f"{driver_full_name} is the driver")
+            # logger.info(f"{driver_full_name} is the driver")
+            
+            logger.info(f"{driver_full_name} is the driver")
+
+            ride_dict = ride.__dict__.copy()
+            ride_dict["driver_fullname"] = driver_full_name
+            result.append(ride_dict)
+            # return {"driver_fullname": driver_full_name,
+                    # **booked_rides.__dict__}
+        logger.info(f"{driver_full_name} is the driver")
+
+        
+
+        return result
+    
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
 
@@ -142,6 +174,22 @@ async def _price_quote(db, current_user, payload):
             per_hour_rate = settings.per_hour_rate
             total_quote = total_quote + per_hour_rate
 
-        return total_quote
+        return round(total_quote, 2)
+
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
+
+
+async def _get_driver_fullname(driver_id , db):
+    
+
+    driver = db.query(driver_table).filter(driver_table.id == driver_id).first()
+    logger.info(f"{driver.full_name} is the driver for this ride ")
+    return driver.full_name
+
+async def _get_vehicle(vehicle_id, db):
+
+    vehicle = db.query(vehicle_table).filter(vehicle_table.id == vehicle_id).first()
+    if not vehicle:
+        logger.info(f"There are no vehicles with {vehicle_id}")
+    return f"{vehicle.make} {vehicle.model} {vehicle.year}"

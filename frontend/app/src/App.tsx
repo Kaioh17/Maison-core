@@ -40,6 +40,14 @@ export default function App() {
         }
       />
       <Route
+        path="/tenant_settings"
+        element={
+          <ProtectedRoute allowRoles={["tenant"]}>
+            <TenantSettings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/vehicles/add"
         element={
           <ProtectedRoute allowRoles={["tenant"]}>

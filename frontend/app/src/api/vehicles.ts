@@ -1,7 +1,7 @@
 import { http } from './http'
 
 export async function getVehicles() {
-  const { data } = await http.get<VehicleResponse[]>('/v1/vehicles/')
+  const { data } = await http.get<VehicleResponse[]>('/v1/vehicles')
   return data
 }
 

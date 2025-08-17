@@ -35,7 +35,7 @@ async def get_driver(is_driver: bool = Depends(is_driver),
         message="Driver info recieved successfully"
     )
 
-@router.get("/rides/available", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[list[booking.BookingRespose]])
+@router.get("/rides/available", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[list[booking.BookingResponse]])
 async def get_bookings_for_driver(is_driver: bool = Depends(is_driver),
                                   booking_status: Optional[str] = "pending",
                                 db: Session = Depends(get_db), 
@@ -48,7 +48,7 @@ async def get_bookings_for_driver(is_driver: bool = Depends(is_driver),
     )
 
 """Set ride status"""
-@router.patch("/ride/{booking_id}/decision", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[booking.BookingRespose])
+@router.patch("/ride/{booking_id}/decision", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[booking.BookingResponse])
 async def set_ride_status(booking_id: int, action: str =Query(None, description= "Confirm/Cancelled"),
                        is_driver: bool =  Depends(is_driver),
                        db: Session = Depends(get_db), current_driver: int = Depends(get_base_db)):

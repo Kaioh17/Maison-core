@@ -18,6 +18,7 @@
       "@store/*": ["src/store/*"],
       "@components/*": ["src/components/*"],
       "@pages/*": ["src/pages/*"],
+      "@contexts/*": ["src/contexts/*"],
       "@config": ["src/config"]
     }
   },

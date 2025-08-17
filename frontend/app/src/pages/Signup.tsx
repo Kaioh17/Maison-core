@@ -89,7 +89,7 @@ export default function Signup() {
             {error && <div className="small-muted" style={{ color: '#ffb3b3' }}>{error}</div>}
             {message && <div className="small-muted" style={{ color: '#b3ffcb' }}>{message}</div>}
 
-            <button className="bw-btn" type="submit" style={{ color: '#000' }}>Create account</button>
+            <button className="bw-btn" type="submit" style={{ color: '#ffffffff' }}>Create account</button>
 
             <div style={{ marginTop: 12, textAlign: 'center' }}>
               <span className="small-muted">Already have an account? </span>

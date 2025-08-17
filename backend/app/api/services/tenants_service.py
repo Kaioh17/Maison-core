@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 import random
 from .stripe_services import StripeService
 import string
+from .booking_services import _get_driver_fullname, _get_vehicle
 # from .helper_service import 
 
 
@@ -50,6 +51,7 @@ async def _create_vehicle_category_rate_table(db, id_tenant):
         
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
+
 
 
 async def create_tenant(db, payload):
@@ -193,8 +195,28 @@ async def get_all_bookings(db, current_tenant):
         if not booking_obj:
             logger.info(f"There are no bookings for tenant {current_tenant.id}")
             return []  # Return empty array instead of raising error
+        
+        result = []
+        for ride in booking_obj:
+            
+            if ride.driver_id:
+                driver_full_name = await _get_driver_fullname(driver_id=ride.driver_id, db=db)
+            if ride.vehicle_id:
+                vehicle = await _get_vehicle(vehicle_id=ride.vehicle_id, db=db)
+           
 
-        return booking_obj
+            ride_dict = ride.__dict__.copy()
+            ride_dict["vehicle"] = vehicle
+            ride_dict["driver_fullname"] = driver_full_name
+            
+            result.append(ride_dict)
+            
+    
+
+        
+
+        return result
+        # return booking_obj
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
         raise HTTPException(status_code=500, detail="Database error occurred")

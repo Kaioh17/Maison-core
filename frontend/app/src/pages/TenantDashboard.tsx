@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react'
 import type React from 'react'
 import { getTenantInfo, getTenantDrivers, getTenantVehicles, getTenantBookings, onboardDriver, assignDriverToVehicle, type TenantResponse, type DriverResponse, type VehicleResponse, type BookingResponse, type OnboardDriver } from '@api/tenant'
 import { getVehicleRates, getVehicleCategories, createVehicleCategory, setVehicleRates } from '@api/vehicles'
+import { getTenantSettings, updateTenantSettings, type TenantSettingsResponse, type UpdateTenantSetting } from '@api/tenantSettings'
 import { useAuthStore } from '@store/auth'
 import { useNavigate } from 'react-router-dom'
-import { Car, Users, Calendar, Settings, TrendingUp, DollarSign, Clock, MapPin, User, Phone, Mail, Plus, Edit, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { useTenantTheme } from '@contexts/ThemeContext'
+import ThemeToggle from '@components/ThemeToggle'
+import { Car, Users, Calendar, Settings, TrendingUp, DollarSign, Clock, MapPin, User, Phone, Mail, Plus, Edit, Trash2, CheckCircle, XCircle, AlertCircle, Palette, Save } from 'lucide-react'
 import { API_BASE } from '@config'
 
 type TabType = 'overview' | 'drivers' | 'bookings' | 'vehicles' | 'settings'
@@ -27,6 +30,13 @@ export default function TenantDashboard() {
   const [showAddDriver, setShowAddDriver] = useState(false)
   const [showAssignDriver, setShowAssignDriver] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('overview')
+  const [tenantSettings, setTenantSettings] = useState<TenantSettingsResponse | null>(null)
+  const [editingSettings, setEditingSettings] = useState(false)
+  const [savingSettings, setSavingSettings] = useState(false)
+  const [editedSettings, setEditedSettings] = useState<UpdateTenantSetting | null>(null)
+
+  // Sync theme with tenant settings
+  useTenantTheme(tenantSettings?.theme)
 
   // Debug authentication state
   useEffect(() => {
@@ -44,13 +54,15 @@ export default function TenantDashboard() {
       const vehiclesPromise = getTenantVehicles()
       const bookingsPromise = getTenantBookings()
       const vehicleCategoriesPromise = getVehicleCategories()
+      const tenantSettingsPromise = getTenantSettings()
       
-      const [i, d, v, b, vc] = await Promise.all([
+      const [i, d, v, b, vc, ts] = await Promise.all([
         tenantInfoPromise,
         driversPromise,
         vehiclesPromise,
         bookingsPromise,
         vehicleCategoriesPromise,
+        tenantSettingsPromise,
       ])
       
       if (i.data) {
@@ -94,11 +106,29 @@ export default function TenantDashboard() {
         setVehicleCategories([])
       }
       
+      // Handle tenant settings
+      if (ts) {
+        setTenantSettings(ts)
+        setEditedSettings(ts)
+      } else {
+        console.error('No tenant settings data in response:', ts)
+        setError('Failed to load tenant settings - no data in response')
+      }
+      
     } catch (error: any) {
       console.error('Failed to load dashboard data:', error)
       
       if (error.response) {
-        setError(`Failed to load data: ${error.response.status} - ${error.response.data?.detail || 'Unknown error'}`)
+        const status = error.response.status
+        if (status === 401) {
+          setError('Authentication failed. Please log in again.')
+        } else if (status === 403) {
+          setError('Access denied. You do not have permission to view this data.')
+        } else if (status === 500) {
+          setError('Server error. Please try again later.')
+        } else {
+          setError(`Failed to load data: ${status} - ${error.response.data?.detail || 'Unknown error'}`)
+        }
       } else if (error.request) {
         setError('No response from server. Please check your connection and try again.')
       } else {
@@ -222,35 +252,69 @@ export default function TenantDashboard() {
 
   const getVehicleRate = (category: string) => {
     // Check if vehicleCategories is an array and has items
-    if (!vehicleCategories || !Array.isArray(vehicleCategories) || vehicleCategories.length === 0) {
-      // Return default rates if no API data available
+    if (!Array.isArray(vehicleCategories) || vehicleCategories.length === 0) {
+      // Return hardcoded default rates if no categories available
       const defaultRates: { [key: string]: number } = {
-        'sedan': 25.00,
-        'suv': 35.00,
-        'luxury': 50.00,
-        'van': 40.00,
-        'truck': 45.00,
-        'motorcycle': 20.00
+        'sedan': 25,
+        'suv': 35,
+        'luxury': 50,
+        'van': 40,
+        'truck': 45,
+        'motorcycle': 20
       }
-      return defaultRates[category] || 0
+      return defaultRates[category.toLowerCase()] || 0
     }
     
-    // Look for the category in vehicleCategories
-    const categoryData = vehicleCategories.find(cat => cat.vehicle_category === category)
-    if (categoryData && categoryData.vehicle_flat_rate > 0) {
-      return categoryData.vehicle_flat_rate
+    // Find the category and return its rate
+    const foundCategory = vehicleCategories.find(cat => 
+      cat.vehicle_category.toLowerCase() === category.toLowerCase()
+    )
+    
+    if (foundCategory && foundCategory.vehicle_flat_rate > 0) {
+      return foundCategory.vehicle_flat_rate
     }
     
-    // Return default rates if no API data available
+    // Return hardcoded default rates if no rate set
     const defaultRates: { [key: string]: number } = {
-      'sedan': 25.00,
-      'suv': 35.00,
-      'luxury': 50.00,
-      'van': 40.00,
-      'truck': 45.00,
-      'motorcycle': 20.00
+      'sedan': 25,
+      'suv': 35,
+      'luxury': 50,
+      'van': 40,
+      'truck': 45,
+      'motorcycle': 20
     }
-    return defaultRates[category] || 0
+    return defaultRates[category.toLowerCase()] || 0
+  }
+
+  const handleSettingChange = (field: keyof UpdateTenantSetting, value: any) => {
+    if (editedSettings) {
+      setEditedSettings({
+        ...editedSettings,
+        [field]: value
+      })
+    }
+  }
+
+  const handleSaveSettings = async () => {
+    if (!editedSettings) return
+    
+    try {
+      setSavingSettings(true)
+      const updatedSettings = await updateTenantSettings(editedSettings)
+      setTenantSettings(updatedSettings)
+      setEditingSettings(false)
+      alert('Settings updated successfully!')
+    } catch (error) {
+      console.error('Failed to update settings:', error)
+      alert('Failed to update settings. Please try again.')
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditedSettings(tenantSettings)
+    setEditingSettings(false)
   }
 
   const tabs: Array<{ id: TabType; label: string; icon: React.ComponentType<{ className?: string }> }> = [
@@ -353,6 +417,7 @@ export default function TenantDashboard() {
           <h1 style={{ fontSize: 32, margin: 0 }}>Dashboard</h1>
           <div className="bw-header-actions">
             <span className="bw-text-muted">Welcome back, {info?.first_name}</span>
+            <ThemeToggle />
             <button 
               className="bw-btn-outline" 
               onClick={() => useAuthStore.getState().logout()}
@@ -436,7 +501,7 @@ export default function TenantDashboard() {
             </div>
 
             {/* Company Info */}
-            <div className="bw-card" style={{ gridColumn: 'span 6' }}>
+            <div className="bw-card" style={{ gridColumn: 'span 6', height: 'fit-content' }}>
               <h3 style={{ margin: '0 0 16px 0' }}>Company Information</h3>
               <div className="bw-info-grid">
                 <div className="bw-info-item">
@@ -464,27 +529,187 @@ export default function TenantDashboard() {
 
             {/* Recent Activity */}
             <div className="bw-card" style={{ gridColumn: 'span 6' }}>
-              <h3 style={{ margin: '0 0 16px 0' }}>Recent Bookings</h3>
+              <div className="bw-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0 }}>Recent Bookings</h3>
+                <button 
+                  className="bw-btn-outline" 
+                  onClick={() => setActiveTab('bookings')}
+                  style={{ fontSize: '12px', padding: '4px 8px' }}
+                >
+                  View All
+                </button>
+              </div>
               <div className="bw-recent-list">
-                {bookings.slice(0, 5).map((booking) => (
-                  <div key={booking.id} className="bw-recent-item">
-                    <div className="bw-recent-icon">
-                      <MapPin className="w-4 h-4" />
-                    </div>
-                    <div className="bw-recent-content">
-                      <div className="bw-recent-title">
-                        {booking.pickup_location} → {booking.dropoff_location}
+                {bookings.length === 0 ? (
+                  <div className="bw-empty-state" style={{ padding: '24px', textAlign: 'center' }}>
+                    <Calendar className="w-8 h-8" style={{ color: '#9ca3af', marginBottom: '8px' }} />
+                    <div style={{ color: '#6b7280', fontSize: '14px' }}>No bookings yet</div>
+                    <div style={{ color: '#9ca3af', fontSize: '12px' }}>Bookings will appear here</div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Show first 3 pending trips */}
+                    {bookings.slice(0, 3).map((booking) => (
+                      <div key={booking.id} className="bw-recent-item" style={{ 
+                        border: '1px solid #e5e7eb', 
+                        borderRadius: '8px', 
+                        padding: '12px', 
+                        marginBottom: '8px',
+                        backgroundColor: '#ffffff'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div className="bw-recent-icon" style={{ 
+                              background: getStatusColor(booking.booking_status), 
+                              padding: '4px', 
+                              borderRadius: '4px',
+                              color: 'white'
+                            }}>
+                              <MapPin className="w-3 h-3" />
+                            </div>
+                            <div>
+                              <div className="bw-recent-title" style={{ 
+                                fontWeight: '600', 
+                                fontSize: '14px', 
+                                color: '#111827',
+                                marginBottom: '2px'
+                              }}>
+                                {booking.pickup_location} → {booking.dropoff_location}
+                              </div>
+                              <div className="bw-recent-meta" style={{ 
+                                fontSize: '12px', 
+                                color: '#6b7280',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}>
+                                <span>{new Date(booking.pickup_time).toLocaleDateString()}</span>
+                                <span>•</span>
+                                <span>{booking.service_type || 'Standard'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bw-recent-status">
+                            {getStatusIcon(booking.booking_status)}
+                          </div>
+                        </div>
+                        
+                        {/* Additional Booking Details */}
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '1fr 1fr', 
+                          gap: '8px', 
+                          fontSize: '12px',
+                          color: '#6b7280',
+                          borderTop: '1px solid #f3f4f6',
+                          paddingTop: '8px'
+                        }}>
+                          <div>
+                            <span style={{ fontWeight: '500' }}>Customer:</span> {booking.customer_name || 'Anonymous Customer'}
+                          </div>
+                          <div>
+                            <span style={{ fontWeight: '500' }}>Driver:</span> {booking.driver_fullname || 'Unassigned'}
+                          </div>
+                          <div>
+                            <span style={{ fontWeight: '500' }}>Vehicle:</span> {booking.vehicle || 'N/A'}
+                          </div>
+                          <div>
+                            <span style={{ fontWeight: '500' }}>Fare:</span> ${booking.estimated_price || '0.00'}
+                          </div>
+                        </div>
+                        
+                        {/* Time Information */}
+                        <div style={{ 
+                          fontSize: '11px', 
+                          color: '#9ca3af', 
+                          marginTop: '6px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <span>Pickup: {new Date(booking.pickup_time).toLocaleTimeString()}</span>
+                          {booking.dropoff_time && (
+                            <span>Dropoff: {new Date(booking.dropoff_time).toLocaleTimeString()}</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="bw-recent-meta">
-                        {new Date(booking.pickup_time).toLocaleDateString()} • {booking.service_type}
+                    ))}
+                    
+                    {/* Dropdown to show more bookings if there are more than 3 */}
+                    {bookings.length > 3 && (
+                      <div style={{ 
+                        border: '1px dashed #d1d5db', 
+                        borderRadius: '8px', 
+                        padding: '12px', 
+                        textAlign: 'center',
+                        backgroundColor: '#f9fafb',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => setActiveTab('bookings')}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f3f4f6'
+                        e.currentTarget.style.borderColor = '#9ca3af'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f9fafb'
+                        e.currentTarget.style.borderColor = '#d1d5db'
+                      }}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          gap: '8px',
+                          color: '#6b7280',
+                          fontSize: '14px'
+                        }}>
+                          <Calendar className="w-4 h-4" />
+                          <span>View {bookings.length - 3} more bookings</span>
+                          <span style={{ fontSize: '12px' }}>→</span>
+                        </div>
                       </div>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              {/* Quick Stats Summary */}
+              {bookings.length > 0 && (
+                <div style={{ 
+                  marginTop: '16px', 
+                  padding: '12px', 
+                  backgroundColor: '#f8fafc', 
+                  borderRadius: '6px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(3, 1fr)', 
+                    gap: '12px',
+                    fontSize: '12px'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontWeight: '600', color: '#111827' }}>
+                        {bookings.filter(b => b.booking_status === 'completed').length}
+                      </div>
+                      <div style={{ color: '#6b7280' }}>Completed</div>
                     </div>
-                    <div className="bw-recent-status">
-                      {getStatusIcon(booking.booking_status)}
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontWeight: '600', color: '#111827' }}>
+                        {bookings.filter(b => b.booking_status === 'active').length}
+                      </div>
+                      <div style={{ color: '#6b7280' }}>Active</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontWeight: '600', color: '#111827' }}>
+                        {bookings.filter(b => b.booking_status === 'pending').length}
+                      </div>
+                      <div style={{ color: '#6b7280' }}>Pending</div>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -495,9 +720,8 @@ export default function TenantDashboard() {
             <div className="bw-content-header">
               <h3>Driver Management</h3>
               <button 
-                className="bw-btn" 
+                className="bw-btn bw-btn-action" 
                 onClick={() => setShowAddDriver(true)}
-                style={{ color: '#000' }}
               >
                 <Plus className="w-4 h-4" />
                 Add Driver
@@ -580,17 +804,27 @@ export default function TenantDashboard() {
           <div className="bw-content">
             <div className="bw-content-header">
               <h3>Booking Management</h3>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <span className="bw-text-muted">
+                  Total: {bookings.length} • 
+                  Completed: {bookings.filter(b => b.booking_status === 'completed').length} • 
+                  Active: {bookings.filter(b => b.booking_status === 'active').length} • 
+                  Pending: {bookings.filter(b => b.booking_status === 'pending').length}
+                </span>
+              </div>
             </div>
 
             <div className="bw-card">
               <div className="bw-table">
                 <div className="bw-table-header">
-                  <div className="bw-table-cell">ID</div>
-                  <div className="bw-table-cell">Route</div>
-                  <div className="bw-table-cell">Service</div>
+                  <div className="bw-table-cell">Booking ID</div>
+                  <div className="bw-table-cell">Customer & Route</div>
+                  <div className="bw-table-cell">Service Details</div>
                   <div className="bw-table-cell">Date & Time</div>
+                  <div className="bw-table-cell">Driver & Vehicle</div>
                   <div className="bw-table-cell">Status</div>
-                  <div className="bw-table-cell">Price</div>
+                  <div className="bw-table-cell">Fare</div>
+                  <div className="bw-table-cell">Actions</div>
                 </div>
                 {bookings.length === 0 ? (
                   <div className="bw-empty-state">
@@ -603,42 +837,99 @@ export default function TenantDashboard() {
                 ) : (
                   bookings.map((booking) => (
                     <div key={booking.id} className="bw-table-row">
-                      <div className="bw-table-cell">#{booking.id}</div>
+                      <div className="bw-table-cell">
+                        <div style={{ fontWeight: '600', color: '#374151' }}>
+                          #{booking.id}
+                        </div>
+                      </div>
                       <div className="bw-table-cell">
                         <div className="bw-route-info">
-                          <div className="bw-route-item">
+                          <div style={{ marginBottom: '4px' }}>
+                            <span style={{ fontWeight: '500', color: '#111827' }}>
+                              {booking.customer_name || 'Anonymous Customer'}
+                            </span>
+                          </div>
+                          <div className="bw-route-item" style={{ fontSize: '12px', color: '#6b7280' }}>
                             <MapPin className="w-3 h-3" />
-                            {booking.pickup_location}
+                            <span style={{ marginLeft: '4px' }}>From: {booking.pickup_location}</span>
                           </div>
                           {booking.dropoff_location && (
-                            <div className="bw-route-item">
+                            <div className="bw-route-item" style={{ fontSize: '12px', color: '#6b7280' }}>
                               <MapPin className="w-3 h-3" />
-                              {booking.dropoff_location}
+                              <span style={{ marginLeft: '4px' }}>To: {booking.dropoff_location}</span>
                             </div>
                           )}
                         </div>
                       </div>
                       <div className="bw-table-cell">
-                        <span className="bw-badge bw-badge-secondary">
-                          {booking.service_type}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span className="bw-badge bw-badge-secondary" style={{ fontSize: '11px' }}>
+                            {booking.service_type || 'Standard'}
+                          </span>
+                          {booking.estimated_duration && (
+                            <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                              Est: {booking.estimated_duration} min
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="bw-table-cell">
                         <div className="bw-datetime-info">
-                          <div>{new Date(booking.pickup_time).toLocaleDateString()}</div>
-                          <div className="bw-text-muted">
+                          <div style={{ fontWeight: '500', color: '#111827' }}>
+                            {new Date(booking.pickup_time).toLocaleDateString()}
+                          </div>
+                          <div className="bw-text-muted" style={{ fontSize: '12px' }}>
                             {new Date(booking.pickup_time).toLocaleTimeString()}
+                          </div>
+                          {booking.dropoff_time && (
+                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                              Drop: {new Date(booking.dropoff_time).toLocaleTimeString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="bw-table-cell">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ fontSize: '12px' }}>
+                            <span style={{ fontWeight: '500' }}>Driver:</span> {booking.driver_fullname || 'Unassigned'}
+                          </div>
+                          <div style={{ fontSize: '12px' }}>
+                            <span style={{ fontWeight: '500' }}>Vehicle:</span> {booking.vehicle || 'N/A'}
                           </div>
                         </div>
                       </div>
                       <div className="bw-table-cell">
-                        {getStatusIcon(booking.booking_status)}
-                        <span className={getStatusColor(booking.booking_status)}>
-                          {booking.booking_status}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {getStatusIcon(booking.booking_status)}
+                          <span className={getStatusColor(booking.booking_status)} style={{ fontSize: '12px' }}>
+                            {booking.booking_status?.charAt(0).toUpperCase() + booking.booking_status?.slice(1)}
+                          </span>
+                        </div>
                       </div>
                       <div className="bw-table-cell">
-                        {booking.estimated_price ? `$${booking.estimated_price}` : 'N/A'}
+                        <div style={{ fontWeight: '600', color: '#059669' }}>
+                          ${booking.estimated_price || '0.00'}
+                        </div>
+                      </div>
+                      <div className="bw-table-cell">
+                        <div className="bw-actions">
+                          <button 
+                            className="bw-btn-icon" 
+                            title="View Details"
+                            style={{ padding: '4px' }}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                          {booking.booking_status === 'pending' && (
+                            <button 
+                              className="bw-btn-icon bw-btn-icon-success" 
+                              title="Assign Driver"
+                              style={{ padding: '4px' }}
+                            >
+                              <User className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -654,17 +945,16 @@ export default function TenantDashboard() {
             <div className="bw-content-header">
               <h3>Vehicle Management</h3>
               <button 
-                className="bw-btn" 
+                className="bw-btn bw-btn-action" 
                 onClick={() => setShowAssignDriver(true)}
-                style={{ color: '#000' }}
               >
                 <Plus className="w-4 h-4" />
                 Assign Driver
               </button>
               <button 
-                className="bw-btn" 
+                className="bw-btn bw-btn-action" 
                 onClick={() => navigate('/vehicles/add')}
-                style={{ color: '#000', marginLeft: 16 }}
+                style={{ marginLeft: 16 }}
               >
                 <Plus className="w-4 h-4" />
                 Add Vehicle
@@ -828,94 +1118,6 @@ export default function TenantDashboard() {
                 </p>
               </div>
               
-              {/* Add New Category Section */}
-              <div style={{ 
-                marginBottom: 24, 
-                padding: '16px', 
-                backgroundColor: '#f8fafc', 
-                border: '1px solid #e2e8f0', 
-                borderRadius: '4px' 
-              }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#374151' }}>Add New Category</h5>
-                <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: '1fr 1fr 1fr auto' }}>
-                  <input
-                    type="text"
-                    placeholder="Category name (e.g., electric)"
-                    className="bw-input"
-                    style={{ fontSize: '14px' }}
-                    id="newCategoryName"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Base rate ($)"
-                    className="bw-input"
-                    style={{ fontSize: '14px' }}
-                    id="newCategoryRate"
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    max="20"
-                    placeholder="Seating capacity"
-                    className="bw-input"
-                    style={{ fontSize: '14px' }}
-                    id="newCategoryCapacity"
-                  />
-                  <button
-                    className="bw-btn"
-                    style={{ fontSize: '14px', padding: '8px 16px' }}
-                    disabled={addingCategory}
-                    onClick={async () => {
-                      const nameInput = document.getElementById('newCategoryName') as HTMLInputElement
-                      const rateInput = document.getElementById('newCategoryRate') as HTMLInputElement
-                      const capacityInput = document.getElementById('newCategoryCapacity') as HTMLInputElement
-                      
-                      const name = nameInput.value.trim()
-                      const rate = parseFloat(rateInput.value) || 0
-                      const capacity = parseInt(capacityInput.value) || 1
-                      
-                      if (name && rate > 0 && capacity > 0) {
-                        setAddingCategory(true)
-                        try {
-                          await createVehicleCategory({ 
-                            vehicle_category: name, 
-                            vehicle_flat_rate: rate, 
-                            seating_capacity: capacity 
-                          })
-                          
-                          // Clear inputs after successful creation
-                          nameInput.value = ''
-                          rateInput.value = ''
-                          capacityInput.value = ''
-                          
-                          alert('New category added successfully!')
-                          await load() // Refresh data
-                        } catch (error) {
-                          console.error('Failed to add new category:', error)
-                          alert('Failed to add new category. Please try again.')
-                        } finally {
-                          setAddingCategory(false)
-                        }
-                      } else {
-                        alert('Please fill all fields with valid values')
-                      }
-                    }}
-                  >
-                    {addingCategory ? (
-                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    ) : (
-                      <Plus className="w-4 h-4" />
-                    )}
-                    Add
-                  </button>
-                </div>
-              </div>
-              
               <div className="bw-table">
                 <div className="bw-table-header">
                   <div className="bw-table-cell">Vehicle Category</div>
@@ -987,18 +1189,96 @@ export default function TenantDashboard() {
                       </div>
                     )
                   })
-                ) : (
-                  // Empty state when no categories are available
-                  <div className="bw-empty-state">
-                    <div className="bw-empty-icon">
-                      <Car className="w-8 h-8" />
-                    </div>
-                    <div className="bw-empty-text">No vehicle categories yet</div>
-                    <div className="bw-empty-subtext">
-                      Add your first vehicle category above to get started
+                ) : null}
+                
+                {/* Add New Category Row */}
+                <div className="bw-table-row" style={{ backgroundColor: '#000000', border: '1px dashed #d1d5db' }}>
+                  <div className="bw-table-cell">
+                    <input
+                      type="text"
+                      placeholder="New category name"
+                      className="bw-input"
+                      style={{ 
+                        width: '100%', 
+                        padding: '4px 8px', 
+                        fontSize: '14px',
+                        color: '#ffffff',
+                        backgroundColor: '#000000',
+                        borderBottom: '1px solid #d1d5db'
+                      }}
+                      id="newCategoryName"
+                    />
+                  </div>
+                  <div className="bw-table-cell">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1.0"
+                        placeholder="0.00"
+                        className="bw-input"
+                        style={{ 
+                          width: '80px', 
+                          padding: '4px 8px', 
+                          fontSize: '14px',
+                          color: '#ffffff',
+                          backgroundColor: '#000000',
+                          borderBottom: '1px solid #d1d5db'
+                        }}
+                        id="newCategoryRate"
+                      />
                     </div>
                   </div>
-                )}
+                  <div className="bw-table-cell">
+                    <div className="bw-actions">
+                      <button
+                        className="bw-btn"
+                        style={{ fontSize: '12px', padding: '4px 5px' }}
+                        disabled={addingCategory}
+                        onClick={async () => {
+                          const nameInput = document.getElementById('newCategoryName') as HTMLInputElement
+                          const rateInput = document.getElementById('newCategoryRate') as HTMLInputElement
+
+                          const name = nameInput.value.trim()
+                          const rate = parseFloat(rateInput.value) || 0
+
+                          if (name && rate > 0) {
+                            setAddingCategory(true)
+                            try {
+                              await createVehicleCategory({
+                                vehicle_category: name,
+                                vehicle_flat_rate: rate,
+                                seating_capacity: 4 // Default seating capacity
+                              })
+                              nameInput.value = ''
+                              rateInput.value = ''
+                              alert('New category added successfully!')
+                              await load() // Refresh data
+                            } catch (error) {
+                              console.error('Failed to add new category:', error)
+                              alert('Failed to add new category. Please try again.')
+                            } finally {
+                              setAddingCategory(false)
+                            }
+                          } else {
+                            alert('Please fill both fields with valid values')
+                          }
+                        }}
+                      >
+                        {addingCategory ? (
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <div style={{ marginTop: 16, padding: '16px', backgroundColor: '#f3f4f6', borderRadius: '4px' }}>
@@ -1012,6 +1292,275 @@ export default function TenantDashboard() {
                 </ul>
               </div>
             </div>
+
+            {/* Tenant Settings Section */}
+            {tenantSettings && (
+              <div className="bw-card" style={{ marginTop: 24 }}>
+                <div className="bw-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ margin: 0 }}>Business Configuration</h4>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {editingSettings ? (
+                      <>
+                        <button 
+                          className="bw-btn-outline" 
+                          onClick={handleCancelEdit}
+                          disabled={savingSettings}
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          className="bw-btn" 
+                          onClick={handleSaveSettings}
+                          disabled={savingSettings}
+                        >
+                          {savingSettings ? 'Saving...' : (
+                            <>
+                              <Save className="w-4 h-4" />
+                              Save Changes
+                            </>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <button 
+                        className="bw-btn-outline" 
+                        onClick={() => {
+                          setEditedSettings(tenantSettings)
+                          setEditingSettings(true)
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit Settings
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Branding & Theme Settings */}
+                <div style={{ marginBottom: 32 }}>
+                  <h5 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Palette className="w-4 h-4" />
+                    Branding & Theme
+                  </h5>
+                  <div className="bw-form-grid" style={{ display: 'grid', gap: '16px', gridTemplateColumns: '1fr 1fr' }}>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Theme</label>
+                      {editingSettings ? (
+                        <select 
+                          className="bw-input" 
+                          value={editedSettings?.theme || ''} 
+                          onChange={(e) => {
+                            const newTheme = e.target.value
+                            handleSettingChange('theme', newTheme)
+                            // Apply theme immediately for preview
+                            document.documentElement.setAttribute('data-theme', newTheme)
+                            document.body.setAttribute('data-theme', newTheme)
+                          }}
+                        >
+                          <option value="light">Light Mode</option>
+                          <option value="dark">Dark Mode</option>
+                          <option value="auto">Auto (System)</option>
+                        </select>
+                      ) : (
+                        <span className="bw-info-value">
+                          {tenantSettings.theme === 'light' ? 'Light Mode' : 
+                           tenantSettings.theme === 'dark' ? 'Dark Mode' : 
+                           tenantSettings.theme === 'auto' ? 'Auto (System)' : 
+                           'Not set'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Logo URL</label>
+                      {editingSettings ? (
+                        <input 
+                          className="bw-input" 
+                          type="text" 
+                          value={editedSettings?.logo_url || ''} 
+                          onChange={(e) => handleSettingChange('logo_url', e.target.value)}
+                          placeholder="https://example.com/logo.png"
+                        />
+                      ) : (
+                        <span className="bw-info-value">{tenantSettings.logo_url || 'Not set'}</span>
+                      )}
+                    </div>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Slug</label>
+                      {editingSettings ? (
+                        <input 
+                          className="bw-input" 
+                          type="text" 
+                          value={editedSettings?.slug || ''} 
+                          onChange={(e) => handleSettingChange('slug', e.target.value)}
+                          placeholder="company-name"
+                        />
+                      ) : (
+                        <span className="bw-info-value">{tenantSettings.slug || 'Not set'}</span>
+                      )}
+                    </div>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Enable Branding</label>
+                      {editingSettings ? (
+                        <select 
+                          className="bw-input" 
+                          value={editedSettings?.enable_branding ? 'true' : 'false'} 
+                          onChange={(e) => handleSettingChange('enable_branding', e.target.value === 'true')}
+                        >
+                          <option value="true">Yes</option>
+                          <option value="false">No</option>
+                        </select>
+                      ) : (
+                        <span className="bw-info-value">{tenantSettings.enable_branding ? 'Yes' : 'No'}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fare Settings */}
+                <div style={{ marginBottom: 32 }}>
+                  <h5 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <DollarSign className="w-4 h-4" />
+                    Fare Configuration
+                  </h5>
+                  <div className="bw-form-grid" style={{ display: 'grid', gap: '16px', gridTemplateColumns: '1fr 1fr' }}>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Base Fare ($)</label>
+                      {editingSettings ? (
+                        <input 
+                          className="bw-input" 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          value={editedSettings?.base_fare || 0} 
+                          onChange={(e) => handleSettingChange('base_fare', parseFloat(e.target.value) || 0)}
+                          placeholder="5.00"
+                        />
+                      ) : (
+                        <span className="bw-info-value">${tenantSettings.base_fare || 0}</span>
+                      )}
+                    </div>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Per Minute Rate ($)</label>
+                      {editingSettings ? (
+                        <input 
+                          className="bw-input" 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          value={editedSettings?.per_minute_rate || 0} 
+                          onChange={(e) => handleSettingChange('per_minute_rate', parseFloat(e.target.value) || 0)}
+                          placeholder="0.50"
+                        />
+                      ) : (
+                        <span className="bw-info-value">${tenantSettings.per_minute_rate || 0}</span>
+                      )}
+                    </div>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Per Mile Rate ($)</label>
+                      {editingSettings ? (
+                        <input 
+                          className="bw-input" 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          value={editedSettings?.per_mile_rate || 0} 
+                          onChange={(e) => handleSettingChange('per_mile_rate', parseFloat(e.target.value) || 0)}
+                          placeholder="2.50"
+                        />
+                      ) : (
+                        <span className="bw-info-value">${tenantSettings.per_mile_rate || 0}</span>
+                      )}
+                    </div>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Per Hour Rate ($)</label>
+                      {editingSettings ? (
+                        <input 
+                          className="bw-input" 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          value={editedSettings?.per_hour_rate || 0} 
+                          onChange={(e) => handleSettingChange('per_hour_rate', parseFloat(e.target.value) || 0)}
+                          placeholder="25.00"
+                        />
+                      ) : (
+                        <span className="bw-info-value">${tenantSettings.per_hour_rate || 0}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rider Settings */}
+                <div style={{ marginBottom: 32 }}>
+                  <h5 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <User className="w-4 h-4" />
+                    Rider Configuration
+                  </h5>
+                  <div className="bw-form-grid" style={{ display: 'grid', gap: '16px', gridTemplateColumns: '1fr 1fr' }}>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Rider Tiers Enabled</label>
+                      {editingSettings ? (
+                        <select 
+                          className="bw-input" 
+                          value={editedSettings?.rider_tiers_enabled ? 'true' : 'false'} 
+                          onChange={(e) => handleSettingChange('rider_tiers_enabled', e.target.value === 'true')}
+                        >
+                          <option value="true">Yes</option>
+                          <option value="false">No</option>
+                        </select>
+                      ) : (
+                        <span className="bw-info-value">{tenantSettings.rider_tiers_enabled ? 'Yes' : 'No'}</span>
+                      )}
+                    </div>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Cancellation Fee ($)</label>
+                      {editingSettings ? (
+                        <input 
+                          className="bw-input" 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          value={editedSettings?.cancellation_fee || 0} 
+                          onChange={(e) => handleSettingChange('cancellation_fee', parseFloat(e.target.value) || 0)}
+                          placeholder="10.00"
+                        />
+                      ) : (
+                        <span className="bw-info-value">${tenantSettings.cancellation_fee || 0}</span>
+                      )}
+                    </div>
+                    <div className="bw-form-group">
+                      <label className="bw-form-label">Discounts Enabled</label>
+                      {editingSettings ? (
+                        <select 
+                          className="bw-input" 
+                          value={editedSettings?.discounts ? 'true' : 'false'} 
+                          onChange={(e) => handleSettingChange('discounts', e.target.value === 'true')}
+                        >
+                          <option value="true">Yes</option>
+                          <option value="false">No</option>
+                        </select>
+                      ) : (
+                        <span className="bw-info-value">{tenantSettings.discounts ? 'Yes' : 'No'}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Last Updated Info */}
+                <div style={{ 
+                  padding: '16px', 
+                  backgroundColor: '#f8fafc', 
+                  borderRadius: '4px', 
+                  border: '1px solid #e2e8f0',
+                  marginTop: '16px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6b7280', fontSize: '14px' }}>
+                    <Clock className="w-4 h-4" />
+                    Last updated: {tenantSettings.updated_on ? new Date(tenantSettings.updated_on).toLocaleString() : 'Never'}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1071,9 +1620,8 @@ export default function TenantDashboard() {
                 Cancel
               </button>
               <button 
-                className="bw-btn" 
+                className="bw-btn bw-btn-action" 
                 onClick={createDriver}
-                style={{ color: '#000' }}
               >
                 Create Driver
               </button>
@@ -1095,31 +1643,33 @@ export default function TenantDashboard() {
             <div className="bw-modal-body">
               <div className="bw-form-grid">
                 <div className="bw-form-group">
-                  <label>Vehicle</label>
+                  <label>Select Vehicle</label>
                   <select 
-                    className="bw-input" 
                     value={assign.vehicleId} 
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssign({ ...assign, vehicleId: e.target.value })}
+                    onChange={(e) => setAssign({ ...assign, vehicleId: e.target.value })}
+                    className="bw-input"
+                    style={{ color: '#374151', backgroundColor: '#ffffff' }}
                   >
-                    <option value="">Select vehicle</option>
-                    {vehicles.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.year} {v.make} {v.model}
+                    <option value="">Choose a vehicle</option>
+                    {vehicles.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.id} style={{ color: '#374151', backgroundColor: '#ffffff' }}>
+                        {vehicle.make} {vehicle.model} {vehicle.year} - {vehicle.license_plate}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="bw-form-group">
-                  <label>Driver</label>
+                  <label>Select Driver</label>
                   <select 
-                    className="bw-input" 
                     value={assign.driverId} 
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssign({ ...assign, driverId: e.target.value })}
+                    onChange={(e) => setAssign({ ...assign, driverId: e.target.value })}
+                    className="bw-input"
+                    style={{ color: '#374151', backgroundColor: '#ffffff' }}
                   >
-                    <option value="">Select driver</option>
-                    {drivers.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.first_name} {d.last_name}
+                    <option value="">Choose a driver</option>
+                    {drivers.map((driver) => (
+                      <option key={driver.id} value={driver.id} style={{ color: '#374151', backgroundColor: '#ffffff' }}>
+                        {driver.first_name} {driver.last_name} - {driver.email}
                       </option>
                     ))}
                   </select>
@@ -1131,9 +1681,8 @@ export default function TenantDashboard() {
                 Cancel
               </button>
               <button 
-                className="bw-btn" 
+                className="bw-btn bw-btn-action" 
                 onClick={assignVehicle}
-                style={{ color: '#000' }}
               >
                 Assign Driver
               </button>

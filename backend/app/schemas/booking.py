@@ -82,11 +82,14 @@ class CreateBooking(BoookingBase):
 
 class UpdateBookingTenants(BoookingBase):
     pass 
-class BookingRespose(BoookingBase):
+class BookingResponse(BoookingBase):
     id: int
     tenant_id: Optional[int]
     estimated_price: Optional[float]
     booking_status: str
+    customer_name: Optional[str] = None
+    vehicle:  Optional[str] = None
+    driver_fullname: Optional[str] = None
     created_on: Optional[datetime]
     updated_on: Optional[datetime]
    

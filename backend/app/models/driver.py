@@ -61,8 +61,8 @@ class Drivers(Base):
 
 
 
-@property
-def full_name(self):
-    """Return the full name of the users"""
-    return f"{self.first_name} {self.last_name}"
+    @property
+    def full_name(self):
+        """Return the full name of the users"""
+        return f"{self.first_name} {self.last_name}"
 

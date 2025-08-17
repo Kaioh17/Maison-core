@@ -80,16 +80,13 @@ export const useAuthStore = create<AuthState>()(
           const decoded = jwtDecode<TokenPayload>(state.accessToken)
           const currentTime = Date.now() / 1000
           
-          // Check if token is expired (assuming exp field exists)
           if (decoded.exp && decoded.exp < currentTime) {
-            // Token is expired, clear it
             get().logout()
             return false
           }
           
           return true
         } catch {
-          // Invalid token, clear it
           get().logout()
           return false
         }

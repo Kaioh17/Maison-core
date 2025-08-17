@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from app.models import user, driver, tenant, full_name
+from app.models import user, driver, tenant
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from .helper_service import _tenants_exist,_tenant_activity_

@@ -10,6 +10,7 @@ db_exceptions = db_error_handler.DBErrorHandler
 driver_table = driver.Drivers
 vehicle_table = vehicle.Vehicles
 booking_table = booking.Bookings
+tenant_table = tenant.Tenants
 
 async def _table_checks_(driver_obj, payload, db):
     if not driver_obj:
@@ -91,7 +92,7 @@ async def register_driver(payload, db):
                 driver_obj.vehicle_id = new_vehicle.id
 
                 logger.info("Vehicle_config has been created")
-                await allocate_vehicle_category(payload.vehicle, db, driver_obj.tenant_id, new_vehicle.id)
+                # await allocate_vehicle_category(payload.vehicle, db, driver_obj.tenant_id, new_vehicle.id)
                 logger.info("Vehicle has been registered...")
                 continue
             
@@ -100,8 +101,11 @@ async def register_driver(payload, db):
         driver_obj.password = hashed_pwd
         driver_obj.is_registered = "registered"
        
+        tenant = db.query(tenant_table).filter(tenant_table.id == driver_obj.tenant_id).first()
 
+        tenant_driver = tenant.drivers_count + 1 
 
+        tenant.drivers_count = tenant_driver
         db.commit()
         db.refresh(driver_obj)
         logger.info("Logger driver succesfully registered")

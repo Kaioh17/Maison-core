@@ -52,7 +52,7 @@ async def add_vehicle(payload, current_user, db):
         db.commit()
         db.refresh(new_vehicle)
 
-        await allocate_vehicle_category(payload, db, user, new_vehicle.id)
+        # await allocate_vehicle_category(payload, db, user, new_vehicle.id)
         logger.info(f"{payload.make} added to {tenants.company}..")
         
     except db_exceptions.COMMON_DB_ERRORS as e:
@@ -89,6 +89,21 @@ def load_vehicles():
         logger.error(f"Error reading vehicle data file: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                           detail="Error reading vehicle configuration") 
+    
+
+async def add_vehicle_category(payload, current_tenant, db):
+    try:
+        logger.info(f"[{current_tenant.id}] add new vehicle category...")
+        category_info = payload.model_dump()
+        vehicle_category = vehicle_category_table(tenant_id = current_tenant.id, **category_info)
+
+        db.add(vehicle_category)
+        db.commit()
+        db.refresh(vehicle_category)
+
+        return vehicle_category
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
 async def allocate_vehicle_category(payload, db, id_tenant, id_vehicle):
     
     try:

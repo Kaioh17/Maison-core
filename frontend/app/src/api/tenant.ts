@@ -18,17 +18,17 @@ export async function createTenant(payload: TenantCreate) {
 }
 
 export async function getTenantDrivers() {
-  const { data } = await http.get<StandardResponse<DriverResponse[]>>('/v1/tenant/drivers/')
+  const { data } = await http.get<StandardResponse<DriverResponse[]>>('/v1/tenant/drivers')
   return data
 }
 
 export async function getTenantVehicles(params?: { driver_id?: number; assigned_drivers?: boolean }) {
-  const { data } = await http.get<StandardResponse<VehicleResponse[]>>('/v1/tenant/vehicles/', { params })
+  const { data } = await http.get<StandardResponse<VehicleResponse[]>>('/v1/tenant/vehicles', { params })
   return data
 }
 
 export async function getTenantBookings(params?: { booking_status?: string }) {
-  const { data } = await http.get<StandardResponse<BookingResponse[]>>('/v1/tenant/bookings/', { params })
+  const { data } = await http.get<StandardResponse<BookingResponse[]>>('/v1/tenant/bookings', { params })
   return data
 }
 

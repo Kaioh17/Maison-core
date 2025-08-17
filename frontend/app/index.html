@@ -1,9 +1,77 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Maison</title>
+    <script>
+      // Prevent theme flash by immediately applying saved theme
+      (function() {
+        console.log('Theme: HTML script starting...');
+        try {
+          // Wait for DOM to be ready
+          if (document.readyState === 'loading') {
+            console.log('Theme: DOM still loading, waiting for DOMContentLoaded');
+            document.addEventListener('DOMContentLoaded', applyTheme);
+          } else {
+            console.log('Theme: DOM already ready, applying theme immediately');
+            applyTheme();
+          }
+          
+          function applyTheme() {
+            console.log('Theme: applyTheme function called');
+            const savedTheme = localStorage.getItem('theme');
+            console.log('Theme: Saved theme from localStorage:', savedTheme);
+            
+            const root = document.documentElement;
+            const body = document.body;
+            
+            if (savedTheme === 'light') {
+              console.log('Theme: Applying light theme');
+              root.setAttribute('data-theme', 'light');
+              body.setAttribute('data-theme', 'light');
+            } else if (savedTheme === 'dark') {
+              console.log('Theme: Applying dark theme');
+              root.setAttribute('data-theme', 'dark');
+              body.setAttribute('data-theme', 'dark');
+            } else if (savedTheme === 'auto') {
+              console.log('Theme: Applying auto theme');
+              root.setAttribute('data-theme', 'auto');
+              body.setAttribute('data-theme', 'auto');
+              // For auto theme, check system preference immediately
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                console.log('Theme: Auto theme, system preference is dark');
+                root.setAttribute('data-theme', 'dark');
+                body.setAttribute('data-theme', 'dark');
+              } else {
+                console.log('Theme: Auto theme, system preference is light');
+                root.setAttribute('data-theme', 'light');
+                body.setAttribute('data-theme', 'light');
+              }
+            } else {
+              // No saved theme, check system preference
+              console.log('Theme: No saved theme, checking system preference');
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                console.log('Theme: System preference is dark');
+                root.setAttribute('data-theme', 'dark');
+                body.setAttribute('data-theme', 'dark');
+              } else {
+                console.log('Theme: System preference is light');
+                root.setAttribute('data-theme', 'light');
+                body.setAttribute('data-theme', 'light');
+              }
+            }
+            
+            console.log('Theme: Final theme attributes - Root:', root.getAttribute('data-theme'), 'Body:', body.getAttribute('data-theme'));
+          }
+        } catch (e) {
+          console.warn('Theme: Error applying theme:', e);
+          // Fallback to dark theme if there's an error
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.body.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

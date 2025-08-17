@@ -86,7 +86,7 @@ async def get_vehicles(
     )
 
 # Get bookings for the tenant, optionally filtered by status
-@router.get('/bookings', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[booking.BookingRespose]])
+@router.get('/bookings', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[booking.BookingResponse]])
 async def get_bookings(
     booking_status: Optional[str] = Query(None, description="only this labels can be passed 'pending', 'confirmed', 'active', 'cancelled', 'no_show'"),
     db: Session = Depends(get_db),

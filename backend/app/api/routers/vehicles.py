@@ -16,7 +16,7 @@ router = APIRouter(
 
 
 @router.get("/", status_code=200, response_model=list[vehicle.VehicleResponse])
-async def get_all_vehicles(current_user = Depends(deps.get_current_user),
+async def get_all_vehicles(is_tenants: int = Depends(is_tenants),current_user = Depends(deps.get_current_user),
                      db: Session = Depends(get_db)):
     vehicles =await vehicle_service.get_vehicles(current_user, db)
     return vehicles
@@ -37,11 +37,22 @@ async def set_vehicle_flat_rate(payload: vehicle_config.VehicleRate,
     vehicle_rate = await vehicle_service.set_vehicle_flat_rate(db, payload, current_user)
     return vehicle_rate
 
-@router.get("/vehicle_rates", status_code= status.HTTP_200_OK, response_model=list[vehicle_config.VehicleCategoryRateResponse])
+@router.get("/category", status_code= status.HTTP_200_OK, response_model=list[vehicle_config.VehicleCategoryRateResponse])
 async def get_vehicle_flat_rate(is_tenants: int = Depends(is_tenants),current_user = Depends(deps.get_current_user),
                      db: Session = Depends(get_db)):
     vehicle_category = db.query(vehicle_category_rate.VehicleCategoryRate).filter(vehicle_category_rate.VehicleCategoryRate.tenant_id == current_user.id).all()
     return vehicle_category
 
+@router.post("/create_category", status_code=status.HTTP_201_CREATED, response_model=vehicle_config.VehicleCategoryRateResponse )
+async def get_all_vehicles( payload: vehicle_config.VehicleRate,
+                            is_tenant = Depends(is_tenants),
+                            current_user = Depends(deps.get_current_user),
+                            db: Session = Depends(get_db)
+                     ):
+    vehicles = await vehicle_service.add_vehicle_category(payload, current_user, db)
+    return vehicles
 
-##search fpr vehicles 
+
+# @router.get("/category", status_code=status.HTTP_200_OK, response_model=list[vehicle_config.VehicleCategoryRateResponse])
+# async def get_vehicle_categories
+# ##search fpr vehicles 

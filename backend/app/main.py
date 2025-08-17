@@ -104,12 +104,15 @@ app = FastAPI(
     ]
 )
 
-# CORS for frontend (dev: Vite at 5173; docker: nginx serves same-origin and proxies /api)
+# CORS for frontend (dev: Vite at 3000; docker: nginx serves same-origin and proxies /api)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        "http://localhost:3000",   
+        "http://localhost:3001",    
+
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
     ],
     allow_credentials=True,
     allow_methods=["*"],

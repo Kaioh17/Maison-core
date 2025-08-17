@@ -23,7 +23,7 @@ def public_info():
     logger.info("Public test started")
     return {"msg": "test endpoint"}
 
-@router.post("/set", status_code=status.HTTP_201_CREATED,response_model= booking.BookingRespose)
+@router.post("/set", status_code=status.HTTP_201_CREATED,response_model= booking.BookingResponse)
 async def BookRide(book_ride: booking.CreateBooking, current_rider =  Depends(deps.get_current_user) 
              ,db: Session= Depends(get_db), rider = Depends(is_rider)):
     
@@ -31,7 +31,7 @@ async def BookRide(book_ride: booking.CreateBooking, current_rider =  Depends(de
     return ride_booked
 
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=list[booking.BookingRespose])
+@router.get("/", status_code=status.HTTP_200_OK, response_model=list[booking.BookingResponse])
 async def BookRide(current_user =  Depends(deps.get_current_user) 
                     ,db: Session= Depends(get_db)):
     

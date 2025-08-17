@@ -13,10 +13,17 @@ router = APIRouter(
     tags = ["tenant_settings"]
 )
 
+@router.get("/", status_code=status.HTTP_200_OK, response_model=tenant_setting.TenantResponse)
+async def get_tenant_settings(db: Session = Depends(get_db),
+                              current_tenant: int = Depends(deps.get_current_user)):
+    logger.info("Getting tenant settings")
+    tenant_setting_obj = await tenant_settings_service.get_tenant_settings(db, current_tenant)
+    return tenant_setting_obj
+
 @router.patch("/", status_code=status.HTTP_202_ACCEPTED, response_model=tenant_setting.UpdateTenantSetting)
 async def update_tenant_settings(payload: tenant_setting.UpdateTenantSetting, db: Session = Depends(get_db),
                                  current_tenant: int = Depends(deps.get_current_user)):
-    logger.info("-_-  :) :(   '_' ")
+    logger.info("Tenant settings updated...")
     upated_tenant_setting =await tenant_settings_service.update_tenant_settings(payload, db, current_tenant)
     
     return upated_tenant_setting

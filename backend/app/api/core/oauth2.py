@@ -52,13 +52,18 @@ def create_refresh_token(data: dict):
 def verify_access_token(token: str, credentials_exception):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        
         id: str = str(payload.get("id"))
         role: str = payload.get("role")
+        tenant_id: str = payload.get("tenant_id")
+        
         if id is None or role is None:
             raise credentials_exception
-        token_data = auth.TokenData(id = id, role = role)
+            
+        token_data = auth.TokenData(id=id, role=role, tenant_id=tenant_id)
+        return token_data
     except JWTError:
         raise credentials_exception
     
-    return token_data
+    
 

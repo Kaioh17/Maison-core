@@ -49,6 +49,7 @@ class DriverResponse(DriverBase):
     created_on: datetime
     updated_on: Optional[datetime] = None
     vehicle: Optional[VehicleResponse] = None
+    phone_no: Optional[str] = Field(None, pattern = r'^\+?[\d\s\-\(\)]+$')  # Make optional for response
 
     model_config = {
         "from_attributes": True

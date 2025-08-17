@@ -101,8 +101,8 @@ export default function AuthPage() {
             <label className="small-muted" htmlFor="password">Password</label>
             <div style={{ position: 'relative', marginTop: 6 }}>
               <Lock size={16} aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: .7 }} />
-              <input id="password" name="password" type={showPassword ? 'text' : 'password'} required className="bw-input" style={{ paddingLeft: 36, paddingRight: 36 }} placeholder="••••••••" onChange={handleInputChange} />
-              <button type="button" aria-label="Toggle password" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 0, color: '#fff' }}>
+              <input id="password" name="password" type={showPassword ? 'text' : 'password'} required className="bw-input" style={{ paddingLeft: 36}} placeholder="••••••••" onChange={handleInputChange} />
+              <button type="button" aria-label="Toggle password" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 0, color: '#4c4e4eff' }}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>

@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from slowapi import Limiter,_rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+
+from app.api.core import deps
 from ..core.auth_rate_limiter import *
 
 from app.db.database import  get_base_db
@@ -61,8 +63,8 @@ def login( request: Request,
         
         clear_failed_attempts(attempts_key)
 
-        access_token = create_access_token(data = {"id": str(user.id), "role": user.role})
-        refresh_token = create_refresh_token(data = {"id": str(user.id), "role": user.role})
+        access_token = create_access_token(data = {"id": str(user.id), "role": user.role,  "tenant_id": str(user.id)})
+        refresh_token = create_refresh_token(data = {"id": str(user.id), "role": user.role,  "tenant_id": str(user.id)})
         logger.info(f"refresh token: {refresh_token}")
 
         response = JSONResponse(content = {"access_token": access_token})
@@ -70,10 +72,10 @@ def login( request: Request,
             key = "refresh_token",
             value= refresh_token,
             httponly=True,
-            secure=False, #set to true for prpoduction 
+            secure=False, #set to true for production 
             samesite="lax",
             max_age=60 * 60 * 24 * 30,
-            path= "/api/v1/login/refresh_tenants"
+            path= "/api/v1/login/refresh_tenants"  # Changed from "/api/v1/login/refresh_tenants" to "/api"
         )
         # logger.info(f"response: {response}")
 
@@ -131,7 +133,7 @@ def login( request: Request,
             secure=False, #set to true for prpoduction 
             samesite="lax",
             max_age=60 * 60 * 24 * 30,
-            path= "/api/v1/login/refresh"
+            path= "/api"  # Changed from "/api/v1/login/refresh" to "/api"
         )
 
         # return {"msg": response,
@@ -186,7 +188,7 @@ def login( request: Request,
             secure=False, #set to true for prpoduction 
             samesite="lax",
             max_age=60 * 60 * 24 * 30,
-            path= "/api/v1/login/refresh"
+            path= "/api"  # Changed from "/api/v1/login/refresh" to "/api"
         )
 
         # return {"msg": response,
@@ -199,30 +201,58 @@ def login( request: Request,
 ###refresh tokens endpoint
 @router.post("/refresh_tenants")
 async def refresh_token(request: Request):
-    refresh_token =request.cookies.get("refresh_token")
-    if not refresh_token:
-        logger.error("There is no refresh token...")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail="No refresh token")
-    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
-    payload = verify_access_token(refresh_token, credentials_exception)
+    try:
+        refresh_token = request.cookies.get("refresh_token")
+        if not refresh_token:
+            logger.error("There is no refresh token...")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                    detail="No refresh token")
+        
+        logger.info("Attempting to refresh tenant token...")
+        credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
+        payload = verify_access_token(refresh_token, credentials_exception)
 
-    #create new access token
-    logger.info("Token refreshed...")
-    new_access_token = create_access_token(data = {"id": payload['id'], "role": payload['role']})
-    return {"new_access_token": new_access_token}    
+        #create new access token
+        logger.info(f"Token refreshed successfully for tenant {payload.id}")
+        token_data = {"id": str(payload.id), "role": payload.role, "tenant_id": str(payload.id)}
+        logger.info(f"Creating new access token with data: {token_data}")
+        new_access_token = create_access_token(data=token_data)
+        logger.info(f"New access token created: {new_access_token[:20]}...")
+        return {"new_access_token": new_access_token}
+    except Exception as e:
+        logger.error(f"Error refreshing tenant token: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during token refresh")
 
 @router.post("/refresh")
 async def refresh_token(request: Request):
-    refresh_token =request.cookies.get("refresh_token")
-    if not refresh_token:
-        logger.error("There is no refresh token...")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail="No refresh token")
-    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
-    payload = verify_access_token(refresh_token, credentials_exception)
+    try:
+        refresh_token = request.cookies.get("refresh_token")
+        if not refresh_token:
+            logger.error("There is no refresh token...")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                    detail="No refresh token")
+        
+        logger.info("Attempting to refresh token...")
+        credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
+        payload = verify_access_token(refresh_token, credentials_exception)
 
-    #create new access token
-    logger.info("Token refreshed...")
-    new_access_token = create_access_token(data = {"id": payload['id'], "role": payload['role'], "tenant_id": payload['tenant_id']})
-    return {"new_access_token": new_access_token}  
+        #create new access token
+        logger.info(f"Token refreshed successfully for user {payload.id}")
+        token_data = {"id": str(payload.id), "role": payload.role, "tenant_id": str(payload.tenant_id)}
+        logger.info(f"Creating new access token with data: {token_data}")
+        new_access_token = create_access_token(data=token_data)
+        logger.info(f"New access token created: {new_access_token[:20]}...")
+        return {"new_access_token": new_access_token}
+    except Exception as e:
+        logger.error(f"Error refreshing token: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during token refresh")  
+
+@router.get("/test-auth")
+async def test_auth(current_user = Depends(deps.get_current_user)):
+    """Test endpoint to verify authentication is working"""
+    return {
+        "message": "Authentication successful",
+        "user_id": current_user.id,
+        "role": current_user.role,
+        "email": current_user.email
+    } 

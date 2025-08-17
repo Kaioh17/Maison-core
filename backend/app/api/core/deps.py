@@ -14,19 +14,26 @@ def get_current_user(token: str = Depends(oauth2.oauth2_scheme), db: Session = D
         
     credentials_exception =  HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"could not validate credentials in get current user", 
                                           headers={"WWW-Authenticate": "Bearer"})
-    token_data = oauth2.verify_access_token(token, credentials_exception)
+    
+    try:
+        token_data = oauth2.verify_access_token(token, credentials_exception)
 
-    role = token_data.role
+        role = token_data.role
 
-    if not role:
-        print(f"role not present {role}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail = "No role")
-    table = oauth2.role_table_map.get(role)
+        if not role:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                                detail = "No role")
+        
+        table = oauth2.role_table_map.get(role)
 
-    if not table:
-        raise credentials_exception
+        if not table:
+            raise credentials_exception
 
-    user = db.query(table).filter(table.id == token_data.id).first()
+        user = db.query(table).filter(table.id == token_data.id).first()
+        
+        if not user:
+            raise credentials_exception
 
-    return user
+        return user
+    except Exception as e:
+        raise
