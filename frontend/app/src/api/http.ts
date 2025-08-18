@@ -11,6 +11,7 @@ function resolveApiBase(): string {
 			}
 			return url.origin + url.pathname.replace(/\/$/, '')
 		}
+		// For relative URLs like '/api', return as is
 		return API_BASE
 	} catch {
 		return API_BASE

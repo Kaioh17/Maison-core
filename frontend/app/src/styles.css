@@ -12,6 +12,7 @@ body {
   /* Dark Theme (Default) */
   --bw-bg: #000000;
   --bw-fg: #ffffff;
+  --bw-text: #fffdfd;
   --bw-muted: #f5f5f5;
   --bw-border: rgba(255,255,255,0.12);
   --bw-border-strong: rgba(255,255,255,0.2);
@@ -19,6 +20,7 @@ body {
   --bw-shadow: 0 6px 24px rgba(0,0,0,0.25);
   --bw-bg-hover: rgba(255,255,255,0.05);
   --bw-bg-hover-strong: rgba(255,255,255,0.1);
+  --bw-bg-secondary: #111111;
   --bw-accent: #3b82f6;
   --bw-accent-hover: #1d4ed8;
   
@@ -37,6 +39,7 @@ body {
 [data-theme="light"] {
   --bw-bg: #ffffff;
   --bw-fg: #1f2937;
+  --bw-text: #1f2937;
   --bw-muted: #6b7280;
   --bw-border: rgba(0,0,0,0.12);
   --bw-border-strong: rgba(0,0,0,0.2);
@@ -44,6 +47,7 @@ body {
   --bw-shadow: 0 6px 24px rgba(0,0,0,0.1);
   --bw-bg-hover: rgba(0,0,0,0.02);
   --bw-bg-hover-strong: rgba(0,0,0,0.05);
+  --bw-bg-secondary: #f9fafb;
   --bw-accent: #3b82f6;
   --bw-accent-hover: #1d4ed8;
 }
@@ -53,6 +57,7 @@ body {
   [data-theme="auto"] {
     --bw-bg: #ffffff;
     --bw-fg: #1f2937;
+    --bw-text: #1f2937;
     --bw-muted: #6b7280;
     --bw-border: rgba(0,0,0,0.12);
     --bw-border-strong: rgba(0,0,0,0.2);
@@ -60,6 +65,7 @@ body {
     --bw-shadow: 0 6px 24px rgba(0,0,0,0.1);
     --bw-bg-hover: rgba(0,0,0,0.02);
     --bw-bg-hover-strong: rgba(0,0,0,0.05);
+    --bw-bg-secondary: #f9fafb;
     --bw-accent: #3b82f6;
     --bw-accent-hover: #1d4ed8;
   }
@@ -69,6 +75,7 @@ body {
   [data-theme="auto"] {
     --bw-bg: #000000;
     --bw-fg: #ffffff;
+    --bw-text: #ffffff;
     --bw-muted: #f5f5f5;
     --bw-border: rgba(255,255,255,0.12);
     --bw-border-strong: rgba(255,255,255,0.2);
@@ -76,6 +83,7 @@ body {
     --bw-shadow: 0 6px 24px rgba(0,0,0,0.25);
     --bw-bg-hover: rgba(255,255,255,0.05);
     --bw-bg-hover-strong: rgba(255,255,255,0.1);
+    --bw-bg-secondary: #111111;
     --bw-accent: #3b82f6;
     --bw-accent-hover: #1d4ed8;
   }

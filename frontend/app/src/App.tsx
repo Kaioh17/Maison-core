@@ -3,6 +3,8 @@ import Landing from '@pages/Landing'
 import Login from '@pages/Login'
 import Signup from '@pages/Signup'
 import TenantDashboard from '@pages/TenantDashboard'
+import DriverDashboard from '@pages/DriverDashboard'
+import RiderDashboard from '@pages/RiderDashboard'
 import VehicleRates from '@pages/VehicleRates'
 import TenantSettings from '@pages/TenantSettings'
 import AddVehicle from '@pages/AddVehicle'
@@ -52,6 +54,24 @@ export default function App() {
         element={
           <ProtectedRoute allowRoles={["tenant"]}>
             <AddVehicle />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/driver"
+        element={
+          <ProtectedRoute allowRoles={["driver"]}>
+            <DriverDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/rider"
+        element={
+          <ProtectedRoute allowRoles={["rider"]}>
+            <RiderDashboard />
           </ProtectedRoute>
         }
       />

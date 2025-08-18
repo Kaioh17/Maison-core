@@ -723,7 +723,7 @@ export default function TenantDashboard() {
                 className="bw-btn bw-btn-action" 
                 onClick={() => setShowAddDriver(true)}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3 h-3" />
                 Add Driver
               </button>
             </div>
@@ -948,7 +948,7 @@ export default function TenantDashboard() {
                 className="bw-btn bw-btn-action" 
                 onClick={() => setShowAssignDriver(true)}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3 h-3" />
                 Assign Driver
               </button>
               <button 
@@ -956,7 +956,7 @@ export default function TenantDashboard() {
                 onClick={() => navigate('/vehicles/add')}
                 style={{ marginLeft: 16 }}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3 h-3" />
                 Add Vehicle
               </button>
             </div>
@@ -1192,7 +1192,7 @@ export default function TenantDashboard() {
                 ) : null}
                 
                 {/* Add New Category Row */}
-                <div className="bw-table-row" style={{ backgroundColor: '#000000', border: '1px dashed #d1d5db' }}>
+                <div className="bw-table-row" style={{ backgroundColor: '#ffffffad', border: '2px dashed #d1d5db' }}>
                   <div className="bw-table-cell">
                     <input
                       type="text"
@@ -1202,8 +1202,8 @@ export default function TenantDashboard() {
                         width: '100%', 
                         padding: '4px 8px', 
                         fontSize: '14px',
-                        color: '#ffffff',
-                        backgroundColor: '#000000',
+                        color: '#000000ff',
+                        backgroundColor: '#ffffffff',
                         borderBottom: '1px solid #d1d5db'
                       }}
                       id="newCategoryName"
@@ -1222,8 +1222,8 @@ export default function TenantDashboard() {
                           width: '80px', 
                           padding: '4px 8px', 
                           fontSize: '14px',
-                          color: '#ffffff',
-                          backgroundColor: '#000000',
+                          color: '#000000ff',
+                          backgroundColor: '#ffffffff',
                           borderBottom: '1px solid #d1d5db'
                         }}
                         id="newCategoryRate"
@@ -1233,8 +1233,8 @@ export default function TenantDashboard() {
                   <div className="bw-table-cell">
                     <div className="bw-actions">
                       <button
-                        className="bw-btn"
-                        style={{ fontSize: '12px', padding: '4px 5px' }}
+                        className="bw-btn-outline"
+                        style={{ fontSize: '12px', padding: '5px 6px' }}
                         disabled={addingCategory}
                         onClick={async () => {
                           const nameInput = document.getElementById('newCategoryName') as HTMLInputElement
@@ -1272,7 +1272,7 @@ export default function TenantDashboard() {
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                         ) : (
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-3 h-3" />
                         )}
                         Add
                       </button>

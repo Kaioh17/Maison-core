@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-
+import './landing.css'
 function Header() {
   return (
     <header className="bw-topnav">
@@ -506,20 +506,32 @@ function Testimonial() {
 
 function FinalCTA() {
   return (
-    <section className="section bw-container" aria-label="Final call to action">
+    <section className="section bw-container" aria-label="Final call to action" style={{
+      backgroundColor: '#ffffffff',
+      color: '#ffffffff',
+      position: 'relative',
+      borderRadius: '12px',
+      margin: '32px auto',
+      padding: '48px 24px',
+      maxWidth: '1000px',
+      textAlign: 'center'
+    }}>
       <div style={{ 
-        textAlign: 'center', 
-        maxWidth: '800px', 
-        margin: '0 auto',
         position: 'relative',
         zIndex: 2
       }}>
-        <h2 style={{ fontSize: '2.5rem', marginBottom: 16 }}>Maison is the Next Generation of Limo Software.</h2>
-        <p className="bw-sub" style={{ fontSize: '1.25rem', marginBottom: 32, lineHeight: 1.6 }}>
+        <h2 style={{ fontSize: '2.5rem', marginBottom: 16, color: '#ffffff' }}>Maison is the Next Generation of Limo Software.</h2>
+        <p className="bw-sub" style={{ fontSize: '1.25rem', marginBottom: 32, lineHeight: 1.6, color: '#e5e7eb' }}>
           Stop fighting with outdated systems. Start running your business on a platform built for you — operators, drivers, and riders.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-          <Link to="/signup" className="bw-btn" style={{ color: '#ffffffff', fontSize: '1.1rem', padding: '12px 32px' }}>
+          <Link to="/signup" className="bw-btn" style={{ 
+            color: '#ffffff', 
+            fontSize: '1.1rem', 
+            padding: '12px 32px',
+            backgroundColor: '#3b82f6',
+            borderColor: '#3b82f6'
+          }}>
             Start Free Today
           </Link>
         </div>
@@ -535,7 +547,8 @@ function FinalCTA() {
         backgroundImage: 'url(/images/final-cta-background.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
+        backgroundRepeat: 'no-repeat',
+        borderRadius: '12px'
       }} />
     </section>
   )
@@ -581,7 +594,7 @@ function Footer() {
 
 export default function Landing() {
   return (
-    <main className="bw" aria-label="Landing">
+    <main className="bw landing-page" aria-label="Landing">
       <Header />
       <Hero />
       <Features />

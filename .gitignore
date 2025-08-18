@@ -7,3 +7,4 @@ backend/_alembic_setup.sh
 .env
 
 frontend/app/node_modules
+frontend/mobile/node_modules

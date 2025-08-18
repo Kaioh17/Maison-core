@@ -1,0 +1,132 @@
+/* Landing Page Specific Styles - Fixed White Theme */
+.landing-page {
+  /* Override theme variables for landing page */
+  --landing-bg: #ffffff;
+  --landing-fg: #1f2937;
+  --landing-text: #1f2937;
+  --landing-muted: #6b7280;
+  --landing-border: rgba(0,0,0,0.12);
+  --landing-border-strong: rgba(0,0,0,0.2);
+  --landing-focus: #3b82f6;
+  --landing-shadow: 0 6px 24px rgba(0,0,0,0.1);
+  --landing-bg-hover: rgba(0,0,0,0.02);
+  --landing-bg-hover-strong: rgba(0,0,0,0.05);
+  --landing-bg-secondary: #f9fafb;
+  --landing-accent: #3b82f6;
+  --landing-accent-hover: #1d4ed8;
+}
+
+/* Force white theme for landing page */
+.landing-page {
+  background: var(--landing-bg) !important;
+  color: var(--landing-fg) !important;
+}
+
+.landing-page .bw-card {
+  background: var(--landing-bg) !important;
+  border-color: var(--landing-border) !important;
+  color: var(--landing-fg) !important;
+}
+
+.landing-page .bw-card:hover {
+  box-shadow: var(--landing-shadow) !important;
+}
+
+.landing-page .bw-btn {
+  background: var(--landing-fg) !important;
+  color: var(--landing-bg) !important;
+  border-color: var(--landing-fg) !important;
+}
+
+.landing-page .bw-btn-outline {
+  background: transparent !important;
+  color: var(--landing-fg) !important;
+  border-color: var(--landing-border-strong) !important;
+}
+
+.landing-page .bw-topnav {
+  background: var(--landing-bg) !important;
+  border-color: var(--landing-border) !important;
+}
+
+.landing-page .bw-footer {
+  border-color: var(--landing-border) !important;
+}
+
+.landing-page .bw-input {
+  color: var(--landing-fg) !important;
+  border-color: var(--landing-border-strong) !important;
+}
+
+.landing-page .bw-input:focus {
+  border-color: var(--landing-fg) !important;
+}
+
+.landing-page .bw-input::placeholder {
+  color: var(--landing-muted) !important;
+}
+
+.landing-page .small-muted {
+  color: var(--landing-muted) !important;
+}
+
+.landing-page .section {
+  border-color: var(--landing-border) !important;
+}
+
+.landing-page .bw-hero-art {
+  border-color: var(--landing-border) !important;
+  color: var(--landing-muted) !important;
+}
+
+/* Ensure all text elements use landing colors */
+.landing-page h1, .landing-page h2, .landing-page h3, .landing-page h4, .landing-page h5, .landing-page h6 {
+  color: var(--landing-fg) !important;
+}
+
+.landing-page p {
+  color: var(--landing-fg) !important;
+}
+
+.landing-page a {
+  color: var(--landing-fg) !important;
+}
+
+/* Override any theme-aware variables that might be used */
+.landing-page [style*="var(--bw-"] {
+  /* Force landing colors for any inline styles using theme variables */
+}
+
+/* Ensure SVG icons in landing page are black */
+.landing-page svg {
+  color: #000000 !important;
+}
+
+/* Override any hover states */
+.landing-page .bw-card:hover {
+  background: var(--landing-bg-hover-strong) !important;
+}
+
+.landing-page .bw-btn:hover {
+  background: var(--landing-bg-hover-strong) !important;
+}
+
+.landing-page .bw-btn-outline:hover {
+  background: var(--landing-bg-hover) !important;
+}
+
+/* Remove hover effects for landing page buttons */
+.landing-page .bw-btn:hover,
+.landing-page .bw-btn-outline:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background: inherit !important;
+  border-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Remove card hover effects */
+.landing-page .bw-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+} 

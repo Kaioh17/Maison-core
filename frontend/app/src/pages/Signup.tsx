@@ -13,6 +13,7 @@ export default function Signup() {
   const [company, setCompany] = useState('')
   const [slug, setSlug] = useState('')
   const [city, setCity] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -30,6 +31,7 @@ export default function Signup() {
         company_name: company,
         slug,
         city,
+        logo_url: logoUrl || null,
       })
       // Auto-login then go to dashboard
       const data = await loginTenant(email, password)
@@ -85,6 +87,16 @@ export default function Signup() {
                 <input className="bw-input" value={city} onChange={(e) => setCity(e.target.value)} />
               </label>
             </div>
+
+            <label className="small-muted">Logo URL (optional)
+              <input 
+                className="bw-input" 
+                type="url" 
+                placeholder="https://example.com/logo.png" 
+                value={logoUrl} 
+                onChange={(e) => setLogoUrl(e.target.value)} 
+              />
+            </label>
 
             {error && <div className="small-muted" style={{ color: '#ffb3b3' }}>{error}</div>}
             {message && <div className="small-muted" style={{ color: '#b3ffcb' }}>{message}</div>}
