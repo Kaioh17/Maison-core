@@ -4,23 +4,24 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 import re
 from enum import Enum
+from fastapi import UploadFile, Form
 
 class DriverType(str, Enum):
     OUTSOURCED = "outsourced"
     IN_HOUSE = "in_house"
 """Tenants Schemas"""
 class TenantCreate(BaseModel):
-    email: EmailStr
-    first_name: str = Field(..., min_length=1, max_length=200)
-    last_name: str = Field(..., min_length=1, max_length=200)
-    password: str = Field(min_length=8)
-    phone_no: str = Field(..., pattern = r'^\+?[\d\s\-\(\)]+$')
-    company_name: str = Field(..., min_length=1, max_length=200)
-    logo_url: Optional[str] = None
-    slug: str = Field(..., min_length=1, max_length=100, pattern=r'^[a-z0-9-]+$')
-    address: Optional[str] = None
-    city: str = Field(..., min_length=1, max_length=100)
-    drivers_count: int = Field(default=0, ge=0)
+    email: EmailStr = Form(...)
+    first_name: str = Form(..., min_length=1, max_length=200)
+    last_name: str = Form(..., min_length=1, max_length=200)
+    password: str = Form(min_length=8)
+    phone_no: str = Form(..., pattern = r'^\+?[\d\s\-\(\)]+$')
+    company_name: str = Form(..., min_length=1, max_length=200)
+    # logo_url: Optional[UploadFile] = None
+    slug: str = Form(..., min_length=1, max_length=100, pattern=r'^[a-z0-9-]+$')
+    address: Optional[str] = Form(None)
+    city: str = Form(..., min_length=1, max_length=100)
+    drivers_count: int = Form(default=0, ge=0)
 
     @field_validator('email')
     def validate_email(cls, v):
@@ -61,7 +62,7 @@ class TenantResponse(BaseModel):
     last_name: str
     phone_no: str
     company_name: str
-    logo_url: Optional[str]
+    logo_url: Optional[str] = None
     slug: str
     address: Optional[str]
     city: str

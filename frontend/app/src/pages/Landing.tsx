@@ -508,7 +508,7 @@ function FinalCTA() {
   return (
     <section className="section bw-container" aria-label="Final call to action" style={{
       backgroundColor: '#ffffffff',
-      color: '#ffffffff',
+      color: '#000000ff',
       position: 'relative',
       borderRadius: '12px',
       margin: '32px auto',

@@ -1,5 +1,6 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, FastAPI, Query, Response, status, Request
+from fastapi import APIRouter, HTTPException, FastAPI, Query, Response, status, Request, UploadFile, File, Form
+from pydantic import EmailStr
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
@@ -42,13 +43,37 @@ async def tenants(db: Session = Depends(get_db), current_tenants = Depends(deps.
 
 # Create a new tenant
 @router.post('/add', status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[tenant.TenantResponse])
-async def create_tenants(payload: tenant.TenantCreate, db: Session = Depends(get_base_db)):
-    logger.info("Tenants created")
-    tenant_obj = await tenants_service.create_tenant(db, payload)
-    return general.StandardResponse(
-        data=tenant_obj,
-        message="Tenant created successfully"
-    )
+    
+async def create_tenants(   email: EmailStr = Form(...),
+                            first_name: str = Form(..., min_length=1, max_length=200),
+                            last_name: str = Form(..., min_length=1, max_length=200),
+                            password: str = Form(min_length=8),
+                            phone_no: str = Form(..., pattern = r'^\+?[\d\s\-\(\)]+$'),
+                            company_name: str = Form(..., min_length=1, max_length=200),
+                            # logo_url: Optional[UploadFile] = None
+                            slug: str = Form(..., min_length=1, max_length=100, pattern=r'^[a-z0-9-]+$'),
+                            address: Optional[str] = Form(None),
+                            city: str = Form(..., min_length=1, max_length=100),
+                            drivers_count: int = Form(default=0, ge=0),
+                            logo_url: Optional[UploadFile] = File(None), 
+                            db: Session = Depends(get_base_db)):
+        logger.info("Tenants created")
+        tenant_obj = await tenants_service.create_tenant(db =db,
+                                                        email=email,
+                                                        first_name=first_name,
+                                                        last_name=last_name,
+                                                        password=password,
+                                                        phone_no=phone_no,
+                                                        company_name=company_name,
+                                                        slug=slug,
+                                                        address=address,
+                                                        city=city,
+                                                        drivers_count=drivers_count,
+                                                        logo_url=logo_url, )
+        return general.StandardResponse(
+            data=tenant_obj,
+            message="Tenant created successfully"
+        )
 
 # Get all drivers for the current tenant
 @router.get('/drivers', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[driver.DriverResponse]])

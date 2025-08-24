@@ -14,7 +14,10 @@ Dependencies:
 - SQLAlchemy ORM models for tenants, drivers, vehicles, bookings, and tenant settings
 - Utility modules for password hashing, database error handling, and logging
 """
-from fastapi import HTTPException, status
+import os
+from typing import Optional
+from fastapi import HTTPException, UploadFile, status, Form, File
+from pydantic import EmailStr
 from app.models import tenant, driver, TenantSettings, vehicle, booking, vehicle_category_rate
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
@@ -54,28 +57,50 @@ async def _create_vehicle_category_rate_table(db, id_tenant):
 
 
 
-async def create_tenant(db, payload):
+async def create_tenant(db, email,
+                            first_name,
+                            last_name ,
+                            password ,
+                            phone_no ,
+                            company_name ,
+                            # logo_url: Optional[UploadFile] = None
+                            slug ,
+                            address ,
+                            city ,
+                            drivers_count ,
+                            logo_url ):
     try:
         model_map = {
-            "email": payload.email,
-            "company_name": payload.company_name,
-            "phone_no": payload.phone_no,
-            "slug": payload.slug
+            "email": email,
+            "company_name": company_name,
+            "phone_no": phone_no,
+            "slug": slug
         }
         """Stripe config"""
-        stripe_customer = StripeService.create_customer(email = payload.email,name = f"{payload.first_name} {payload.last_name}")
-        stripe_express = StripeService.create_express_account(email = payload.email)
+        stripe_customer = StripeService.create_customer(email = email,name = f"{first_name} {last_name}")
+        stripe_express = StripeService.create_express_account(email = email)
 
         _check_unique_fields(tenant_table, db, model_map)
         """Create new tenants"""
-        _verify_upload(payload.logo_url)
+        logo_path = await _verify_upload(logo_url,slug)
 
-        hashed_pwd = password_utils.hash(payload.password.strip()) #hash password
-        tenats_info = payload.model_dump()
-        tenats_info.pop("users", None)
+        hashed_pwd = password_utils.hash(password.strip()) #hash password
+        # tenats_info = model_dump()
+        # tenats_info.pop("users", None)
         new_tenant = tenant_table(stripe_customer_id = stripe_customer,
                                     stripe_account_id = stripe_express,
-                                   **tenats_info)
+                                    email=email,
+                                    first_name=first_name,
+                                    last_name=last_name,
+                                    password=password,
+                                    phone_no=phone_no,
+                                    company_name=company_name,
+                                    slug=slug,
+                                    address=address,
+                                    city=city,
+                                    drivers_count=drivers_count,
+                                    logo_url = logo_path
+                                    )
         new_tenant.password = hashed_pwd
 
        
@@ -87,18 +112,32 @@ async def create_tenant(db, payload):
         logger.info(f"new tenant_id {new_tenant.id}")
         """add tenants settings"""
 
-        await _set_up_tenant_settings( new_tenant.id,payload,db)
+        await _set_up_tenant_settings( new_tenant.id,logo_path, slug,db)
         await _create_vehicle_category_rate_table(db, new_tenant.id)
 
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
         
     return new_tenant
-async def _verify_upload(logo_url):
-    contents = await logo_url.read()
-
-    with open(f"upload/{logo_url}", "wb") as f:
-        f.write(contents)
+async def _verify_upload(logo_url,slug):
+    if logo_url:
+        try:
+            contents = await logo_url.read()
+            # Extract filename from the uploaded file
+            filename = logo_url.filename if hasattr(logo_url, 'filename') else 'logo.jpg'
+            upload_dir =  "app/upload"
+            os.makedirs(upload_dir, exist_ok=True)
+            file_path = f"{upload_dir}/{slug}_{filename}"
+            with open(file_path, "wb") as f:
+                f.write(contents)
+            logger.info(f"{file_path}")
+            logger.info("{slug}, Logo is saved!!")
+            return file_path
+        except Exception as e:
+            logger.warning(f"Failed to save logo upload: {e}")
+            # Continue without failing the tenant creation
+    return None
+    # If no logo_url, just continue
 async def get_company_info(db, current_tenats):
     try: 
         company = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_tenats.id).first()
@@ -363,13 +402,25 @@ def _check_unique_fields(model, db, fields: dict):
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
             
-async def _set_up_tenant_settings(new_tenant_id,payload,db):
+async def _set_up_tenant_settings(new_tenant_id,logo_url, slug,db):
     try: 
-        new_tenants_settings = TenantSettings(tenant_id = new_tenant_id,
-                                           logo_url = payload.logo_url, 
-                                           slug = payload.slug)
+        new_tenants_settings = TenantSettings(
+            tenant_id = new_tenant_id,
+            logo_url = logo_url, 
+            slug = slug,
+            theme = "dark",  # Default theme
+            enable_branding = False,  # Default to false
+            base_fare = 0.0,  # Default base fare
+            per_mile_rate = 0.0,  # Default per mile rate
+            per_minute_rate = 0.0,  # Default per minute rate
+            per_hour_rate = 0.0,  # Default per hour rate
+            rider_tiers_enabled = False,  # Default to false
+            cancellation_fee = 0.0,  # Default cancellation fee
+            discounts = False  # Default to false
+        )
         db.add(new_tenants_settings)
         db.commit()
+        logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
 
