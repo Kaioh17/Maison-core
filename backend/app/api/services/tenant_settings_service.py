@@ -6,6 +6,7 @@ from app.models import tenant_setting
 from .helper_service import _tenants_exist
 from .vehicle_service import allocate_vehicle_category
 from sqlalchemy.orm import selectinload
+from .tenants_service import _verify_upload
 
 db_exceptions = db_error_handler.DBErrorHandler
 tenant_setting_table= tenant_setting.TenantSettings
@@ -28,9 +29,26 @@ async def update_tenant_settings(payload, db, current_tenant):
     if not setting_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail = "Settings not found ")
+    
     for field, value in payload.dict().items():
-        setattr(setting_obj, field, value)
+        if hasattr(setting_obj, field):
+            setattr(setting_obj, field, value)
 
+    db.commit()
+    db.refresh(setting_obj)
+
+    return setting_obj
+
+async def update_logo(logo, db, current_tenant):
+    setting_query = db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == current_tenant.id)
+    setting_obj = setting_query.first()
+
+    logo_url = await _verify_upload(logo, current_tenant.slug)
+    if not setting_obj:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"[{current_tenant.id}] Settings not found for user")
+    
+    setting_obj.logo_url = logo_url
     db.commit()
     db.refresh(setting_obj)
 

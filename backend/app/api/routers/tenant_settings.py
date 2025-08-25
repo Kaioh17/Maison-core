@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, FastAPI, Response,status
+from fastapi import APIRouter, HTTPException, FastAPI, Response,status, UploadFile, File
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
@@ -7,7 +7,7 @@ from app.schemas import tenant_setting
 from ..core import deps
 from .dependencies import is_driver
 from app.utils.logging import logger
-
+from typing import Optional 
 router = APIRouter(
     prefix = "/api/v1/tenant_setting",
     tags = ["tenant_settings"]
@@ -27,3 +27,9 @@ async def update_tenant_settings(payload: tenant_setting.UpdateTenantSetting, db
     upated_tenant_setting =await tenant_settings_service.update_tenant_settings(payload, db, current_tenant)
     
     return upated_tenant_setting
+
+@router.patch("/logo", status_code=status.HTTP_202_ACCEPTED, response_model = tenant_setting.updated_vicuals )
+async def update_logo (logo_url: Optional[UploadFile] = File(None), db: Session = Depends(get_db), current_tenant: int = Depends(deps.get_current_user)):
+    
+    updated_logo = await tenant_settings_service.update_logo(logo_url, db, current_tenant)
+    return updated_logo

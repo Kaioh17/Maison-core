@@ -137,7 +137,7 @@ async def _verify_upload(logo_url,slug):
             logger.warning(f"Failed to save logo upload: {e}")
             # Continue without failing the tenant creation
     return None
-    # If no logo_url, just continue
+    # If no logo_url, return None
 async def get_company_info(db, current_tenats):
     try: 
         company = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_tenats.id).first()
