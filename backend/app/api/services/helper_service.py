@@ -45,18 +45,18 @@ def _tenant_activity_(db, data):
 import os
 @staticmethod
 #this is used to verify uploads from clients and direct to respective directory or s3 bucket 
-async def _verify_upload(logo_url,slug: str, upload_dir: str):
+async def _verify_upload(logo_url,slug: str, upload_dir: str, file_path: str):
     if logo_url:
         try:
             contents = await logo_url.read()
             # Extract filename from the uploaded file
             filename = logo_url.filename if hasattr(logo_url, 'filename') else 'image.jpg'
             os.makedirs(upload_dir, exist_ok=True)
-            file_path = f"{upload_dir}/{slug}_{filename}"
-            with open(file_path, "wb") as f:
+            _file_path = f"{file_path}_{filename}"
+            with open(_file_path, "wb") as f:
                 f.write(contents)
-            logger.info(f"{file_path}")
-            logger.info("{slug}, image is saved!!")
+            logger.info(f"{_file_path}")
+            logger.info(f"{slug}, image is saved!!")
             return file_path
         except Exception as e:
             logger.warning(f"Failed to save logo upload: {e}")

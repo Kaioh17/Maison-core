@@ -13,7 +13,36 @@ export async function getTenantInfo() {
 }
 
 export async function createTenant(payload: TenantCreate) {
-  const { data } = await http.post<StandardResponse<TenantResponse>>('/v1/tenant/add', payload)
+  const formData = new FormData()
+  
+  // Add all text fields
+  formData.append('email', payload.email)
+  formData.append('first_name', payload.first_name)
+  formData.append('last_name', payload.last_name)
+  formData.append('password', payload.password)
+  formData.append('phone_no', payload.phone_no)
+  formData.append('company_name', payload.company_name)
+  formData.append('slug', payload.slug)
+  formData.append('city', payload.city)
+  
+  if (payload.address) {
+    formData.append('address', payload.address)
+  }
+  
+  if (payload.drivers_count !== undefined) {
+    formData.append('drivers_count', payload.drivers_count.toString())
+  }
+  
+  // Add logo file if provided
+  if (payload.logo_url instanceof File) {
+    formData.append('logo_url', payload.logo_url)
+  }
+  
+  const { data } = await http.post<StandardResponse<TenantResponse>>('/v1/tenant/add', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
   return data
 }
 
@@ -55,7 +84,7 @@ export type TenantCreate = {
   password: string
   phone_no: string
   company_name: string
-  logo_url?: string | null
+  logo_url?: File | null
   slug: string
   address?: string | null
   city: string

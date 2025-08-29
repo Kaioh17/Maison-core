@@ -13,10 +13,24 @@ export default function Signup() {
   const [company, setCompany] = useState('')
   const [slug, setSlug] = useState('')
   const [city, setCity] = useState('')
-  const [logoUrl, setLogoUrl] = useState('')
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoFile(file)
+      // Create preview URL
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -31,7 +45,7 @@ export default function Signup() {
         company_name: company,
         slug,
         city,
-        logo_url: logoUrl || null,
+        logo_url: logoFile,
       })
       // Auto-login then go to dashboard
       const data = await loginTenant(email, password)
@@ -88,15 +102,51 @@ export default function Signup() {
               </label>
             </div>
 
-            <label className="small-muted">Logo URL (optional)
-              <input 
-                className="bw-input" 
-                type="url" 
-                placeholder="https://example.com/logo.png" 
-                value={logoUrl} 
-                onChange={(e) => setLogoUrl(e.target.value)} 
-              />
-            </label>
+            <div className="bw-form-group">
+              <label className="small-muted">Company Logo (optional)</label>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  style={{ display: 'none' }}
+                  id="logo-upload"
+                />
+                <label 
+                  htmlFor="logo-upload" 
+                  className="bw-btn-outline" 
+                  style={{ 
+                    padding: '8px 16px', 
+                    cursor: 'pointer', 
+                    display: 'inline-block',
+                    textAlign: 'center',
+                    minWidth: '120px'
+                  }}
+                >
+                  {logoFile ? 'Change Logo' : 'Upload Logo'}
+                </label>
+                {logoFile && (
+                  <span className="small-muted" style={{ fontSize: '12px' }}>
+                    {logoFile.name}
+                  </span>
+                )}
+              </div>
+              {logoPreview && (
+                <div style={{ marginTop: 8 }}>
+                  <img 
+                    src={logoPreview} 
+                    alt="Logo preview" 
+                    style={{ 
+                      maxWidth: '100px', 
+                      maxHeight: '100px', 
+                      objectFit: 'contain',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px'
+                    }} 
+                  />
+                </div>
+              )}
+            </div>
 
             {error && <div className="small-muted" style={{ color: '#ffb3b3' }}>{error}</div>}
             {message && <div className="small-muted" style={{ color: '#b3ffcb' }}>{message}</div>}

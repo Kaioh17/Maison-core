@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type React from 'react'
 import { getTenantInfo, getTenantDrivers, getTenantVehicles, getTenantBookings, onboardDriver, assignDriverToVehicle, type TenantResponse, type DriverResponse, type VehicleResponse, type BookingResponse, type OnboardDriver } from '@api/tenant'
 import { getVehicleRates, getVehicleCategories, createVehicleCategory, setVehicleRates } from '@api/vehicles'
-import { getTenantSettings, updateTenantSettings, type TenantSettingsResponse, type UpdateTenantSetting } from '@api/tenantSettings'
+import { getTenantSettings, updateTenantSettings, updateTenantLogo, type TenantSettingsResponse, type UpdateTenantSetting } from '@api/tenantSettings'
 import { useAuthStore } from '@store/auth'
 import { useNavigate } from 'react-router-dom'
 import { useTenantTheme } from '@contexts/ThemeContext'
@@ -34,6 +34,8 @@ export default function TenantDashboard() {
   const [editingSettings, setEditingSettings] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
   const [editedSettings, setEditedSettings] = useState<UpdateTenantSetting | null>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
   // Sync theme with tenant settings
   useTenantTheme(tenantSettings?.theme)
@@ -295,14 +297,83 @@ export default function TenantDashboard() {
     }
   }
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoFile(file)
+      // Create preview URL
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+      
+      // Update the edited settings with the file
+      if (editedSettings) {
+        setEditedSettings({
+          ...editedSettings,
+          logo_url: file
+        })
+      }
+    }
+  }
+
   const handleSaveSettings = async () => {
     if (!editedSettings) return
     
     try {
       setSavingSettings(true)
-      const updatedSettings = await updateTenantSettings(editedSettings)
+      
+      // If only logo changed, use the dedicated logo endpoint
+      if (logoFile && !hasOtherChanges()) {
+        try {
+          await updateTenantLogo(logoFile)
+          // After successful logo update, refresh the settings to get the new logo URL
+          const refreshedSettings = await getTenantSettings()
+          setTenantSettings(refreshedSettings)
+          setEditedSettings(refreshedSettings)
+          setEditingSettings(false)
+          setLogoFile(null)
+          setLogoPreview(null)
+          alert('Logo updated successfully!')
+          return
+        } catch (logoError) {
+          console.error('Logo update failed:', logoError)
+          console.log('Falling back to regular settings update...')
+          
+          // Fallback: try to update via regular settings endpoint
+          try {
+            const settingsToUpdate = {
+              ...editedSettings,
+              logo_url: logoFile
+            }
+            
+            const updatedSettings = await updateTenantSettings(settingsToUpdate)
+            setTenantSettings(updatedSettings)
+            setEditingSettings(false)
+            setLogoFile(null)
+            setLogoPreview(null)
+            alert('Logo updated successfully via fallback method!')
+            return
+          } catch (fallbackError) {
+            console.error('Fallback update also failed:', fallbackError)
+            alert('Failed to update logo. Please try again.')
+            return
+          }
+        }
+      }
+      
+      // Otherwise, update all settings
+      const settingsToUpdate = {
+        ...editedSettings,
+        logo_url: logoFile || editedSettings.logo_url
+      }
+      
+      const updatedSettings = await updateTenantSettings(settingsToUpdate)
       setTenantSettings(updatedSettings)
       setEditingSettings(false)
+      setLogoFile(null)
+      setLogoPreview(null)
       alert('Settings updated successfully!')
     } catch (error) {
       console.error('Failed to update settings:', error)
@@ -312,9 +383,28 @@ export default function TenantDashboard() {
     }
   }
 
+  const hasOtherChanges = () => {
+    if (!tenantSettings || !editedSettings) return false
+    
+    return (
+      editedSettings.theme !== tenantSettings.theme ||
+      editedSettings.slug !== tenantSettings.slug ||
+      editedSettings.enable_branding !== tenantSettings.enable_branding ||
+      editedSettings.base_fare !== tenantSettings.base_fare ||
+      editedSettings.per_minute_rate !== tenantSettings.per_minute_rate ||
+      editedSettings.per_mile_rate !== tenantSettings.per_mile_rate ||
+      editedSettings.per_hour_rate !== tenantSettings.per_hour_rate ||
+      editedSettings.rider_tiers_enabled !== tenantSettings.rider_tiers_enabled ||
+      editedSettings.cancellation_fee !== tenantSettings.cancellation_fee ||
+      editedSettings.discounts !== tenantSettings.discounts
+    )
+  }
+
   const handleCancelEdit = () => {
     setEditedSettings(tenantSettings)
     setEditingSettings(false)
+    setLogoFile(null)
+    setLogoPreview(null)
   }
 
   const tabs: Array<{ id: TabType; label: string; icon: React.ComponentType<{ className?: string }> }> = [
@@ -723,7 +813,7 @@ export default function TenantDashboard() {
                 className="bw-btn bw-btn-action" 
                 onClick={() => setShowAddDriver(true)}
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-4 h-4" />
                 Add Driver
               </button>
             </div>
@@ -948,7 +1038,7 @@ export default function TenantDashboard() {
                 className="bw-btn bw-btn-action" 
                 onClick={() => setShowAssignDriver(true)}
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-4 h-4" />
                 Assign Driver
               </button>
               <button 
@@ -956,7 +1046,7 @@ export default function TenantDashboard() {
                 onClick={() => navigate('/vehicles/add')}
                 style={{ marginLeft: 16 }}
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-4 h-4" />
                 Add Vehicle
               </button>
             </div>
@@ -1192,7 +1282,11 @@ export default function TenantDashboard() {
                 ) : null}
                 
                 {/* Add New Category Row */}
-                <div className="bw-table-row" style={{ backgroundColor: '#ffffffad', border: '2px dashed #d1d5db' }}>
+                <div className="bw-table-row" style={{ 
+                  backgroundColor: 'var(--bw-bg-secondary)', 
+                  border: '2px dashed var(--bw-border)',
+                  color: 'var(--bw-text)'
+                }}>
                   <div className="bw-table-cell">
                     <input
                       type="text"
@@ -1202,16 +1296,17 @@ export default function TenantDashboard() {
                         width: '100%', 
                         padding: '4px 8px', 
                         fontSize: '14px',
-                        color: '#000000ff',
-                        backgroundColor: '#ffffffff',
-                        borderBottom: '1px solid #d1d5db'
+                        color: 'var(--bw-text)',
+                        backgroundColor: 'var(--bw-bg)',
+                        border: '1px solid var(--bw-border)',
+                        borderRadius: '4px'
                       }}
                       id="newCategoryName"
                     />
                   </div>
                   <div className="bw-table-cell">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>$</span>
+                      <span style={{ color: 'var(--bw-text)' }}>$</span>
                       <input
                         type="number"
                         min="0"
@@ -1222,9 +1317,10 @@ export default function TenantDashboard() {
                           width: '80px', 
                           padding: '4px 8px', 
                           fontSize: '14px',
-                          color: '#000000ff',
-                          backgroundColor: '#ffffffff',
-                          borderBottom: '1px solid #d1d5db'
+                          color: 'var(--bw-text)',
+                          backgroundColor: 'var(--bw-bg)',
+                          border: '1px solid var(--bw-border)',
+                          borderRadius: '4px'
                         }}
                         id="newCategoryRate"
                       />
@@ -1234,7 +1330,7 @@ export default function TenantDashboard() {
                     <div className="bw-actions">
                       <button
                         className="bw-btn-outline"
-                        style={{ fontSize: '12px', padding: '5px 6px' }}
+                        style={{ fontSize: '12px', padding: '4px 5px' }}
                         disabled={addingCategory}
                         onClick={async () => {
                           const nameInput = document.getElementById('newCategoryName') as HTMLInputElement
@@ -1267,12 +1363,12 @@ export default function TenantDashboard() {
                         }}
                       >
                         {addingCategory ? (
-                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin h-4 w-4" style={{ color: 'var(--bw-text)' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                         ) : (
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-4 h-4" style={{ color: 'var(--bw-text)' }} />
                         )}
                         Add
                       </button>
@@ -1373,15 +1469,35 @@ export default function TenantDashboard() {
                     <div className="bw-form-group">
                       <label className="bw-form-label">Logo URL</label>
                       {editingSettings ? (
-                        <input 
-                          className="bw-input" 
-                          type="text" 
-                          value={editedSettings?.logo_url || ''} 
-                          onChange={(e) => handleSettingChange('logo_url', e.target.value)}
-                          placeholder="https://example.com/logo.png"
-                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <input 
+                            className="bw-input" 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleLogoChange}
+                            style={{ flex: 1 }}
+                          />
+                          {logoPreview && (
+                            <img src={logoPreview} alt="Logo Preview" style={{ width: 50, height: 50, borderRadius: '4px' }} />
+                          )}
+                        </div>
                       ) : (
-                        <span className="bw-info-value">{tenantSettings.logo_url || 'Not set'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span className="bw-info-value">{tenantSettings.logo_url || 'Not set'}</span>
+                          {tenantSettings.logo_url && (
+                            <img 
+                              src={tenantSettings.logo_url} 
+                              alt="Current logo" 
+                              style={{ 
+                                width: 50, 
+                                height: 50, 
+                                borderRadius: '4px',
+                                objectFit: 'contain',
+                                border: '1px solid #ddd'
+                              }} 
+                            />
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="bw-form-group">

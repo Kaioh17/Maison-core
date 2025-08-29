@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getTenantInfo } from '@api/tenant'
-import { getTenantSettings, updateTenantSettings, type TenantSettingsResponse, type UpdateTenantSetting } from '@api/tenantSettings'
+import { getTenantSettings, updateTenantSettings, updateTenantLogo, testLogoEndpoint, type TenantSettingsResponse, type UpdateTenantSetting } from '@api/tenantSettings'
 import { useAuthStore } from '@store/auth'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Settings, User, Building, MapPin, Phone, Mail, Shield, CreditCard, DollarSign, Clock, Car, Palette, Save, Edit } from 'lucide-react'
@@ -12,6 +12,8 @@ export default function TenantSettings() {
   const [editingSettings, setEditingSettings] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editedSettings, setEditedSettings] = useState<UpdateTenantSetting | null>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -42,14 +44,83 @@ export default function TenantSettings() {
     }
   }
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoFile(file)
+      // Create preview URL
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+      
+      // Update the edited settings with the file
+      if (editedSettings) {
+        setEditedSettings({
+          ...editedSettings,
+          logo_url: file
+        })
+      }
+    }
+  }
+
   const handleSaveSettings = async () => {
     if (!editedSettings) return
     
     try {
       setSaving(true)
-      const updatedSettings = await updateTenantSettings(editedSettings)
+      
+      // If only logo changed, use the dedicated logo endpoint
+      if (logoFile && !hasOtherChanges()) {
+        try {
+          await updateTenantLogo(logoFile)
+          // After successful logo update, refresh the settings to get the new logo URL
+          const refreshedSettings = await getTenantSettings()
+          setTenantSettings(refreshedSettings)
+          setEditedSettings(refreshedSettings)
+          setEditingSettings(false)
+          setLogoFile(null)
+          setLogoPreview(null)
+          alert('Logo updated successfully!')
+          return
+        } catch (logoError) {
+          console.error('Logo update failed:', logoError)
+          console.log('Falling back to regular settings update...')
+          
+          // Fallback: try to update via regular settings endpoint
+          try {
+            const settingsToUpdate = {
+              ...editedSettings,
+              logo_url: logoFile
+            }
+            
+            const updatedSettings = await updateTenantSettings(settingsToUpdate)
+            setTenantSettings(updatedSettings)
+            setEditingSettings(false)
+            setLogoFile(null)
+            setLogoPreview(null)
+            alert('Logo updated successfully via fallback method!')
+            return
+          } catch (fallbackError) {
+            console.error('Fallback update also failed:', fallbackError)
+            alert('Failed to update logo. Please try again.')
+            return
+          }
+        }
+      }
+      
+      // Otherwise, update all settings
+      const settingsToUpdate = {
+        ...editedSettings,
+        logo_url: logoFile || editedSettings.logo_url
+      }
+      
+      const updatedSettings = await updateTenantSettings(settingsToUpdate)
       setTenantSettings(updatedSettings)
       setEditingSettings(false)
+      setLogoFile(null)
+      setLogoPreview(null)
       alert('Settings updated successfully!')
     } catch (error) {
       console.error('Failed to update settings:', error)
@@ -59,9 +130,40 @@ export default function TenantSettings() {
     }
   }
 
+  const hasOtherChanges = () => {
+    if (!tenantSettings || !editedSettings) return false
+    
+    return (
+      editedSettings.theme !== tenantSettings.theme ||
+      editedSettings.slug !== tenantSettings.slug ||
+      editedSettings.enable_branding !== tenantSettings.enable_branding ||
+      editedSettings.base_fare !== tenantSettings.base_fare ||
+      editedSettings.per_minute_rate !== tenantSettings.per_minute_rate ||
+      editedSettings.per_mile_rate !== tenantSettings.per_mile_rate ||
+      editedSettings.per_hour_rate !== tenantSettings.per_hour_rate ||
+      editedSettings.rider_tiers_enabled !== tenantSettings.rider_tiers_enabled ||
+      editedSettings.cancellation_fee !== tenantSettings.cancellation_fee ||
+      editedSettings.discounts !== tenantSettings.discounts
+    )
+  }
+
   const handleCancelEdit = () => {
     setEditedSettings(tenantSettings)
     setEditingSettings(false)
+    setLogoFile(null)
+    setLogoPreview(null)
+  }
+
+  const handleTestLogoEndpoint = async () => {
+    try {
+      console.log('Testing logo endpoint...')
+      const result = await testLogoEndpoint()
+      console.log('Logo endpoint test result:', result)
+      alert('Logo endpoint test successful! Check console for details.')
+    } catch (error) {
+      console.error('Logo endpoint test failed:', error)
+      alert('Logo endpoint test failed! Check console for details.')
+    }
   }
 
   if (loading) {
@@ -260,6 +362,13 @@ export default function TenantSettings() {
             <MapPin className="w-4 h-4" />
             Update Address
           </button>
+          <button 
+            className="bw-btn-outline" 
+            onClick={handleTestLogoEndpoint}
+            style={{ backgroundColor: '#f0f9ff', borderColor: '#0ea5e9' }}
+          >
+            🐛 Test Logo Endpoint
+          </button>
         </div>
       </div>
 
@@ -329,15 +438,35 @@ export default function TenantSettings() {
               <div className="bw-form-group">
                 <label className="bw-form-label">Logo URL</label>
                 {editingSettings ? (
-                  <input 
-                    className="bw-input" 
-                    type="text" 
-                    value={editedSettings?.logo_url || ''} 
-                    onChange={(e) => handleSettingChange('logo_url', e.target.value)}
-                    placeholder="https://example.com/logo.png"
-                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input 
+                      className="bw-input" 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleLogoChange}
+                      style={{ flex: 1 }}
+                    />
+                    {logoPreview && (
+                      <img src={logoPreview} alt="Logo Preview" style={{ width: 50, height: 50, borderRadius: '4px' }} />
+                    )}
+                  </div>
                 ) : (
-                  <span className="bw-info-value">{tenantSettings.logo_url || 'Not set'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span className="bw-info-value">{tenantSettings.logo_url || 'Not set'}</span>
+                    {tenantSettings.logo_url && (
+                      <img 
+                        src={tenantSettings.logo_url} 
+                        alt="Current logo" 
+                        style={{ 
+                          width: 50, 
+                          height: 50, 
+                          borderRadius: '4px',
+                          objectFit: 'contain',
+                          border: '1px solid #ddd'
+                        }} 
+                      />
+                    )}
+                  </div>
                 )}
               </div>
               <div className="bw-form-group">

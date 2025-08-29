@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, FastAPI, Response,status
+from typing import Optional
+from fastapi import APIRouter, File, HTTPException, FastAPI, Response, UploadFile,status
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db
@@ -7,6 +8,7 @@ from app.schemas import vehicle, vehicle_config
 from ..core import deps
 from .dependencies import tenant_and_driver_check, is_tenants
 from app.utils.logging import logger
+from typing import Optional
 from app.models import vehicle_category_rate
 
 router = APIRouter(
@@ -52,7 +54,24 @@ async def get_all_vehicles( payload: vehicle_config.VehicleRate,
     vehicles = await vehicle_service.add_vehicle_category(payload, current_user, db)
     return vehicles
 
+#should only be used as a form attached to "vehcile/add"
+#parameters should automaticaly be filled by the frontend during update prcess
+@router.patch("/add/image/{vehicle_make}/{vehicle_model}", status_code=status.HTTP_202_ACCEPTED)
+async def update_vehicle_image (vehicle_make: Optional[str],vehicle_model: Optional[str],
+                                vehicle_image: Optional[UploadFile] = File(None), 
+                                db: Session = Depends(get_db),  
+                                current_user = Depends(deps.get_current_user)
+                                ):
+    update_vehicle_image = await vehicle_service.update_vehicle_image(vehicle_model,vehicle_make,vehicle_image, db, current_user)
+    return update_vehicle_image
 
-# @router.get("/category", status_code=status.HTTP_200_OK, response_model=list[vehicle_config.VehicleCategoryRateResponse])
-# async def get_vehicle_categories
 # ##search fpr vehicles 
+#filter by name
+#filter by seat capacity 
+#filter by year
+#filter by category
+# @router.get("/{vehicle_name}", status_code=status.HTTP_200_OK, response_model=vehicle_config.VehicleConfigResponse)
+# async def search_vehicle(vehicle_name: str,
+#                          db: Session = Depends(get_db), 
+#                          current_user = Depends(deps.get_current_user)):
+#     get_vehicle_ = await 

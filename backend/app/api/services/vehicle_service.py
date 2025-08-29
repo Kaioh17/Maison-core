@@ -4,11 +4,14 @@ from app.utils import db_error_handler
 from app.utils.logging import logger
 import json
 from pathlib import Path
+from .helper_service import _verify_upload
+from typing import Optional
 db_exceptions = db_error_handler.DBErrorHandler
 
 
 vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 vehicle_config_table = vehicle_config.VehicleConfig
+vehicle_table = vehicle.Vehicles
 
 async def get_vehicles(current_user, db):
     try:
@@ -104,6 +107,45 @@ async def add_vehicle_category(payload, current_tenant, db):
         return vehicle_category
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
+async def update_vehicle_image(vehicle_model:Optional[str], vehicle_make: Optional[str],vehicle_image, db, current_user):
+    try: 
+        """control input of vehicle_model and vehicle_make using dropdowns approprite case from frontend
+                -VEHICLE_CREATE - the user enters the make and model of the vehicle in form, then "next" button prompting a commit to database.
+                  The image selection panel next "+add image", then submit. Pulling the needed fields like vehicle_make and form from the recently saved vehicle.
+
+                - VEHICLE_IMAGE_UPDATE - This allows tenants and drivers to switch images. same concepts as earlier but will need to load parameters based on the file needed to edit.
+        """
+        if current_user.role.lower() == "user" or current_user.role.lower() == "driver":
+            slug = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_user.tenant_id,
+                                                    ).first().slug
+            vehicle = db.query(vehicle_table).filter(
+                vehicle_table.tenant_id == current_user.tenant_id,
+                vehicle_table.make == vehicle_make,
+                vehicle_table.model == vehicle_model
+            ).first()
+        else:
+            vehicle = db.query(vehicle_table).filter(vehicle_table.tenant_id == current_user.id ,
+                                                    vehicle_table.make == vehicle_make,
+                                                    vehicle_table.model == vehicle_model
+                                                    ).first()
+            # logger.info(f"vehicle found for  {vehicle.make}-{vehicle.model}")
+            slug = current_user.slug
+
+        if not vehicle:
+            logger.warning(f"[Vehicle Not found] {vehicle_make}-{vehicle_model} cannot be updated")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail = "vehicle does not exists")
+        
+        logger.info(f"Vehicle image [{vehicle_make}-{vehicle_model}] has been updated")
+        upload_dir = f"app/upload/vehicle_image"
+        await _verify_upload(vehicle_image, 
+                       slug,
+                       upload_dir,
+                       file_path = f"{upload_dir}/{slug}/_{vehicle_make}{vehicle_model}")
+        return {"msg": "Image saved successfully"}
+    except Exception as e:
+        logger.error(f"There is an unexpected error {e}")
+
 async def allocate_vehicle_category(payload, db, id_tenant, id_vehicle):
     
     try:

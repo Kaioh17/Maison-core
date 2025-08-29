@@ -125,7 +125,7 @@ async def _verify_upload(logo_url,slug):
             contents = await logo_url.read()
             # Extract filename from the uploaded file
             filename = logo_url.filename if hasattr(logo_url, 'filename') else 'logo.jpg'
-            upload_dir =  "app/upload"
+            upload_dir =  "app/upload/logos"
             os.makedirs(upload_dir, exist_ok=True)
             file_path = f"{upload_dir}/{slug}_{filename}"
             with open(file_path, "wb") as f:
