@@ -107,7 +107,7 @@ async def add_vehicle_category(payload, current_tenant, db):
         return vehicle_category
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)
-async def update_vehicle_image(vehicle_model:Optional[str], vehicle_make: Optional[str],vehicle_image, db, current_user):
+async def update_vehicle_image(vehicle_id: int,vehicle_image, db, current_user):
     try: 
         """control input of vehicle_model and vehicle_make using dropdowns approprite case from frontend
                 -VEHICLE_CREATE - the user enters the make and model of the vehicle in form, then "next" button prompting a commit to database.
@@ -120,28 +120,26 @@ async def update_vehicle_image(vehicle_model:Optional[str], vehicle_make: Option
                                                     ).first().slug
             vehicle = db.query(vehicle_table).filter(
                 vehicle_table.tenant_id == current_user.tenant_id,
-                vehicle_table.make == vehicle_make,
-                vehicle_table.model == vehicle_model
+                vehicle_table.id == vehicle_id
             ).first()
         else:
             vehicle = db.query(vehicle_table).filter(vehicle_table.tenant_id == current_user.id ,
-                                                    vehicle_table.make == vehicle_make,
-                                                    vehicle_table.model == vehicle_model
+                                                                    vehicle_table.id == vehicle_id
                                                     ).first()
-            # logger.info(f"vehicle found for  {vehicle.make}-{vehicle.model}")
+            
             slug = current_user.slug
 
         if not vehicle:
-            logger.warning(f"[Vehicle Not found] {vehicle_make}-{vehicle_model} cannot be updated")
+            # logger.warning(f"[Vehicle Not found] {vehicle_make}-{vehicle_model} cannot be updated")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail = "vehicle does not exists")
         
-        logger.info(f"Vehicle image [{vehicle_make}-{vehicle_model}] has been updated")
+        # logger.info(f"Vehicle image [{vehicle_make}-{vehicle_model}] has been updated")
         upload_dir = f"app/upload/vehicle_image"
         await _verify_upload(vehicle_image, 
                        slug,
                        upload_dir,
-                       file_path = f"{upload_dir}/{slug}/_{vehicle_make}{vehicle_model}")
+                       file_path = f"{upload_dir}/{slug}/_{vehicle.make}{vehicle.model}")
         return {"msg": "Image saved successfully"}
     except Exception as e:
         logger.error(f"There is an unexpected error {e}")

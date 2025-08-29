@@ -56,13 +56,13 @@ async def get_all_vehicles( payload: vehicle_config.VehicleRate,
 
 #should only be used as a form attached to "vehcile/add"
 #parameters should automaticaly be filled by the frontend during update prcess
-@router.patch("/add/image/{vehicle_make}/{vehicle_model}", status_code=status.HTTP_202_ACCEPTED)
-async def update_vehicle_image (vehicle_make: Optional[str],vehicle_model: Optional[str],
+@router.patch("/add/image/{vehicle_id}", status_code=status.HTTP_202_ACCEPTED)
+async def update_vehicle_image (vehicle_id: int,
                                 vehicle_image: Optional[UploadFile] = File(None), 
                                 db: Session = Depends(get_db),  
                                 current_user = Depends(deps.get_current_user)
                                 ):
-    update_vehicle_image = await vehicle_service.update_vehicle_image(vehicle_model,vehicle_make,vehicle_image, db, current_user)
+    update_vehicle_image = await vehicle_service.update_vehicle_image(vehicle_id,vehicle_image, db, current_user)
     return update_vehicle_image
 
 # ##search fpr vehicles 
