@@ -17,3 +17,6 @@ class VehicleCategoryRate(Base):
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now())
+    
+    vehicles = relationship("Vehicles",
+        back_populates="vehicle_category")

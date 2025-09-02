@@ -1,0 +1,79 @@
+# Simplified Flutter Dockerfile for mobile app development
+FROM ubuntu:22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV FLUTTER_VERSION=3.24.5
+ENV ANDROID_SDK_VERSION=34
+ENV ANDROID_BUILD_TOOLS_VERSION=34.0.0
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    unzip \
+    xz-utils \
+    zip \
+    libglu1-mesa \
+    openjdk-17-jdk \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+# Install Flutter
+RUN git clone https://github.com/flutter/flutter.git -b stable /flutter
+ENV PATH="/flutter/bin:/flutter/bin/cache/dart-sdk/bin:${PATH}"
+
+# Pre-download Flutter dependencies
+RUN flutter precache
+
+# Install Android SDK using a more reliable method
+RUN mkdir -p /opt/android-sdk
+ENV ANDROID_HOME=/opt/android-sdk
+ENV PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}"
+
+# Download and install Android command line tools
+RUN cd /tmp && \
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip && \
+    unzip commandlinetools-linux-11076708_latest.zip && \
+    rm commandlinetools-linux-11076708_latest.zip && \
+    mkdir -p /opt/android-sdk/cmdline-tools/latest && \
+    mv cmdline-tools/* /opt/android-sdk/cmdline-tools/latest/ && \
+    rm -rf cmdline-tools
+
+# Accept Android licenses and install required components
+RUN yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+RUN /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+    "platform-tools" \
+    "platforms;android-${ANDROID_SDK_VERSION}" \
+    "build-tools;${ANDROID_BUILD_TOOLS_VERSION}"
+
+# Create a non-root user
+RUN useradd -m -s /bin/bash flutter
+RUN usermod -aG sudo flutter
+RUN echo "flutter ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Set up Flutter for the user
+RUN chown -R flutter:flutter /flutter
+RUN chown -R flutter:flutter /opt/android-sdk
+
+# Switch to flutter user
+USER flutter
+WORKDIR /home/flutter
+
+# Set up Flutter
+RUN flutter doctor --android-licenses
+
+# Create workspace directory
+RUN mkdir -p /home/flutter/workspace
+
+# Set working directory
+WORKDIR /home/flutter/workspace
+
+# Expose ports for Flutter development
+EXPOSE 3000 8080
+
+# Default command
+CMD ["/bin/bash"]

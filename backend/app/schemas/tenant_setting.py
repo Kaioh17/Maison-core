@@ -6,7 +6,7 @@ import re
 
 class UpdateTenantSetting(BaseModel):
     theme: str
-    logo_url: str 
+    # logo_url: str 
     slug: str
     enable_branding: bool
     #Fare 
@@ -24,3 +24,6 @@ class TenantResponse(UpdateTenantSetting):
     tenant_id: int
     created_on: datetime
     updated_on: Optional[datetime]
+
+class updated_vicuals(BaseModel):
+    logo_url: Optional[str] = None 

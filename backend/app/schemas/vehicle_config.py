@@ -11,7 +11,14 @@ class VehicleConfigResponse(BaseModel):
 
 class VehicleRate(BaseModel):
     vehicle_category: Optional[str]
+    # seating_capacity: int
     vehicle_flat_rate: float
+
+class VehicleConfig(BaseModel):
+#     vehicle_category: Optional[str]
+#     seating_capacity: int
+#     vehicle_flat_rate: float
+    pass
 
 
 class VehicleCategoryRateResponse(BaseModel):
