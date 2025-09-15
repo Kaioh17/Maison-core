@@ -28,7 +28,6 @@ async def get_vehicles(current_user, db):
 
     return vehicles
 async def add_vehicle(payload, current_user, db):
-    ##automaticlly set tenant id from current user 
     try:
         tenants = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_user.id).first()
         if not tenants:
@@ -42,20 +41,24 @@ async def add_vehicle(payload, current_user, db):
         logger.info("Creating vehicle...")
 
         vehicle_info = payload.model_dump()
-
+        
+        # config = payload.vehicle_category_id 
         user = current_user.id
         if current_user.role != "tenant":
             user = current_user.tenant_id
 
-
-        new_vehicle = vehicle.Vehicles(tenant_id=user, **vehicle_info)
+        # vehicle_category_ = db.query(vehicle_category_table).filter(vehicle_category_table.tenant_id == user,
+        #                                                             vehicle_category_table.id == config).first()
+        
+        get_category_id = get_category(payload.vehicle_category, db,user)
+        
+        vehicle_info.pop("vehicle_category", None) #except vehicle category
+        new_vehicle = vehicle.Vehicles(tenant_id=user,vehicle_category_id = get_category_id ,**vehicle_info)
 
        
         db.add(new_vehicle)
         db.commit()
         db.refresh(new_vehicle)
-
-        # await allocate_vehicle_category(payload, db, user, new_vehicle.id)
         logger.info(f"{payload.make} added to {tenants.company}..")
         
     except db_exceptions.COMMON_DB_ERRORS as e:
@@ -63,7 +66,19 @@ async def add_vehicle(payload, current_user, db):
 
     return new_vehicle
 
-
+def get_category( vehicle_category, db, user):
+    try:
+        
+        vehicle_category_ = db.query(vehicle_category_table).filter(vehicle_category_table.tenant_id == user,
+                                                                    vehicle_category_table.vehicle_category== vehicle_category).first()
+        
+        if not vehicle_category_:
+            raise HTTPException(status_code=400,detail="The vehicle category does not exists")
+        logger.info(f"Vehicle_category: {vehicle_category_.id}")
+        return  vehicle_category_.id
+    except db_exceptions.COMMON_DB_ERRORS as e:
+        db_exceptions.handle(e, db)
+        
 def load_vehicles():
     try:
         vehicle_data = None
@@ -109,12 +124,7 @@ async def add_vehicle_category(payload, current_tenant, db):
         db_exceptions.handle(e, db)
 async def update_vehicle_image(vehicle_id: int,vehicle_image, db, current_user):
     try: 
-        """control input of vehicle_model and vehicle_make using dropdowns approprite case from frontend
-                -VEHICLE_CREATE - the user enters the make and model of the vehicle in form, then "next" button prompting a commit to database.
-                  The image selection panel next "+add image", then submit. Pulling the needed fields like vehicle_make and form from the recently saved vehicle.
-
-                - VEHICLE_IMAGE_UPDATE - This allows tenants and drivers to switch images. same concepts as earlier but will need to load parameters based on the file needed to edit.
-        """
+        
         if current_user.role.lower() == "user" or current_user.role.lower() == "driver":
             slug = db.query(tenant.Tenants).filter(tenant.Tenants.id == current_user.tenant_id,
                                                     ).first().slug
@@ -144,49 +154,6 @@ async def update_vehicle_image(vehicle_id: int,vehicle_image, db, current_user):
     except Exception as e:
         logger.error(f"There is an unexpected error {e}")
 
-async def allocate_vehicle_category(payload, db, id_tenant, id_vehicle):
-    
-    try:
-        vehicle_category = load_vehicles()
-        
-        
-        # if current_tenant.role == driver
-        if vehicle_category:
-            found = False
-            for v in vehicle_category:
-                # logger.info(f"{v["make"]}")
-                if (v["make"].lower() == payload.make.lower()
-                and v["model"].lower() == payload.model.lower()
-                and v["year"] == payload.year):
-                    vehicle_category_rate = db.query(vehicle_category_table).filter(vehicle_category_table.tenant_id == id_tenant, 
-                                                                vehicle_category_table.vehicle_category == v["category"]).first()
-                    vehicle_category = vehicle_config.VehicleConfig(vehicle_id = id_vehicle,
-                                                                    tenant_id = id_tenant, 
-                                                                    vehicle_category = v["category"], 
-                                                                    seating_capacity = v["seating_capacity"], 
-                                                                    vehicle_flat_rate = vehicle_category_rate.vehicle_flat_rate)
-                    
-                
-                    db.add(vehicle_category)
-                    db.commit()
-
-        
-                    found = True
-                    break   
-        if not found:
-            raise ValueError( "car is not present in data form ")
-        
-        vehicle_obj = db.query(vehicle.Vehicles).filter(vehicle.Vehicles.id == id_vehicle).first()
-        if not vehicle_obj:
-            raise HTTPException(status_code=404,
-                                detail = "vehicle not found")
-        vehicle_obj.vehicle_config_id = vehicle_category.id
-        logger.info("Vehicle config updated")
-        db.commit()
-
-        return vehicle_category
-    except db_exceptions.COMMON_DB_ERRORS as e:
-        db_exceptions.handle(e, db)
 
 """Update vehicle flat rate """
 async def set_vehicle_flat_rate(db, payload, current_user):

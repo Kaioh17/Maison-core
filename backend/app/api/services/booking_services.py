@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from app.models import booking, tenant, driver, vehicle_config, vehicle
+from app.models import booking, tenant, driver, vehicle_config, vehicle, vehicle_category_rate
 from app.utils import db_error_handler
 from app.utils.logging import logger
 from datetime import timedelta, datetime
@@ -21,6 +21,7 @@ driver_table = driver.Drivers
 booking_table = booking.Bookings
 tenant_setting_table = tenant_setting.TenantSettings  
 vehicle_config_table = vehicle_config.VehicleConfig
+vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 vehicle_table = vehicle.Vehicles
 
 def _bookings_overlap(db, payload):
@@ -144,7 +145,7 @@ async def get_booked_rides(db, current_user):
             result.append(ride_dict)
             # return {"driver_fullname": driver_full_name,
                     # **booked_rides.__dict__}
-        logger.info(f"{driver_full_name} is the driver")
+        # logger.info(f"{driver_full_name} is the driver")
 
         
 
@@ -156,10 +157,21 @@ async def get_booked_rides(db, current_user):
 async def _price_quote(db, current_user, payload):
     try: 
         settings = db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == current_user.tenant_id).first()
-        vehicle_base_price = db.query(vehicle_config_table).filter(vehicle_config_table.vehicle_id == payload.vehicle_id).first()
+        vehicle = db.query(vehicle_table).filter(vehicle_table.id == payload.vehicle_id).first()
+        if not vehicle:
+            logger.error(f"Tenant[{current_user.tenant_id}] Vehicle was not found at {vehicle.id}")
+
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail = "Vehicle not found")
+        
+        vehicle_base_price = db.query(vehicle_category_table).filter(vehicle_category_table.id == vehicle.vehicle_category_id).first()
+        if not vehicle_base_price:
+            logger.error(f"Tenant[{current_user.tenant_id}] Vehicle categroy was not found at {vehicle.vehicle_category_id}")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail = "Vehicle category not found")
         if not settings:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail= "Settingd for tenants found...")
+                                detail= "Setting for tenants found...")
         #calculate price
         logger.info(f"base_fare = {settings.base_fare}")
         base_fare = settings.base_fare

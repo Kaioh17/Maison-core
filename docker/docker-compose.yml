@@ -42,32 +42,6 @@ services:
   #     - app-network
   #   restart: unless-stopped
 
-  # Flutter Mobile App Development
-  flutter:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.flutter.simple
-    container_name: maison_flutter
-    user: "1000:1000" # Match your Linux/WSL UID:GID
-    ports:
-      - "3001:3000"  # Flutter web dev server
-      - "8080:8080"  # Flutter debugging
-    volumes:
-      - ../frontend/mobile_app:/home/flutter/workspace/mobile_app
-      - flutter_cache:/home/flutter/.pub-cache
-      - android_cache:/home/flutter/.android
-      - gradle_cache:/home/flutter/.gradle
-    environment:
-      - FLUTTER_WEB_PORT=3000
-      - FLUTTER_DEBUG_PORT=8080
-    working_dir: /home/flutter/workspace/mobile_app
-    networks:
-      - app-network
-    stdin_open: true
-    tty: true
-    restart: unless-stopped
-
-    
 
   db:
     image: postgres:15
@@ -103,9 +77,6 @@ services:
 
 volumes:
   postgres_data:
-  flutter_cache:
-  android_cache:
-  gradle_cache:
 
 networks:
   app-network:

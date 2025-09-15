@@ -4,7 +4,6 @@ from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from app.models import tenant_setting
 from .helper_service import _tenants_exist
-from .vehicle_service import allocate_vehicle_category
 from sqlalchemy.orm import selectinload
 from .tenants_service import _verify_upload
 

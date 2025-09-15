@@ -31,6 +31,7 @@ async def get_all_vehicles( payload: vehicle.VehicleCreate,
     vehicles = await vehicle_service.add_vehicle(payload, current_user, db)
     return vehicles
 
+
 @router.patch("/set_rates", status_code= status.HTTP_201_CREATED, response_model=vehicle_config.VehicleCategoryRateResponse)
 async def set_vehicle_flat_rate(payload: vehicle_config.VehicleRate, 
                                 is_tenants: int = Depends(is_tenants),

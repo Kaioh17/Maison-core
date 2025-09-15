@@ -3,7 +3,6 @@ from app.models import *
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from .helper_service import _tenants_exist
-from .vehicle_service import allocate_vehicle_category
 from sqlalchemy.orm import selectinload
 
 db_exceptions = db_error_handler.DBErrorHandler
