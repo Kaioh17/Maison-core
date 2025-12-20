@@ -5,8 +5,7 @@ from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
 from ..core import deps
-from ..services import tenants_service
-from ..services.tenants_service import TenantService
+from ..services.tenants_service import TenantService, get_tenant_service, get_unauthorized_tenant_service
 from app.schemas import tenant, driver, vehicle, booking, general
 from ..core import security, deps
 from app.utils.logging import logger
@@ -34,9 +33,10 @@ def get_client_info(request: Request):
     return {"client_host" : client_host}
 
 @router.get('/', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[tenant.TenantResponse])
-async def tenants(db: Session = Depends(get_db), current_tenants = Depends(deps.get_current_user)):
+                            
+async def tenants(tenant_service: TenantService = Depends(get_tenant_service)):
     logger.info("Tenant's info")
-    company = await tenants_service.TenantService().get_company_info(db, current_tenants)
+    company = await tenant_service.get_company_info()
     return general.StandardResponse(
         data=company,
         message="Tenant's info retrieved successfully",
@@ -57,10 +57,12 @@ async def create_tenants(   email: EmailStr = Form(...),
                             city: str = Form(..., min_length=1, max_length=100),
                             drivers_count: int = Form(default=0, ge=0),
                             logo_url: Optional[UploadFile] = File(None), 
+                            tenant_service: TenantService = Depends(get_unauthorized_tenant_service),
                             db: Session = Depends(get_base_db)):
-        logger.info("Tenants created")
-        tenant_obj = await tenants_service.TenantService().create_tenant(db =db,
-                                                        email=email,
+                            
+        logger.info("Creating Tenant....")
+        
+        tenant_obj = await tenant_service.create_tenant(email=email,
                                                         first_name=first_name,
                                                         last_name=last_name,
                                                         password=password,
@@ -78,10 +80,9 @@ async def create_tenants(   email: EmailStr = Form(...),
 
 # Get all drivers for the current tenant
 @router.get('/drivers', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[driver.DriverResponse]])
-async def get_drivers(db: Session = Depends(get_db), 
-                      current_tenants = Depends(deps.get_current_user)):
+async def get_drivers(tenant_service: TenantService = Depends(get_tenant_service)):
     logger.info("Tenant drivers")
-    drivers = await tenants_service.get_all_drivers(db, current_tenants)
+    drivers = await tenant_service.get_all_drivers()
     return general.StandardResponse(
         data=drivers,
         message="Drivers retrieved successfully",
@@ -93,18 +94,17 @@ async def get_drivers(db: Session = Depends(get_db),
 async def get_vehicles(
     driver_id: Optional[int] = Query(None, description="Get vehicles for specific driver"),
     assigned_drivers: Optional[bool] = Query(False, description="Get only vehicles assigned to drivers"),
-    db: Session = Depends(get_db),
-    current_tenants = Depends(deps.get_current_user)
+    tenant_service: TenantService = Depends(get_tenant_service)
 ):
     if assigned_drivers:
         logger.info("Getting vehicles assigned to drivers")
-        vehicles = await tenants_service.fetch_assigned_drivers_vehicles(db, current_tenants)
+        vehicles = await tenant_service.fetch_assigned_drivers_vehicles()
     elif driver_id:
         logger.info(f"Getting driver [{driver_id}] vehicles...")
-        vehicles = await tenants_service.find_vehicles_owned_by_driver(db, driver_id, current_tenants)
+        vehicles = await tenant_service.find_vehicles_owned_by_driver(driver_id)
     else:
         logger.info("Tenant vehicles...")
-        vehicles = await tenants_service.get_all_vehicles(db, current_tenants)
+        vehicles = await tenant_service.get_all_vehicles()
     return general.StandardResponse(
         data=vehicles,
         message="Drivers retrieved successfully",
@@ -115,15 +115,14 @@ async def get_vehicles(
 @router.get('/bookings', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[booking.BookingResponse]])
 async def get_bookings(
     booking_status: Optional[str] = Query(None, description="only this labels can be passed 'pending', 'confirmed', 'active', 'cancelled', 'no_show'"),
-    db: Session = Depends(get_db),
-    current_tenant = Depends(deps.get_current_user)
+    tenant_service: TenantService = Depends(get_tenant_service)
 ):
     if booking_status:
         logger.info(f"Getting {booking_status} bookings...")
-        bookings = await tenants_service.get_bookings_by_status(db, booking_status, current_tenant)
+        bookings = await tenant_service.get_bookings_by_status(booking_status)
     else:
-        logger.info(f"All available bookings for {current_tenant.id}")
-        bookings = await tenants_service.get_all_bookings(db, current_tenant)
+        logger.info("All available bookings")
+        bookings = await tenant_service.get_all_bookings()
     return general.StandardResponse(
         data=bookings,
         message="Bookings retrieved successfully",
@@ -134,11 +133,10 @@ async def get_bookings(
 @router.post('/onboard', status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[tenant.OnboardDriverResponse])
 async def onboard_drivers(
     payload: tenant.OnboardDriver,
-    db: Session = Depends(get_db),
-    current_tenant = Depends(deps.get_current_user)
+    tenant_service: TenantService = Depends(get_tenant_service)
 ):
     logger.info("Onboarding driver...")
-    new_driver = await tenants_service.onboard_drivers(db, payload, current_tenant)
+    new_driver = await tenant_service.onboard_drivers(payload)
     return general.StandardResponse(
         data=new_driver,
         message="New driver onboarded successfully"
@@ -147,19 +145,19 @@ async def onboard_drivers(
 """Assign driver to a booked rides pending drivers"""
 @router.patch("/riders/{rider_id}/assign-driver", status_code=status.HTTP_202_ACCEPTED)
 async def assign_driver_to_rides(payload: tenant.AssignDriver,
-                        rider_id: int,db: Session = Depends(get_db),
-                        current_tenant = Depends(deps.get_current_user)):
+                        rider_id: int,
+                        tenant_service: TenantService = Depends(get_tenant_service)):
      
-     assigned_driver = await tenants_service.assign_driver_to_rides(payload,rider_id,db, current_tenant)
+     assigned_driver = await tenant_service.assign_driver_to_rides(payload, rider_id)
      return assigned_driver
 
 """Assign drivers to vehicles"""
 @router.patch("/vehicles/{vehicle_id}/assign-driver", status_code=status.HTTP_202_ACCEPTED)
 async def assign_driver_to_vehicles(payload: tenant.AssignDriver,
-                        vehicle_id: int,db: Session = Depends(get_db),
-                        current_tenant = Depends(deps.get_current_user)):
+                        vehicle_id: int,
+                        tenant_service: TenantService = Depends(get_tenant_service)):
      
-     assigned_driver = await tenants_service.assign_driver_to_vehicle(payload,vehicle_id,db, current_tenant)
+     assigned_driver = await tenant_service.assign_driver_to_vehicle(payload, vehicle_id)
      return assigned_driver
 
 

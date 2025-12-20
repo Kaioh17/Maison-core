@@ -53,6 +53,8 @@ class TenantUpdate(BaseModel):
     drivers: Optional[int] = Field(None, ge=0)
     plan: Optional[str] = Field(None, pattern=r'^(free|basic|premium|enterprise)$')
     is_active: Optional[bool] = None
+    
+    
 class TenantProfile(BaseModel):
     tenant_id: int
     company_name: str = Field(..., max_length=200)
@@ -94,7 +96,6 @@ class TenantInfo(BaseModel):
     email: EmailStr
     first_name: str = Field(..., max_length=200)
     last_name: str = Field(..., max_length=200)
-    password: str  # Note: Usually excluded from response schemas
     phone_no: str = Field(..., max_length=200)
     created_on: datetime
     updated_on: Optional[datetime] = None
