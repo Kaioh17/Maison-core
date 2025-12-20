@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from ..services import tenants_service
+from ..services.tenants_service import TenantService
 from app.schemas import tenant, driver, vehicle, booking, general
 from ..core import security, deps
 from app.utils.logging import logger
@@ -35,14 +36,14 @@ def get_client_info(request: Request):
 @router.get('/', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[tenant.TenantResponse])
 async def tenants(db: Session = Depends(get_db), current_tenants = Depends(deps.get_current_user)):
     logger.info("Tenant's info")
-    company = await tenants_service.get_company_info(db, current_tenants)
+    company = await tenants_service.TenantService().get_company_info(db, current_tenants)
     return general.StandardResponse(
         data=company,
         message="Tenant's info retrieved successfully",
     )
 
 # Create a new tenant
-@router.post('/add', status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[tenant.TenantResponse])
+@router.post('/add', status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[tenant.TenantRsponse])
     
 async def create_tenants(   email: EmailStr = Form(...),
                             first_name: str = Form(..., min_length=1, max_length=200),
@@ -58,7 +59,7 @@ async def create_tenants(   email: EmailStr = Form(...),
                             logo_url: Optional[UploadFile] = File(None), 
                             db: Session = Depends(get_base_db)):
         logger.info("Tenants created")
-        tenant_obj = await tenants_service.create_tenant(db =db,
+        tenant_obj = await tenants_service.TenantService().create_tenant(db =db,
                                                         email=email,
                                                         first_name=first_name,
                                                         last_name=last_name,

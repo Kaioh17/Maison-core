@@ -17,6 +17,9 @@ Dependencies:
 import os
 from typing import Optional
 from fastapi import HTTPException, UploadFile, status, Form, File
+from sqlalchemy import text
+from sqlalchemy.orm import joinedload
+from sqlalchemy import select
 from pydantic import EmailStr
 from app.models import tenant, driver, TenantSettings, vehicle, booking, vehicle_category_rate
 from app.utils import password_utils, db_error_handler
@@ -28,36 +31,22 @@ import string
 from .booking_services import _get_driver_fullname, _get_vehicle
 # from .helper_service import 
 
+class TenantService:
+    def __init__(self):
+        pass
+    db_exceptions = db_error_handler.DBErrorHandler
 
-db_exceptions = db_error_handler.DBErrorHandler
+    # tenant_table = tenant.Tenants
+    tenant_info = tenant.Tenants
+    tenant_profile = tenant.TenantProfile
+    tenant_stats = tenant.TenantStats
 
-tenant_table = tenant.Tenants
-driver_table = driver.Drivers
-vehicle_table = vehicle.Vehicles
-booking_table = booking.Bookings
-vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
+    driver_table = driver.Drivers
+    vehicle_table = vehicle.Vehicles
+    booking_table = booking.Bookings
+    vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 
-
-async def _create_vehicle_category_rate_table(db, id_tenant):
-    try:
-        logger.info("New tenant vehicle settings table has been set")
-        vehicle_category = [
-            vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Luxury Sedan"),
-            vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Executive SUV"),
-            vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Stretch Limo"),
-            vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Business Van")
-
-        ]
-
-        db.add_all(vehicle_category)
-        db.commit()
-        
-    except db_exceptions.COMMON_DB_ERRORS as e:
-        db_exceptions.handle(e, db)
-
-
-
-async def create_tenant(db, email,
+    async def create_tenant(self,db, email,
                             first_name,
                             last_name ,
                             password ,
@@ -69,56 +58,177 @@ async def create_tenant(db, email,
                             city ,
                             drivers_count ,
                             logo_url ):
-    try:
-        model_map = {
-            "email": email,
-            "company_name": company_name,
-            "phone_no": phone_no,
-            "slug": slug
-        }
-        """Stripe config"""
-        stripe_customer = StripeService.create_customer(email = email,name = f"{first_name} {last_name}")
-        stripe_express = StripeService.create_express_account(email = email)
+        try:
+            print("the new method...")
+            model_map = {
+                "email": email,
+                # "company_name": company_name,
+                "phone_no": phone_no,
+                # "slug": slug
+            }
+            self._check_unique_fields(self.tenant_info, db, model_map)
+            
+            """Stripe config"""
+            stripe_customer = StripeService.create_customer(email = email,name = f"{first_name} {last_name}")
+            stripe_express = StripeService.create_express_account(email = email)
 
-        _check_unique_fields(tenant_table, db, model_map)
-        """Create new tenants"""
-        logo_path = await _verify_upload(logo_url,slug)
+            """Create new tenants"""
+            logo_path = await self._verify_upload(logo_url,slug)
 
-        hashed_pwd = password_utils.hash(password.strip()) #hash password
-        # tenats_info = model_dump()
-        # tenats_info.pop("users", None)
-        new_tenant = tenant_table(stripe_customer_id = stripe_customer,
-                                    stripe_account_id = stripe_express,
-                                    email=email,
-                                    first_name=first_name,
-                                    last_name=last_name,
-                                    password=password,
-                                    phone_no=phone_no,
-                                    company_name=company_name,
-                                    slug=slug,
-                                    address=address,
-                                    city=city,
-                                    drivers_count=drivers_count,
-                                    logo_url = logo_path
-                                    )
-        new_tenant.password = hashed_pwd
+            hashed_pwd = password_utils.hash(password.strip()) #hash password
+          
+            new_tenant_info = self.tenant_info( email=email,
+                                        first_name=first_name,
+                                        last_name=last_name,
+                                        password=hashed_pwd,
+                                        phone_no=phone_no)
+            # new_tenant_info.password = hashed_pwd
+            
+            db.add(new_tenant_info)
+            db.commit()
+            db.refresh(new_tenant_info)
+            new_tenant_id = new_tenant_info.id
+            logger.debug(f"New tenant id: {new_tenant_id}")
+            new_tenant_profile = self.tenant_profile(tenant_id = new_tenant_id,
+                                                     company_name=company_name,
+                                                    slug=slug,
+                                                    address=address,
+                                                    city=city,                                
+                                                    logo_url = logo_path,
+                                                    stripe_customer_id = stripe_customer,
+                                                    stripe_account_id = stripe_express,
+                                                    )
+            new_tenant_stats = self.tenant_stats(tenant_id = new_tenant_id, 
+                                                 drivers_count=drivers_count)
 
-       
-       
-        db.add(new_tenant)
-        db.commit()
-        db.refresh(new_tenant)
-
-        logger.info(f"new tenant_id {new_tenant.id}")
-        """add tenants settings"""
-
-        await _set_up_tenant_settings( new_tenant.id,logo_path, slug,db)
-        await _create_vehicle_category_rate_table(db, new_tenant.id)
-
-    except db_exceptions.COMMON_DB_ERRORS as e:
-        db_exceptions.handle(e, db)
         
-    return new_tenant
+        
+            db.add(new_tenant_profile)
+            db.add(new_tenant_stats)
+            
+            db.commit()
+            db.refresh(new_tenant_profile)
+            db.refresh(new_tenant_stats)
+
+            # logger.info(f"new tenant_id {new_tenant.id}")
+            response_dict  = {"tenants": new_tenant_info, "profile": new_tenant_profile, "stats": new_tenant_stats}
+            """add tenants settings"""
+            logger.debug(response_dict)
+            await self._set_up_tenant_settings( new_tenant_id,logo_path, slug,db)
+            await self._create_vehicle_category_rate_table(db, new_tenant_id)
+
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, db)
+        
+        return response_dict
+    def _check_unique_fields(self, model, db, fields: dict):
+        try:
+            for field_name, value in fields.items():
+                column = getattr(model, field_name)
+                exists = db.query(model).filter(column == value).first()
+                if exists:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"{field_name.replace('_', ' ').title()} already exists"
+                    )
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, db)
+    async def _set_up_tenant_settings(self, new_tenant_id,logo_url, slug,db):
+        try: 
+            new_tenants_settings = TenantSettings(
+                tenant_id = new_tenant_id,
+                logo_url = logo_url, 
+                slug = slug,
+                theme = "dark",  # Default theme
+                enable_branding = False,  # Default to false
+                base_fare = 0.0,  # Default base fare
+                per_mile_rate = 0.0,  # Default per mile rate
+                per_minute_rate = 0.0,  # Default per minute rate
+                per_hour_rate = 0.0,  # Default per hour rate
+                rider_tiers_enabled = False,  # Default to false
+                cancellation_fee = 0.0,  # Default cancellation fee
+                discounts = False  # Default to false
+            )
+            db.add(new_tenants_settings)
+            db.commit()
+            logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, db)
+            
+    async def _create_vehicle_category_rate_table(self, db, id_tenant):
+        try:
+            logger.info("Setting new tenant vehicle settings table..")
+            vehicle_category = [
+                self.vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Luxury Sedan"),
+                self.vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Executive SUV"),
+                self.vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Stretch Limo"),
+                self.vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Business Van")
+
+            ]
+
+            db.add_all(vehicle_category)
+            db.commit()
+            
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, db)
+    async def get_company_info(self, db, current_tenats):
+        try: 
+            # company = db.execute(text("select * from tenants t join tenants_profile tp on tp.tenant_id = t.id join tenant_stats ts on ts.tenant_id = t.id where tenant_id = "))
+            stmt = db.query(self.tenant_info).options(
+                        joinedload(self.tenant_info.profile),
+                        joinedload(self.tenant_info.stats)
+                    ).where(self.tenant_info.id == current_tenats.id)
+            result = db.execute(stmt).scalars().first()
+
+            if not result:
+                logger.warning(f"404: company with id {current_tenats.id} is not in db")
+                raise HTTPException(status_code=404,
+                                    detail="Company cannot be found")
+            
+            return result
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, db)
+            raise HTTPException(status_code=500, detail="Database error occurred")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in get_company_info: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+    async def _verify_upload(logo_url,slug):
+        if logo_url:
+            try:
+                contents = await logo_url.read()
+                # Extract filename from the uploaded file
+                filename = logo_url.filename if hasattr(logo_url, 'filename') else 'logo.jpg'
+                upload_dir =  "app/upload/logos"
+                os.makedirs(upload_dir, exist_ok=True)
+                file_path = f"{upload_dir}/{slug}_{filename}"
+                with open(file_path, "wb") as f:
+                    f.write(contents)
+                logger.info(f"{file_path}")
+                logger.info("{slug}, Logo is saved!!")
+                return file_path
+            except Exception as e:
+                logger.warning(f"Failed to save logo upload: {e}")
+                # Continue without failing the tenant creation
+        return None
+db_exceptions = db_error_handler.DBErrorHandler
+
+tenant_table = tenant.Tenants
+# tenant_info = tenant.TenantsInfo
+# tenant_profile = tenant.TenantProfile
+# tenant_info = tenant.TenanatStats
+
+driver_table = driver.Drivers
+vehicle_table = vehicle.Vehicles
+booking_table = booking.Bookings
+vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
+
+
+
+
+
+
 async def _verify_upload(logo_url,slug):
     if logo_url:
         try:

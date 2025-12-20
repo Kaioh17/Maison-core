@@ -53,41 +53,100 @@ class TenantUpdate(BaseModel):
     drivers: Optional[int] = Field(None, ge=0)
     plan: Optional[str] = Field(None, pattern=r'^(free|basic|premium|enterprise)$')
     is_active: Optional[bool] = None
-
-
-class TenantResponse(BaseModel):
-    id: int
-    email: str
-    first_name: str
-    last_name: str
-    phone_no: str
-    company_name: str
+class TenantProfile(BaseModel):
+    tenant_id: int
+    company_name: str = Field(..., max_length=200)
     logo_url: Optional[str] = None
     slug: str
-    address: Optional[str]
+    address: Optional[str] = None
     city: str
-    role: str
-    drivers_count: int
-    is_verified: bool
-    is_active: bool
-
-    #stripe details
-    stripe_customer_id: Optional[str]
-    stripe_account_id: Optional[str]
-    subscription_status: Optional[str]
-    subscription_plan: Optional[str]
-    total_ride_count: Optional[int]
-    daily_ride_count:Optional[int]
-    last_ride_count_reset:Optional[datetime]
-    
+    role: str = Field(default="tenant")
+    stripe_customer_id: Optional[str] = None
+    stripe_account_id: Optional[str] = None
+    subscription_status: Optional[str] = Field(default="free")
+    subscription_plan: Optional[str] = Field(default="free")
     created_on: datetime
-    updated_on: Optional[datetime]
+    updated_on: Optional[datetime] = None
+    company: Optional[str] = None  # Computed property
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "tenant_id": 1,
+                "company_name": "Acme Corp",
+                "logo_url": "https://example.com/logo.png",
+                "slug": "acme-corp",
+                "address": "123 Main St",
+                "city": "New York",
+                "role": "tenant",
+                "stripe_customer_id": "cus_123456",
+                "stripe_account_id": "acct_123456",
+                "subscription_status": "active",
+                "subscription_plan": "premium",
+                "created_on": "2024-01-01T00:00:00Z",
+                "updated_on": None,
+                "company": "Acme Corp"
+            }
+        }
+class TenantInfo(BaseModel):
+    id: int
+    email: EmailStr
+    first_name: str = Field(..., max_length=200)
+    last_name: str = Field(..., max_length=200)
+    password: str  # Note: Usually excluded from response schemas
+    phone_no: str = Field(..., max_length=200)
+    created_on: datetime
+    updated_on: Optional[datetime] = None
+    full_name: Optional[str] = None  # Computed property
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "email": "tenant@example.com",
+                "first_name": "John",
+                "last_name": "Doe",
+                "phone_no": "+1234567890",
+                "created_on": "2024-01-01T00:00:00Z",
+                "updated_on": None,
+                "full_name": "John Doe"
+            }
+        }
+
+class TenantStats(BaseModel):
+    tenant_id: int
+    drivers_count: int
+    daily_ride_count: int = Field(default=0)
+    last_ride_count_reset: Optional[datetime] = None
+    total_ride_count: int = Field(default=0)
+    created_on: datetime
+    updated_on: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "tenant_id": 1,
+                "drivers_count": 10,
+                "daily_ride_count": 25,
+                "last_ride_count_reset": "2024-01-01T00:00:00Z",
+                "total_ride_count": 1000,
+                "created_on": "2024-01-01T00:00:00Z",
+                "updated_on": None
+            }
+        }
     
-    model_config = {
-        "from_attributes": True
+class TenantRsponse(BaseModel):
+    tenants: TenantInfo
+    profile: TenantProfile
+    stats: TenantStats
+class TenantResponse(TenantInfo):
+    profile: TenantProfile 
+    stats: TenantStats
 
-    }
-
+   
 """schema to onboard driver """
 class OnboardDriverBase(BaseModel):
     first_name: str
