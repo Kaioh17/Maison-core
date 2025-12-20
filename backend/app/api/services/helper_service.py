@@ -9,18 +9,54 @@ from app.utils.logging import logger
 # def user_exist(db):
 #     db.query()
 #     return 
+# 
+# tenant_table = tenant.Tenants
+# driver_table = driver.Drivers
+# booking_table = booking.Bookings
+
 user_table = user.Users
 tenant_table = tenant.Tenants
+tenant_profile = tenant.TenantProfile
+tenant_stats = tenant.TenantStats
 driver_table = driver.Drivers
 booking_table = booking.Bookings
+tenant_setting_table = tenant_setting.TenantSettings  
+vehicle_config_table = vehicle_config.VehicleConfig
+vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
+vehicle_table = vehicle.Vehicles
+from app.schemas import general
 
-@staticmethod
-def _tenants_exist(db, data):
-    exists = db.query(tenant_table).filter(tenant_table.id == data.tenant_id).first()
-    if not exists:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail = "Tenant does not exists")
-    return exists
+# class JsonResponse:
+#     """  success: bool = True
+#     message: Optional[str] = None
+#     meta: Optional[dict] = None
+#     data: Optional[T] = None"""
+def success_resp(msg: str = "Successful", data: any = None, meta: dict = None):
+    return general.StandardResponse(success=True, message=msg, data=data, meta=meta)
+def success_list_resp(msg: str = "Successful", data: any = None):
+    general.ListResponse(success=True, message=msg, data=data)
+class Validations:
+    def __init__(self, db):
+        self.db = db
+        
+    # @staticmethod
+    def _tenant_activity_(self, tenant_id):
+        tenants = self._tenants_exist(tenant_id)
+
+        if tenants.is_active is False:
+            logger.info(f"Tenant is not active right now")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail= f"Tenant {tenants.company_name} is not currently active")
+        
+        return tenants
+    # @staticmethod
+    def _tenants_exist(self, tenant_id):
+        exists = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+        if not exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail = "Tenant does not exists")
+        return exists
+    
 @staticmethod
 def _user_exist(db, data):
     exists = db.query(user_table).filter(user_table.email == data.email, 
@@ -31,16 +67,7 @@ def _user_exist(db, data):
 
 
 
-@staticmethod
-def _tenant_activity_(db, data):
-    tenants = _tenants_exist(db,data)
 
-    if tenants.is_active is False:
-        logger.info(f"Tenant is not active right now")
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail= f"Tenant {tenants.company_name} is not currently active")
-    
-    return tenants
 
 import os
 @staticmethod

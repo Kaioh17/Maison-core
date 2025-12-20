@@ -59,7 +59,7 @@ async def add_vehicle(payload, current_user, db):
         db.add(new_vehicle)
         db.commit()
         db.refresh(new_vehicle)
-        logger.info(f"{payload.make} added to {tenants.company}..")
+        # logger.info(f"{payload.make} added to {tenants.company}..")
         
     except db_exceptions.COMMON_DB_ERRORS as e:
         db_exceptions.handle(e, db)

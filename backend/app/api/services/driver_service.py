@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from app.models import *
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
-from .helper_service import _tenants_exist
+from .helper_service import Validations, tenant_stats
 from sqlalchemy.orm import selectinload
 
 db_exceptions = db_error_handler.DBErrorHandler
@@ -11,6 +11,8 @@ vehicle_table = vehicle.Vehicles
 booking_table = booking.Bookings
 tenant_table = tenant.Tenants
 
+
+# TODO create oop structure 
 async def _table_checks_(driver_obj, payload, db):
     if not driver_obj:
         logger.warning("Token entered is incorrect...")
@@ -100,7 +102,7 @@ async def register_driver(payload, db):
         driver_obj.password = hashed_pwd
         driver_obj.is_registered = "registered"
        
-        tenant = db.query(tenant_table).filter(tenant_table.id == driver_obj.tenant_id).first()
+        tenant = db.query(tenant_stats).filter(tenant_stats.tenant_id == driver_obj.tenant_id).first()
 
         tenant_driver = tenant.drivers_count + 1 
 

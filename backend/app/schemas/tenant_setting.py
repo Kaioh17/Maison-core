@@ -18,6 +18,7 @@ class UpdateTenantSetting(BaseModel):
     rider_tiers_enabled: bool
     cancellation_fee: float 
     discounts: bool
+    updated_on: datetime
 
 class TenantResponse(UpdateTenantSetting):
     id: int 

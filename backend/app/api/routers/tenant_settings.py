@@ -23,7 +23,7 @@ async def get_tenant_settings(db: Session = Depends(get_db),
 @router.patch("/", status_code=status.HTTP_202_ACCEPTED, response_model=tenant_setting.UpdateTenantSetting)
 async def update_tenant_settings(payload: tenant_setting.UpdateTenantSetting, db: Session = Depends(get_db),
                                  current_tenant: int = Depends(deps.get_current_user)):
-    logger.info("Tenant settings updated...")
+    logger.info("Updating settings...")
     upated_tenant_setting =await tenant_settings_service.update_tenant_settings(payload, db, current_tenant)
     
     return upated_tenant_setting

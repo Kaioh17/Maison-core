@@ -9,10 +9,14 @@ from .vehicle import VehicleResponse, VehicleCreate
 T = TypeVar('T')
 
 class StandardResponse(BaseModel, Generic[T]):
+    """Generic response schema for consistent API responses"""
+    success: bool = Field(True, description="Indicates if the operation was successful")
+    message: Optional[str] = Field(None, description="Response message")
+    meta: Optional[dict] = Field(None, description="Additional metadata")
+    data: Optional[T] = Field(None, description="Response data")
+    # error: Optional[Any] =Field(None)
+class ListResponse(StandardResponse[list[T]]):
     success: bool = True
     message: Optional[str] = None
-    meta: Optional[dict] = None
-    data: Optional[T] = None
-class ListResponse(StandardResponse[list[T]]):
     data: list[T] | None
     meta: dict

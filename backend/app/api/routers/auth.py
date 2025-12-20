@@ -41,7 +41,7 @@ def login( request: Request,
         #retrieve client ip
         client_ip = get_remote_address(request)
 
-        #check user-specific rate limiting 
+        #check user-specific rate limit
         attempts_key= check_user_specific_rate_limit(
             email=user_credentials.username,
             ip = client_ip,
@@ -65,7 +65,7 @@ def login( request: Request,
 
         access_token = create_access_token(data = {"id": str(user.id), "role": user.role,  "tenant_id": str(user.id)})
         refresh_token = create_refresh_token(data = {"id": str(user.id), "role": user.role,  "tenant_id": str(user.id)})
-        logger.info(f"refresh token: {refresh_token}")
+        # logger.info(f"refresh token: {refresh_token}")
 
         response = JSONResponse(content = {"access_token": access_token})
         response.set_cookie(

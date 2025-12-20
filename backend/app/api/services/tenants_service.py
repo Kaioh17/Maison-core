@@ -28,10 +28,10 @@ from datetime import datetime, timedelta
 import random
 from .stripe_services import StripeService
 import string
-from .booking_services import _get_driver_fullname, _get_vehicle
+from .booking_services import BookingService
 from app.db.database import get_db, get_base_db
 from ..core import deps
-# from .helper_service import 
+from .helper_service import success_resp 
 
 class TenantService:
     def __init__(self, db, current_tenants):
@@ -123,7 +123,7 @@ class TenantService:
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
         
-        return response_dict
+        return success_resp(data=response_dict, msg="Tenant created successfully")
     def _check_unique_fields(self, model, fields: dict):
         try:
             for field_name, value in fields.items():
@@ -151,7 +151,7 @@ class TenantService:
                 raise HTTPException(status_code=404,
                                     detail="Company cannot be found")
             
-            return result
+            return success_resp(data=result, msg="Tenant's info retrieved successfully")
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
             raise HTTPException(status_code=500, detail="Database error occurred")
@@ -226,9 +226,9 @@ class TenantService:
 
             if not drivers:
                 logger.info(f"There are no drivers for tenant {self.current_tenants.id}")
-                return []
+                return success_resp(data=[], msg="Drivers retrieved successfully", meta={"count": 0})
 
-            return drivers
+            return success_resp(data=drivers, msg="Drivers retrieved successfully", meta={"count": len(drivers)})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
             raise HTTPException(status_code=500, detail="Database error occurred")
@@ -283,7 +283,7 @@ class TenantService:
 
         logger.info("Onboarding process complete...")
 
-        return new_driver
+        return success_resp(data=new_driver, msg="New driver onboarded successfully")
 
     async def approve_driver(self, payload):
         try:
@@ -301,9 +301,9 @@ class TenantService:
 
             if not vehicle_obj:
                 logger.info(f"There are no vehicles for tenant {self.current_tenants.id}")
-                return []  # Return empty array instead of raising error
+                return success_resp(data=[], msg="Vehicles retrieved successfully", meta={"count": 0})
 
-            return vehicle_obj
+            return success_resp(data=vehicle_obj, msg="Vehicles retrieved successfully", meta={"count": len(vehicle_obj)})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
             raise HTTPException(status_code=500, detail="Database error occurred")
@@ -324,7 +324,7 @@ class TenantService:
                 logger.warning(f"There are no vehicles assigned to any drivers {self.current_tenants.id}")
                 raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
                                     detail = f"Tenant {self.current_tenants.id} has no vehicles assigned to any drivers")
-            return vehicle_obj
+            return success_resp(data=vehicle_obj, msg="Vehicles with assigned drivers retrieved successfully", meta={"count": len(vehicle_obj)})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
@@ -341,7 +341,7 @@ class TenantService:
                 logger.warning(f"Driver {driver_id} does not have an assigned a vehicle {self.current_tenants.id}")
                 raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
                                     detail = f"Driver {driver_id} does not have an assigned a vehicle {self.current_tenants.id}")
-            return vehicle_obj
+            return success_resp(data=vehicle_obj, msg=f"Vehicles for driver {driver_id} retrieved successfully", meta={"count": len(vehicle_obj), "driver_id": driver_id})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
@@ -368,7 +368,7 @@ class TenantService:
             self.db.commit()
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
-        return {"msg": f"Driver {payload.driver_id} has been assigned to vehicle: {vehicle_id}"}
+        return success_resp(data={"driver_id": payload.driver_id, "vehicle_id": vehicle_id}, msg=f"Driver {payload.driver_id} has been assigned to vehicle: {vehicle_id}")
 
     async def get_all_bookings(self):
         try:
@@ -377,7 +377,7 @@ class TenantService:
             
             if not booking_obj:
                 logger.info(f"There are no bookings for tenant {self.current_tenants.id}")
-                return []  # Return empty array instead of raising error
+                return success_resp(data=[], msg="Bookings retrieved successfully", meta={"count": 0})
             
             result = []
             for ride in booking_obj:
@@ -385,22 +385,18 @@ class TenantService:
                 vehicle = None
                 
                 if ride.driver_id:
-                    driver_full_name = await _get_driver_fullname(driver_id=ride.driver_id, db=self.db)
+                    driver_full_name = await BookingService(db = self.db, current_user=None)._get_driver_fullname(driver_id=ride.driver_id)
                 if ride.vehicle_id:
-                    vehicle = await _get_vehicle(vehicle_id=ride.vehicle_id, db=self.db)
+                    vehicle = await BookingService(db = self.db, current_user=None)._get_vehicle(vehicle_id=ride.vehicle_id)
                
 
                 ride_dict = ride.__dict__.copy()
                 ride_dict["vehicle"] = vehicle
                 ride_dict["driver_fullname"] = driver_full_name
                 
-                result.append(ride_dict)
-                
-        
+                result.append(ride_dict)            
 
-            
-
-            return result
+            return success_resp(data=result, msg="Bookings retrieved successfully", meta={"count": len(result)})
             # return booking_obj
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
@@ -419,7 +415,7 @@ class TenantService:
             if not booking_obj:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail= f"There are no {booking_status} bookings right now....")
-            return booking_obj
+            return success_resp(data=booking_obj, msg=f"{booking_status.capitalize()} bookings retrieved successfully", meta={"count": len(booking_obj), "status": booking_status})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
@@ -446,7 +442,7 @@ class TenantService:
             ride.driver_id = payload.driver_id
 
             self.db.commit()
-            return {"msg": f"Driver {payload.driver_id} has been assigned to {rider_id}"}
+            return success_resp(data={"driver_id": payload.driver_id, "rider_id": rider_id}, msg=f"Driver {payload.driver_id} has been assigned to {rider_id}")
        except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 

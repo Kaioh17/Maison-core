@@ -37,10 +37,7 @@ def get_client_info(request: Request):
 async def tenants(tenant_service: TenantService = Depends(get_tenant_service)):
     logger.info("Tenant's info")
     company = await tenant_service.get_company_info()
-    return general.StandardResponse(
-        data=company,
-        message="Tenant's info retrieved successfully",
-    )
+    return company
 
 # Create a new tenant
 @router.post('/add', status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[tenant.TenantRsponse])
@@ -73,21 +70,14 @@ async def create_tenants(   email: EmailStr = Form(...),
                                                         city=city,
                                                         drivers_count=drivers_count,
                                                         logo_url=logo_url, )
-        return general.StandardResponse(
-            data=tenant_obj,
-            message="Tenant created successfully"
-        )
+        return tenant_obj
 
 # Get all drivers for the current tenant
 @router.get('/drivers', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[driver.DriverResponse]])
 async def get_drivers(tenant_service: TenantService = Depends(get_tenant_service)):
     logger.info("Tenant drivers")
     drivers = await tenant_service.get_all_drivers()
-    return general.StandardResponse(
-        data=drivers,
-        message="Drivers retrieved successfully",
-        meta={"count": len(drivers)}
-    )
+    return drivers
 
 # Get vehicles for the tenant, optionally filtered by driver or assignment
 @router.get('/vehicles', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[vehicle.VehicleResponse]])
@@ -105,11 +95,7 @@ async def get_vehicles(
     else:
         logger.info("Tenant vehicles...")
         vehicles = await tenant_service.get_all_vehicles()
-    return general.StandardResponse(
-        data=vehicles,
-        message="Drivers retrieved successfully",
-        meta={"count": len(vehicles)}
-    )
+    return vehicles
 
 # Get bookings for the tenant, optionally filtered by status
 @router.get('/bookings', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[booking.BookingResponse]])
@@ -123,11 +109,7 @@ async def get_bookings(
     else:
         logger.info("All available bookings")
         bookings = await tenant_service.get_all_bookings()
-    return general.StandardResponse(
-        data=bookings,
-        message="Bookings retrieved successfully",
-        meta={"count": len(bookings)}
-    )
+    return bookings
 
 # Onboard a new driver for the tenant
 @router.post('/onboard', status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[tenant.OnboardDriverResponse])
@@ -137,10 +119,7 @@ async def onboard_drivers(
 ):
     logger.info("Onboarding driver...")
     new_driver = await tenant_service.onboard_drivers(payload)
-    return general.StandardResponse(
-        data=new_driver,
-        message="New driver onboarded successfully"
-    )
+    return new_driver
 
 """Assign driver to a booked rides pending drivers"""
 @router.patch("/riders/{rider_id}/assign-driver", status_code=status.HTTP_202_ACCEPTED)
