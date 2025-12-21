@@ -15,7 +15,7 @@ router = APIRouter(
 )   
 
 
-@router.post("/add", status_code=status.HTTP_201_CREATED, response_model= StandardResponse[dict])
+@router.post("/add/{tenant_id}", status_code=status.HTTP_201_CREATED, response_model= StandardResponse[dict])
 async def create_user(tenant_id: int, payload: user.UserCreate,user_service: UserService =  Depends(get_unauthorized_service)):
 
     logger.info("Creating User")

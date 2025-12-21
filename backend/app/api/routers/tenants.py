@@ -100,12 +100,17 @@ async def get_vehicles(
 # Get bookings for the tenant, optionally filtered by status
 @router.get('/bookings', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[booking.BookingResponse]])
 async def get_bookings(
+    booking_id: Optional[str] = None,
     booking_status: Optional[str] = Query(None, description="only this labels can be passed 'pending', 'confirmed', 'active', 'cancelled', 'no_show'"),
     tenant_service: TenantService = Depends(get_tenant_service)
 ):
     if booking_status:
         logger.info(f"Getting {booking_status} bookings...")
-        bookings = await tenant_service.get_bookings_by_status(booking_status)
+        bookings = await tenant_service.get_bookings_by(booking_status=booking_status)
+    elif booking_id:
+        logger.info(f"Getting booking at {booking_id} ")
+        bookings = await tenant_service.get_bookings_by(booking_id=booking_id)
+        
     else:
         logger.info("All available bookings")
         bookings = await tenant_service.get_all_bookings()

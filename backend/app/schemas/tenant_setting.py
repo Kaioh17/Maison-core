@@ -5,26 +5,24 @@ from typing import Optional
 import re
 
 class UpdateTenantSetting(BaseModel):
-    theme: str
-    # logo_url: str 
-    slug: str
-    enable_branding: bool
-    #Fare 
-    base_fare: float
-    per_minute_rate: float
-    per_mile_rate: float
-    per_hour_rate: float
-    #rider setings 
-    rider_tiers_enabled: bool
-    cancellation_fee: float 
-    discounts: bool
-    updated_on: datetime
+    theme: Optional[str] = None
+    slug: Optional[str] = None
+    enable_branding: Optional[bool] = None
+    base_fare: Optional[float] = None
+    per_minute_rate: Optional[float] = None
+    per_mile_rate: Optional[float] = None
+    per_hour_rate: Optional[float] = None
+    rider_tiers_enabled: Optional[bool] = None
+    cancellation_fee: Optional[float] = None
+    discounts: Optional[bool] = None
+    updated_on: Optional[datetime] = None
 
 class TenantResponse(UpdateTenantSetting):
     id: int 
     tenant_id: int
     created_on: datetime
-    updated_on: Optional[datetime]
+    logo_url: Optional[str] = None
+    updated_on: Optional[datetime] = None
 
 class updated_vicuals(BaseModel):
-    logo_url: Optional[str] = None 
+    logo_url: Optional[str] = None

@@ -405,17 +405,31 @@ class TenantService:
             logger.error(f"Unexpected error in get_all_bookings: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
 
-    async def get_bookings_by_status(self, booking_status: str):
+    async def get_bookings_by(self,booking_id = None ,booking_status: str = None):
         try:
-            booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id,
-                                                       self.booking_table.booking_status == booking_status.lower())
-
+            if booking_status:
+                booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id,
+                                                            self.booking_table.booking_status == booking_status.lower())
+                det = f"There are no {booking_status} bookings right now...."
+                msg = f"{booking_status.capitalize()} bookings retrieved successfully"
+                meta = {"count": len(booking_obj), "status": booking_status}
+            elif booking_id:
+                logger.debug(f"booking_id {booking_id}active")
+                # booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id,
+                #                                             self.booking_table.id == int(booking_id))
+                stmt = "select b.*,CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_fullname \
+                        from bookings b join drivers d on d.id = b.driver_id join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id\
+                        where b.id = :booking_id"
+                booking_query = self.db.execute(text(stmt), {"booking_id":booking_id})
+                det = f"There is no bokings with id {booking_id} ...."
+                msg = f"Retrieved booking succcessfully"
+                meta = None
             booking_obj = booking_query.all()
-            
+            logger.debug(booking_obj)
             if not booking_obj:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= f"There are no {booking_status} bookings right now....")
-            return success_resp(data=booking_obj, msg=f"{booking_status.capitalize()} bookings retrieved successfully", meta={"count": len(booking_obj), "status": booking_status})
+                                    detail= det)
+            return success_resp(data=booking_obj, msg=msg, meta=meta)
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 

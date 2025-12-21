@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
 from app.models import driver, vehicle
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
@@ -6,49 +6,66 @@ from app.models import tenant_setting
 from .helper_service import Validations
 from sqlalchemy.orm import selectinload
 from .tenants_service import TenantService
+from app.db.database import get_db, get_base_db
+from ..core import deps
+from .helper_service import success_resp , vehicle_table, tenant_setting_table
 
 db_exceptions = db_error_handler.DBErrorHandler
-tenant_setting_table= tenant_setting.TenantSettings
-vehicle_table = vehicle.Vehicles
+class TenantSettingsService:
+    def __init__(self, db, current_tenant):
+        self.db=db
+        self.current_tenant = current_tenant
+    async def get_tenant_settings(self):
+        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_tenant.id)
+        setting_obj = setting_query.first()
 
-async def get_tenant_settings(db, current_tenant):
-    setting_query = db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == current_tenant.id)
-    setting_obj = setting_query.first()
-
-    if not setting_obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail = "Settings not found ")
+        if not setting_obj:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail = "Settings not found ")
+        
+        # return setting_obj
+        return success_resp(data=setting_obj, msg="Tenant settings retrieved successfully")
     
-    return setting_obj
 
-async def update_tenant_settings(payload, db, current_tenant):
-    setting_query = db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == current_tenant.id)
-    setting_obj = setting_query.first()
+    async def update_tenant_settings(self,payload):
+        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_tenant.id)
+        setting_obj = setting_query.first()
 
-    if not setting_obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail = "Settings not found ")
+        if not setting_obj:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail = "Settings not found ")
+        data_mapped = setting_obj.__dict__
+        logger.debug(data_mapped)
+        for field, value in payload.dict().items():
+            if value == None:                
+                value = data_mapped[field] 
     
-    for field, value in payload.dict().items():
-        if hasattr(setting_obj, field):
-            setattr(setting_obj, field, value)
+            if hasattr(setting_obj, field):
+                setattr(setting_obj, field, value)
 
-    db.commit()
-    db.refresh(setting_obj)
+        self.db.commit()
+        self.db.refresh(setting_obj)
 
-    return setting_obj
+        return success_resp(data=setting_obj, msg="Tenant settings updated successfully")
+        
+        return setting_obj
 
-async def update_logo(logo, db, current_tenant):
-    setting_query = db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == current_tenant.id)
-    setting_obj = setting_query.first()
+    async def update_logo(self, logo):
+        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_tenant.id)
+        setting_obj = setting_query.first()
+        slug = setting_obj.slug
+        logger.debug(slug)
+        logo_url = await TenantService(db=self.db, current_tenants=self.current_tenant)._verify_upload(logo_url=logo, slug=slug)
+        if not setting_obj:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                                detail=f"[{self.current_tenant.id}] Settings not found for user")
+        
+        setting_obj.logo_url = logo_url
+        self.db.commit()
+        self.db.refresh(setting_obj)
 
-    logo_url = await TenantService._verify_upload(logo, current_tenant.slug)
-    if not setting_obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"[{current_tenant.id}] Settings not found for user")
-    
-    setting_obj.logo_url = logo_url
-    db.commit()
-    db.refresh(setting_obj)
+        return success_resp(data=setting_obj, msg="Tenant logo updated successfully")
 
-    return setting_obj
+        return setting_obj
+def get_tenant_setting_service(current_tenant=Depends(deps.get_current_user), db=Depends(get_db)):
+    return TenantSettingsService(db=db, current_tenant=current_tenant)
