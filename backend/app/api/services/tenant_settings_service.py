@@ -5,10 +5,11 @@ from app.utils.logging import logger
 from app.models import tenant_setting
 from .helper_service import Validations
 from sqlalchemy.orm import selectinload
+from sqlalchemy import update, insert, select, delete
 from .tenants_service import TenantService
 from app.db.database import get_db, get_base_db
 from ..core import deps
-from .helper_service import success_resp , vehicle_table, tenant_setting_table
+from .helper_service import success_resp , vehicle_table, tenant_setting_table, tenant_profile, SupaS3
 
 db_exceptions = db_error_handler.DBErrorHandler
 class TenantSettingsService:
@@ -28,9 +29,25 @@ class TenantSettingsService:
     
 
     async def update_tenant_settings(self,payload):
+        """from sqlalchemy import update
+
+# Assuming 'User' is an ORM mapped class
+stmt = (
+    update(User)
+    .where(User.username == 'old_name')
+    .values(username='new_name', email='new_email@example.com')
+)
+
+with Session(engine) as session: # Or use an existing session
+    session.execute(stmt)
+    session.commit()
+"""
         setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_tenant.id)
         setting_obj = setting_query.first()
-
+        
+        if payload.slug:
+            stmt = (update(tenant_profile).where(tenant_profile.tenant_id == self.current_tenant.id).values(slug=payload.slug))
+            self.db.execute(stmt)
         if not setting_obj:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail = "Settings not found ")
@@ -55,7 +72,9 @@ class TenantSettingsService:
         setting_obj = setting_query.first()
         slug = setting_obj.slug
         logger.debug(slug)
-        logo_url = await TenantService(db=self.db, current_tenants=self.current_tenant)._verify_upload(logo_url=logo, slug=slug)
+        logo_url = await SupaS3.upload_to_s3(url=logo, slug=slug, bucket_name="logos") 
+       
+        
         if not setting_obj:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                                 detail=f"[{self.current_tenant.id}] Settings not found for user")

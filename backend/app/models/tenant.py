@@ -40,6 +40,10 @@ class Tenants(Base):
         uselist=False,
         cascade="all, delete-orphan"
     )
+    
+    settings = relationship("TenantSettings",
+                            uselist=False,
+                            cascade="all, delete-orphan")
     users = relationship("Users", back_populates="tenants", cascade= "all, delete", passive_deletes=True)
 
 
@@ -48,6 +52,10 @@ class Tenants(Base):
         """Return the full name of the tenant"""
         return f"{self.first_name} {self.last_name}"
     
+    @property
+    def slug(self):
+        """Return the full name of the tenant"""
+        return self.profile.slug
    
     
 class TenantProfile(Base): 

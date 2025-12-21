@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel
+from fastapi import File, UploadFile
+from pydantic import BaseModel, FileUrl
 from typing import Optional
 
 
@@ -37,4 +38,8 @@ class VehicleResponse(VehicleBase):
         "from_attributes": True
 
     }
+    
+# class VehicleImage(BaseModel):
+    
+    
    

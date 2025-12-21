@@ -26,12 +26,15 @@ class TenantCreate(BaseModel):
     @field_validator('email')
     def validate_email(cls, v):
         return v.lower()
-    
-    @field_validator('slug')
-    def validate_slug(cls, v):
-        if not re.match(r'^[a-z0-9-]+$', v):
-            raise ValueError('Slug must contain only lowercase letters, numbers, and hyphens')
-        return v.lower()
+    @field_validator('slug', mode='before')
+    def validate_slug(cls, value:str) -> any:
+        if value != None:
+            return value.lower().strip().replace(' ', '-').replace('_','-')
+    # @field_validator('slug')
+    # def validate_slug(cls, v):
+    #     if not re.match(r'^[a-z0-9-]+$', v):
+    #         raise ValueError('Slug must contain only lowercase letters, numbers, and hyphens')
+    #     return v.lower()
     
     @field_validator('password')
     def validate_password(cls, v):

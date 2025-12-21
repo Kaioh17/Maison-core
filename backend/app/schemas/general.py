@@ -2,7 +2,7 @@ from datetime import datetime
 # from encodings.punycode import T
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, validator, model_validator
-from typing import Optional, Generic, TypeVar
+from typing import Any, Optional, Generic, TypeVar
 from .vehicle_config import VehicleConfigResponse
 from .vehicle import VehicleResponse, VehicleCreate
 
@@ -14,7 +14,7 @@ class StandardResponse(BaseModel, Generic[T]):
     message: Optional[str] = Field(None, description="Response message")
     meta: Optional[dict] = Field(None, description="Additional metadata")
     data: Optional[T] = Field(None, description="Response data")
-    # error: Optional[Any] =Field(None)
+    error: Optional[Any] =Field(None)
 class ListResponse(StandardResponse[list[T]]):
     success: bool = True
     message: Optional[str] = None

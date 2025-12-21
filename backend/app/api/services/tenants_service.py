@@ -31,7 +31,8 @@ import string
 from .booking_services import BookingService
 from app.db.database import get_db, get_base_db
 from ..core import deps
-from .helper_service import success_resp 
+from .helper_service import success_resp, SupaS3
+ 
 
 class TenantService:
     def __init__(self, db, current_tenants):
@@ -76,7 +77,8 @@ class TenantService:
             stripe_express = StripeService.create_express_account(email = email)
 
             """Create new tenants"""
-            logo_path = await self._verify_upload(logo_url,slug)
+            
+            logo_path = await SupaS3.upload_to_s3(url=logo_url, slug=slug, bucket_name='logos')
 
             hashed_pwd = password_utils.hash(password.strip()) #hash password
           
@@ -408,22 +410,38 @@ class TenantService:
     async def get_bookings_by(self,booking_id = None ,booking_status: str = None):
         try:
             if booking_status:
-                booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id,
-                                                            self.booking_table.booking_status == booking_status.lower())
+                stmt = "select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_fullname, b.booking_status \
+                        from bookings b join drivers d on d.id = b.driver_id join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id\
+                        where b.tenant_id = :tenant_id and b.booking_status = :booking_status"
+                # booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id,
+                #                                             self.booking_table.booking_status == booking_status.lower())
+                booking_query = self.db.execute(text(stmt), {"booking_status":booking_status.lower(), "tenant_id":self.current_tenants.id})
+                
                 det = f"There are no {booking_status} bookings right now...."
                 msg = f"{booking_status.capitalize()} bookings retrieved successfully"
-                meta = {"count": len(booking_obj), "status": booking_status}
+                # booking_obj = booking_query.all()
+                # meta = None
+                meta = {"status": booking_status}
             elif booking_id:
                 logger.debug(f"booking_id {booking_id}active")
                 # booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id,
                 #                                             self.booking_table.id == int(booking_id))
-                stmt = "select b.*,CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_fullname \
+                stmt = "select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_fullname \
                         from bookings b join drivers d on d.id = b.driver_id join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id\
-                        where b.id = :booking_id"
-                booking_query = self.db.execute(text(stmt), {"booking_id":booking_id})
+                        where b.tenant_id = :tenant_id and b.id = :booking_id"
+                booking_query = self.db.execute(text(stmt), {"booking_id":booking_id, "tenant_id":self.current_tenants.id})
                 det = f"There is no bokings with id {booking_id} ...."
                 msg = f"Retrieved booking succcessfully"
                 meta = None
+            else: 
+                stmt = "select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_fullname \
+                        from bookings b join drivers d on d.id = b.driver_id join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id\
+                        where b.tenant_id = :tenant_id"
+                booking_query = self.db.execute(text(stmt), {"tenant_id":self.current_tenants.id})
+                det = f"There is no bokings with id {booking_id} ...."
+                msg = f"Retrieved booking succcessfully"
+                meta = None       
+                
             booking_obj = booking_query.all()
             logger.debug(booking_obj)
             if not booking_obj:

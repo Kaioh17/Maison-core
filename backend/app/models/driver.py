@@ -65,4 +65,7 @@ class Drivers(Base):
     def full_name(self):
         """Return the full name of the users"""
         return f"{self.first_name} {self.last_name}"
+    @property
+    def slug(self):
+        return self.tenant.slug
 

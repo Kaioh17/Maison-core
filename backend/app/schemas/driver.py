@@ -55,6 +55,16 @@ class DriverResponse(DriverBase):
         "from_attributes": True
 
     }
+class RiderDriverResponse(BaseModel):
+    id: int 
+    full_name: str
+    driver_type: str
+    completed_rides: int
+    is_active: bool
+    status: str
+    vehicle: Optional[VehicleResponse] = None
+    phone_no: Optional[str] = Field(None, pattern = r'^\+?[\d\s\-\(\)]+$')
+    
        
 
 class DriverLogin(BaseModel):

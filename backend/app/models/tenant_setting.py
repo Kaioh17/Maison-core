@@ -35,3 +35,5 @@ class TenantSettings(Base):
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)
+    
+    tenant = relationship("Tenants", back_populates="settings", uselist=False)

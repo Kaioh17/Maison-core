@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 import uuid
 from .juctions import vehicle_vehicle_config_association
-
+from sqlalchemy.dialects.postgresql import *
 
 id_seq =  Sequence('id_seq', start= 150)
 
@@ -24,7 +24,17 @@ class VehicleConfig(Base):
     #     secondary=vehicle_vehicle_config_association,
     #     back_populates="vehicle_configs"
     # )
-    
+    allowed_image_types = Column(ARRAY(String),nullable=False, default=[
+                                    "front_exterior",
+                                    "rear_exterior",
+                                    "side_exterior",
+                                    "interior_front",
+                                    "interior_rear",
+                                    "trunk",
+                                    "dashboard",
+                                    "wheel",
+                                    "feature"
+                                ])
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now())

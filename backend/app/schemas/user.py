@@ -14,7 +14,7 @@ class UserBase(BaseModel):
     state:  Optional[str] = None
     country:  Optional[str] = None
     postal_code:  Optional[str] = None
-    tenant_id:  int
+    # tenant_id:  int
     
     @field_validator('email')
     def validate_email(cls, v):

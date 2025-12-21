@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int
     pk_test: str
     sk_test: str
-
+    resend_key: str
+    supabase_anon_key: str
+    supabase_url: str
     class Config:
         # env_file = "/backend/docker/.env"
         env_file ="/backend/app/.env"

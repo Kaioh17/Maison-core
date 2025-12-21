@@ -24,7 +24,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # def recieve_checkouot():
 #     logger.debug(f"Connection checked out ")
 def get_db(tenant_id: int | None = Depends(security.get_tenant_id_from_token)):
-    
+    ## for authorized users
     # tenant_id = security.get_tenant_id()
     db = SessionLocal()
     try:

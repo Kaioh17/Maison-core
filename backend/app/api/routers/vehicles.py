@@ -1,10 +1,12 @@
 from typing import Optional
-from fastapi import APIRouter, File, HTTPException, FastAPI, Response, UploadFile,status
+from fastapi import APIRouter, File, Form, HTTPException, FastAPI, Response, UploadFile,status
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from ..services import vehicle_service
+# from ..services import vehicle_service
+from ..services.vehicle_service import VehicleService, get_unauthorized_vehicle_service, get_vehicle_service
 from app.schemas import vehicle, vehicle_config
+from app.schemas.general import StandardResponse as resp
 from ..core import deps
 from .dependencies import tenant_and_driver_check, is_tenants
 from app.utils.logging import logger
@@ -17,53 +19,61 @@ router = APIRouter(
 )
 
 
-@router.get("/", status_code=200, response_model=list[vehicle.VehicleResponse])
-async def get_all_vehicles(is_tenants: int = Depends(is_tenants),current_user = Depends(deps.get_current_user),
-                     db: Session = Depends(get_db)):
-    vehicles =await vehicle_service.get_vehicles(current_user, db)
+@router.get("/", status_code=200, response_model=resp[list[vehicle.VehicleResponse]])
+async def get_all_vehicles(is_tenants: int = Depends(is_tenants),
+                           vehicle_service: VehicleService = Depends(get_vehicle_service),
+                           ):
+    vehicles =await vehicle_service.get_vehicles()
     return vehicles
 
-@router.post("/add", status_code=status.HTTP_201_CREATED, response_model=vehicle.VehicleResponse )
-async def get_all_vehicles( payload: vehicle.VehicleCreate,
-                     current_user = Depends(deps.get_current_user),
-                     db: Session = Depends(get_db)
+@router.post("/add", status_code=status.HTTP_201_CREATED, response_model=resp[vehicle.VehicleResponse] )
+async def add_vehicles( payload: vehicle.VehicleCreate,
+                            vehicle_service: VehicleService = Depends(get_vehicle_service),
+                           
+                    
                      ):
-    vehicles = await vehicle_service.add_vehicle(payload, current_user, db)
+    vehicles = await vehicle_service.add_vehicle(payload)
     return vehicles
 
 
-@router.patch("/set_rates", status_code= status.HTTP_201_CREATED, response_model=vehicle_config.VehicleCategoryRateResponse)
+@router.patch("/set_rates", status_code= status.HTTP_201_CREATED, response_model=resp[vehicle_config.VehicleCategoryRateResponse])
 async def set_vehicle_flat_rate(payload: vehicle_config.VehicleRate, 
                                 is_tenants: int = Depends(is_tenants),
-                                current_user = Depends(deps.get_current_user),
-                                db: Session = Depends(get_db)):
-    vehicle_rate = await vehicle_service.set_vehicle_flat_rate(db, payload, current_user)
+                                vehicle_service: VehicleService = Depends(get_vehicle_service),
+                                
+                                ):
+    vehicle_rate = await vehicle_service.set_vehicle_flat_rate(payload)
     return vehicle_rate
 
-@router.get("/category", status_code= status.HTTP_200_OK, response_model=list[vehicle_config.VehicleCategoryRateResponse])
-async def get_vehicle_flat_rate(is_tenants: int = Depends(is_tenants),current_user = Depends(deps.get_current_user),
-                     db: Session = Depends(get_db)):
-    vehicle_category = db.query(vehicle_category_rate.VehicleCategoryRate).filter(vehicle_category_rate.VehicleCategoryRate.tenant_id == current_user.id).all()
+@router.get("/category", status_code= status.HTTP_200_OK, response_model=resp[list[vehicle_config.VehicleCategoryRateResponse]])
+async def get_vehicle_flat_rate(is_tenants: int = Depends(is_tenants),
+                            vehicle_service: VehicleService = Depends(get_vehicle_service)
+                                ,current_user = Depends(deps.get_current_user), db: Session = Depends(get_db)):
+    vehicle_category =await vehicle_service.get_category()
     return vehicle_category
 
-@router.post("/create_category", status_code=status.HTTP_201_CREATED, response_model=vehicle_config.VehicleCategoryRateResponse )
+@router.post("/create_category", status_code=status.HTTP_201_CREATED, response_model=resp[vehicle_config.VehicleCategoryRateResponse])
 async def get_all_vehicles( payload: vehicle_config.VehicleRate,
                             is_tenant = Depends(is_tenants),
-                            current_user = Depends(deps.get_current_user),
-                            db: Session = Depends(get_db)
+                            
+                            vehicle_service: VehicleService = Depends(get_vehicle_service)
+                            
                      ):
-    vehicles = await vehicle_service.add_vehicle_category(payload, current_user, db)
+    vehicles = await vehicle_service.add_vehicle_category(payload)
     return vehicles
 
 #should only be used as a form attached to "vehcile/add"
 #parameters should automaticaly be filled by the frontend during update prcess
-@router.patch("/add/image/{vehicle_id}", status_code=status.HTTP_202_ACCEPTED)
+@router.patch("/add/image/{vehicle_id}", status_code=status.HTTP_202_ACCEPTED, response_model=resp[dict])
 async def update_vehicle_image (vehicle_id: int,
-                                vehicle_image: Optional[UploadFile] = File(None), 
-                                db: Session = Depends(get_db),  
-                                current_user = Depends(deps.get_current_user)
-                                ):
-    update_vehicle_image = await vehicle_service.update_vehicle_image(vehicle_id,vehicle_image, db, current_user)
+                                image_type: list[str] = Form(), #[front, rare, back, ....]
+                                vehicle_image: Optional[list[UploadFile]] = File(None), #[url0, url1, url2]
+                                vehicle_service: VehicleService = Depends(get_vehicle_service),
+                                ):    
+    # return
+    update_vehicle_image = await vehicle_service.update_vehicle_image(vehicle_id=vehicle_id,
+                                                                      vehicle_image=vehicle_image, 
+                                                                      image_type = image_type)
     return update_vehicle_image
 
 # ##search fpr vehicles 
