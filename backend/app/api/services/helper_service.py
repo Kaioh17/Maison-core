@@ -95,17 +95,17 @@ async def _verify_upload(logo_url,slug: str, upload_dir: str, file_path: str):
 from app.upload.storage.supa_s3 import supabase as supa
 
 class SupaS3:
-    async def _format_file_path(url, slug, vehicle_name: str =None, img_type:str=None):
+    async def _format_file_path(url, slug, vehicle_name: str =None, img_type:str=None, vehicle_id:int = None):
          # Extract filename from the uploaded file
         filename = url.filename if hasattr(url, 'filename') else 'image.jpg'
         # os.makedirs(upload_dir, exist_ok=True)
         if vehicle_name:
-            _file_path = f"{slug}/{vehicle_name.upper()}/{img_type}/{slug}_{filename}"
+            _file_path = f"{slug}/{vehicle_name.upper()}_{vehicle_id}/{img_type}/{slug}_{filename}"
         else:
             _file_path = f"{slug}/{slug}_{filename}"
         logger.debug(_file_path)
         return _file_path
-    async def upload_to_s3(url:UploadFile,slug: str, bucket_name: str, vehicle_name:str = None, img_type: str = None):
+    async def upload_to_s3(url:UploadFile,slug: str, bucket_name: str, vehicle_name:str = None, img_type: str = None, vehicle_id:int = None):
         """
         Upload a file to Supabase S3 storage bucket.
         Args:
@@ -136,7 +136,7 @@ class SupaS3:
 
             logger.debug(f"Starting s3 upload for url {url.filename} of size {url.size} to {bucket_name}")
             
-            _file_path = await SupaS3._format_file_path(url=url,slug=slug, vehicle_name=vehicle_name, img_type=img_type)
+            _file_path = await SupaS3._format_file_path(url=url,slug=slug, vehicle_name=vehicle_name, img_type=img_type, vehicle_id=vehicle_id)
 
             supa.storage.from_(bucket_name).upload(path=_file_path, file=contents, file_options={'upsert':'true'})
             logger.debug("Upload successfull")
@@ -147,7 +147,16 @@ class SupaS3:
         except Exception as e:
             raise e
     
-
+    async def delete_from_s3(bucket_name: str, file_urls: list):
+        try:
+            logger.debug(file_urls)
+            resp = supa.storage.from_(bucket_name).remove(file_urls)
+            if resp[0]['metadata']['httpStatusCode'] != 200:
+                raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Delete failed")
+            logger.debug("Deleted from bucket")
+        except Exception as e:
+            raise e
+    
 """
 validate ids
 check if user exist 

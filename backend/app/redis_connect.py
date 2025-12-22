@@ -12,8 +12,8 @@ redis_client = redis.Redis(
 )
 try:
     redis_client.ping()
-    print("✅Redis Connection successful")
-    logging.info("✅Redis Connection successful")
+    print("^_^ Redis Connection successful")
+    # logging.info("^_^Redis Connection successful")
 
 except redis.ConnectionError:
     logging.info("❌ Redis connection failed - make sure Redis is running")

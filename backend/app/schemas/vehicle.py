@@ -25,14 +25,15 @@ class VehicleBase(BaseModel):
 class VehicleCreate(VehicleBase):
     vehicle_category: str 
     
-
+class ImageTypes(BaseModel):
+    allowed_image_types: list
 class VehicleResponse(VehicleBase):
     tenant_id: int 
     id: int 
     created_on: datetime
     updated_on: Optional[datetime]
     vehicle_category_id: Optional[int]  #revert to not optional after cleaning db
-
+    vehicle_images: Optional[dict]
 
     model_config = {
         "from_attributes": True

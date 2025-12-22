@@ -25,6 +25,22 @@ class VehicleService:
             
    
     async def update_vehicle_image(self, vehicle_id: int ,**kwargs):
+        """
+        Updates the vehicle images for a specified vehicle.
+        This asynchronous method uploads new images for a vehicle identified by its ID. 
+        It checks if the vehicle exists and validates the image types against the allowed types 
+        for the vehicle's category. If the image types are valid, the images are uploaded to S3, 
+        and the vehicle's image data is updated in the database.
+        Parameters:
+            vehicle_id (int): The ID of the vehicle to update.
+            **kwargs: Additional keyword arguments that must include:
+                - vehicle_image (list): A list of image URLs to be uploaded.
+                - image_type (list): A list of corresponding image types for the images.
+        Raises:
+            HTTPException: If the vehicle is not found (404) or if an unsupported image type is provided (400).
+        Returns:
+            dict: A success response containing a message and the updated image URLs.
+        """
         try:             
             
             vehicle = self.db.query(vehicle_table).filter(vehicle_table.tenant_id == self.tenant_id ,
@@ -45,8 +61,7 @@ class VehicleService:
             upload_dir = f"app/upload/vehicle_image"
             vehicle_name = vehicle.vehicle_name
             logger.debug(f"Vehicle_name: {vehicle_name}")
-            # logger.debug(f"Vehicle_image: {vehicle_image}")
-            # logger.debug(f"Vehicle_image: {vehicle_image.vehicle_image}")
+        
             vehicle_image = kwargs['vehicle_image']
             logger.debug(vehicle_image)
             image_type = kwargs['image_type']
@@ -56,7 +71,7 @@ class VehicleService:
                 get_type = image_type[i].lower()
                 if get_type not in allowed_types:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Image type '{get_type}' is not supported. Allowed types: {', '.join(allowed_types)}")
-                image_url = await SupaS3.upload_to_s3(url=image, slug=slug, bucket_name="vehicles", vehicle_name=vehicle_name, img_type=get_type)
+                image_url = await SupaS3.upload_to_s3(url=image, slug=slug, bucket_name="vehicles", vehicle_name=vehicle_name, img_type=get_type, vehicle_id=vehicle_id)
                 if image_url:
                     response[get_type] = image_url
         
@@ -65,14 +80,16 @@ class VehicleService:
             vehicle.vehicle_images = response
             self.db.commit()
             return success_resp(msg="Updated image successfully", meta={"image_types": image_type}, data=response)
-            return {"msg": response}
+
         except Exception as e:
             logger.error(f"There is an unexpected error {e}")
             raise e
-    async def get_vehicles(self):
+    async def get_vehicles(self, vehicle_id: int =None):
         try:
-           
-            vehicles = self.db.query(vehicle.Vehicles).filter(vehicle.Vehicles.tenant_id == self.tenant_id).all()
+            if vehicle_id:
+                vehicles = self.db.query(vehicle.Vehicles).filter(vehicle.Vehicles.tenant_id == self.tenant_id,vehicle_table.id == vehicle_id).all()
+            else:
+                vehicles = self.db.query(vehicle.Vehicles).filter(vehicle.Vehicles.tenant_id == self.tenant_id).all()
 
             if not vehicles:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -86,7 +103,9 @@ class VehicleService:
         return success_resp(msg="Retrieved successfully", meta=None, data=vehicle_category)
         
         # return vehicle_category
-
+    async def get_allowed_image_types(self):
+        vehicle_category = self.db.query(vehicle_category_rate.VehicleCategoryRate).filter(vehicle_category_rate.VehicleCategoryRate.tenant_id == self.tenant_id).first()
+        return success_resp(msg="Retrieved successfully", meta=None, data=vehicle_category)
         
     async def add_vehicle(self, payload):
         try:
@@ -187,7 +206,36 @@ class VehicleService:
             
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
-
+    """Delete vehcicles by vehicle_id"""
+    async def delete_vehicle(self, vehcile_id):
+        resp = self.db.query(vehicle_table).filter(vehicle_table.id == vehcile_id,
+                                            vehicle_table.tenant_id == self.tenant_id).first()
+        if not resp:
+            logger.warning("Vehicle does not exist to delete")
+            raise HTTPException(status_code=404,
+                                    detail="Vehicle does not exist to delete")
+        files:dict = resp.vehicle_images
+        logger.debug(f"Vehicles: {files}")
+        file_urls = []
+        if files is not None:
+            for k, v in files.items():
+                v:str
+                file_parts = v.split('public/')[1].split('/',1)
+                logger.debug(f"File parts: {file_parts}")
+                
+                bucket_name = file_parts[0]
+                file_url = file_parts[1]
+                file_urls.append(file_url)
+                
+                logger.debug(f"Bucket_name: {bucket_name}, file_url: {file_urls}")
+                
+                
+                # file_url = 
+            
+        await SupaS3.delete_from_s3(bucket_name, file_urls)
+        self.db.delete(resp)
+        self.db.commit()
+        return
     """Update vehicle flat rate """
     async def set_vehicle_flat_rate(self, payload):
         try:

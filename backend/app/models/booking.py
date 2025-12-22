@@ -14,7 +14,7 @@ class Bookings(Base):
     # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
     driver_id = Column(Integer,ForeignKey("drivers.id"), nullable=True)
     tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete= "CASCADE"), nullable=False)
-    vehicle_id = Column(Integer,ForeignKey("vehicles.id"), nullable=True)
+    vehicle_id = Column(Integer,ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
     service_type = Column(String, nullable=False)
     rider_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable=False)
     pickup_location = Column(String, nullable=False)

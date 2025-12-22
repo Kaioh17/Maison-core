@@ -27,4 +27,5 @@ class VehicleCategoryRateResponse(BaseModel):
     vehicle_category: Optional[str]
     vehicle_flat_rate: float
     created_on: datetime
+    allowed_image_types: list
     updated_on: Optional[datetime]

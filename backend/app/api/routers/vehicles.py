@@ -20,12 +20,23 @@ router = APIRouter(
 
 
 @router.get("/", status_code=200, response_model=resp[list[vehicle.VehicleResponse]])
-async def get_all_vehicles(is_tenants: int = Depends(is_tenants),
+async def get_all_vehicles(vehicle_id: Optional[int] = None,
                            vehicle_service: VehicleService = Depends(get_vehicle_service),
                            ):
-    vehicles =await vehicle_service.get_vehicles()
+    vehicles =await vehicle_service.get_vehicles(vehicle_id)
     return vehicles
 
+
+@router.get("/riders", status_code=200, response_model=resp[list[vehicle.VehicleResponse]])
+async def get_all_vehicles(vehicle_service: VehicleService = Depends(get_vehicle_service),
+                           ):
+    vehicles=await vehicle_service.get_vehicles()
+    return vehicles
+@router.get("/image/types", status_code=200, response_model=resp[vehicle.ImageTypes])
+async def get_all_vehicles(vehicle_service: VehicleService = Depends(get_vehicle_service),
+                           ):
+    vehicles =await vehicle_service.get_allowed_image_types()
+    return vehicles
 @router.post("/add", status_code=status.HTTP_201_CREATED, response_model=resp[vehicle.VehicleResponse] )
 async def add_vehicles( payload: vehicle.VehicleCreate,
                             vehicle_service: VehicleService = Depends(get_vehicle_service),
@@ -46,9 +57,8 @@ async def set_vehicle_flat_rate(payload: vehicle_config.VehicleRate,
     return vehicle_rate
 
 @router.get("/category", status_code= status.HTTP_200_OK, response_model=resp[list[vehicle_config.VehicleCategoryRateResponse]])
-async def get_vehicle_flat_rate(is_tenants: int = Depends(is_tenants),
-                            vehicle_service: VehicleService = Depends(get_vehicle_service)
-                                ,current_user = Depends(deps.get_current_user), db: Session = Depends(get_db)):
+async def get_vehicle_flat_rate(vehicle_service: VehicleService = Depends(get_vehicle_service)):
+    
     vehicle_category =await vehicle_service.get_category()
     return vehicle_category
 
@@ -76,6 +86,10 @@ async def update_vehicle_image (vehicle_id: int,
                                                                       image_type = image_type)
     return update_vehicle_image
 
+@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vehicle(vehicle_id: int, is_tenant = Depends(is_tenants),vehicle_service: VehicleService = Depends(get_vehicle_service)):
+    delete_vehicle = await vehicle_service.delete_vehicle(vehicle_id)
+    return delete_vehicle
 # ##search fpr vehicles 
 #filter by name
 #filter by seat capacity 
