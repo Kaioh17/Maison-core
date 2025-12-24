@@ -166,7 +166,11 @@ class OnboardDriverResponse(OnboardDriverBase):
     created_on: datetime
     
 class AssignDriver(BaseModel):
+    """
+    AssignDriver schema for assigning a driver to a booking
+    """
     driver_id: int 
+    override: bool = Field(default=False, description="Flag that allows changing from one driver id to another")
 
 class TenantLogin(BaseModel):
     email: EmailStr

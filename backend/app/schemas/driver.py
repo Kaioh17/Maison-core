@@ -22,7 +22,7 @@ class DriverBase(BaseModel):
         return v.lower()
 
 class DriverCreate(DriverBase):
-    driver_token: str 
+    # driver_token: str 
     password: str
     vehicle: Optional[VehicleCreate] = None #outsourced/contracted type only
     ##for inhouse -- due    
@@ -45,6 +45,7 @@ class DriverResponse(DriverBase):
     driver_type: str
     completed_rides: int
     is_active: bool = True
+    is_registered: str
     status: Optional[str] = "available"
     created_on: datetime
     updated_on: Optional[datetime] = None

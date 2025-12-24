@@ -22,10 +22,15 @@ router = APIRouter(
     tags = ["Drivers"]
 )
 # @router.patch("/is_active", status_code=status.HTTP_202_ACCEPTED, response_model=)
+@router.get("/{slug}/verify", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[dict])
+async def get_driver(slug:str,token:str,driver_service: DriverService = Depends(get_unauthorized_driver_service)):
+    logger.info("Driver..")
+    token = await driver_service.check_token(slug=slug, token=token)
+    return token  
 @router.patch("/register", status_code=status.HTTP_202_ACCEPTED,response_model= general.StandardResponse[driver.DriverResponse])
-async def register_driver(payload: driver.DriverCreate, driver_service: DriverService = Depends(get_unauthorized_driver_service) ,db: Session =  Depends(get_base_db)):
+async def register_driver(tenant_id: int, payload: driver.DriverCreate, driver_service: DriverService = Depends(get_unauthorized_driver_service) ,db: Session =  Depends(get_base_db)):
     logger.info("Registration begins....")
-    driver = await driver_service.register_driver(payload)
+    driver = await driver_service.register_driver(payload, tenant_id=tenant_id)
     return general.StandardResponse(
         data=driver,
         message="Driver registered successfully"

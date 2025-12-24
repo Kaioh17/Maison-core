@@ -45,7 +45,9 @@ class Tenants(Base):
                             uselist=False,
                             cascade="all, delete-orphan")
     users = relationship("Users", back_populates="tenants", cascade= "all, delete", passive_deletes=True)
-
+    drivers = relationship("Drivers", back_populates="tenants", cascade= "all, delete", passive_deletes=True)
+    
+    vehicle = relationship("Vehicles", back_populates="tenants", cascade= "all, delete" , passive_deletes=True)
 
     @property
     def full_name(self):
@@ -77,7 +79,6 @@ class TenantProfile(Base):
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)
     
     tenant = relationship("Tenants", back_populates="profile", uselist=False)
-    
     @property
     def company(self):
         """Return company name"""

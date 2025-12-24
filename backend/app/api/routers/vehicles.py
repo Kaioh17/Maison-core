@@ -87,8 +87,8 @@ async def update_vehicle_image (vehicle_id: int,
     return update_vehicle_image
 
 @router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_vehicle(vehicle_id: int, is_tenant = Depends(is_tenants),vehicle_service: VehicleService = Depends(get_vehicle_service)):
-    delete_vehicle = await vehicle_service.delete_vehicle(vehicle_id)
+async def delete_vehicle(vehicle_id: int, approve_delete: bool =False,is_tenant = Depends(is_tenants),vehicle_service: VehicleService = Depends(get_vehicle_service)):
+    delete_vehicle = await vehicle_service.delete_vehicle(vehicle_id, approve_delete=approve_delete)
     return delete_vehicle
 # ##search fpr vehicles 
 #filter by name

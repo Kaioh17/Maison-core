@@ -32,12 +32,11 @@ from .booking_services import BookingService
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from .helper_service import success_resp, SupaS3
- 
-
-class TenantService:
-    def __init__(self, db, current_tenants):
-        self.db = db
-        self.current_tenants = current_tenants
+from .email_services import drivers, admin
+from .service_context import ServiceContext
+class TenantService(ServiceContext):
+    def __init__(self, db, current_user):
+         super().__init__(db, current_user)
     db_exceptions = db_error_handler.DBErrorHandler
 
     # tenant_table = tenant.Tenants
@@ -145,11 +144,11 @@ class TenantService:
             stmt = self.db.query(self.tenant_info).options(
                         joinedload(self.tenant_info.profile),
                         joinedload(self.tenant_info.stats)
-                    ).where(self.tenant_info.id == self.current_tenants.id)
+                    ).where(self.tenant_info.id == self.current_user.id)
             result = self.db.execute(stmt).scalars().first()
-
+            logger.debug(f"{result}")
             if not result:
-                logger.warning(f"404: company with id {self.current_tenants.id} is not in db")
+                logger.warning(f"404: company with id {self.current_user.id} is not in db")
                 raise HTTPException(status_code=404,
                                     detail="Company cannot be found")
             
@@ -220,14 +219,18 @@ class TenantService:
                 # Continue without failing the tenant creation
         return None
 
-    async def get_all_drivers(self):
+    async def get_all_drivers(self, driver_id):
         try:
-            logger.info(f"Getting all drivers for {self.current_tenants.id}")
-            drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.current_tenants.id)
-            drivers = drivers_query.all()
+            logger.info(f"Getting all drivers for {self.current_user.id}")
+            if driver_id:
+                drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.current_user.id, self.driver_table.id == driver_id)
+                drivers = drivers_query.all()    
+            else:    
+                drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.current_user.id)
+                drivers = drivers_query.all()
 
             if not drivers:
-                logger.info(f"There are no drivers for tenant {self.current_tenants.id}")
+                logger.info(f"There are no drivers for tenant {self.current_user.id}")
                 return success_resp(data=[], msg="Drivers retrieved successfully", meta={"count": 0})
 
             return success_resp(data=drivers, msg="Drivers retrieved successfully", meta={"count": len(drivers)})
@@ -241,7 +244,7 @@ class TenantService:
     async def _validate_driver_id(self, driver_id):
         try:
             exists = self.db.query(self.driver_table).filter(self.driver_table.id == driver_id, 
-                                                self.driver_table.tenant_id == self.current_tenants.id).first()
+                                                self.driver_table.tenant_id == self.current_user.id).first()
             if not exists:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                     detail= f"Driver with {driver_id} does not exists") 
@@ -252,7 +255,7 @@ class TenantService:
         ##verify_email does not exist
         try:
             driver_exists = self.db.query(self.driver_table).filter(self.driver_table.email == payload.email,
-                                                    self.driver_table.tenant_id == self.current_tenants.id).first()
+                                                    self.driver_table.tenant_id == self.current_user.id).first()
 
             if driver_exists: 
                 logger.warning("Driver with email already exists...")
@@ -272,7 +275,7 @@ class TenantService:
             logger.info("Starting onboarding process....")
             driver_info = payload.model_dump()
             driver_info.pop("users", None)
-            new_driver = self.driver_table(tenant_id = self.current_tenants.id,
+            new_driver = self.driver_table(tenant_id = self.current_user.id,
                                       driver_token = onboard_token, 
                                       is_registered = "pending",**driver_info)
 
@@ -280,6 +283,9 @@ class TenantService:
             self.db.add(new_driver)
             self.db.commit()
             self.db.refresh(new_driver)
+            
+            """email notification"""
+            drivers.DriverEmailServices(to_email='mubskill@gmail.com', from_email='driver').onboarding_email(token=onboard_token)
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
@@ -297,12 +303,12 @@ class TenantService:
 
     async def get_all_vehicles(self):
         try:
-            logger.info(f"Getting vehicles for tenant: {self.current_tenants.id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_tenants.id)
+            logger.info(f"Getting vehicles for tenant: {self.current_user.id}")
+            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_user.id)
             vehicle_obj = vehicle_query.all()
 
             if not vehicle_obj:
-                logger.info(f"There are no vehicles for tenant {self.current_tenants.id}")
+                logger.info(f"There are no vehicles for tenant {self.current_user.id}")
                 return success_resp(data=[], msg="Vehicles retrieved successfully", meta={"count": 0})
 
             return success_resp(data=vehicle_obj, msg="Vehicles retrieved successfully", meta={"count": len(vehicle_obj)})
@@ -316,16 +322,16 @@ class TenantService:
     async def fetch_assigned_drivers_vehicles(self):
         try:
             
-            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.current_tenants.id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_tenants.id,
+            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.current_user.id}")
+            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_user.id,
                                                             self.vehicle_table.driver_id != None)
             vehicle_obj = vehicle_query.all()
                     
 
             if not vehicle_obj:
-                logger.warning(f"There are no vehicles assigned to any drivers {self.current_tenants.id}")
+                logger.warning(f"There are no vehicles assigned to any drivers {self.current_user.id}")
                 raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-                                    detail = f"Tenant {self.current_tenants.id} has no vehicles assigned to any drivers")
+                                    detail = f"Tenant {self.current_user.id} has no vehicles assigned to any drivers")
             return success_resp(data=vehicle_obj, msg="Vehicles with assigned drivers retrieved successfully", meta={"count": len(vehicle_obj)})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
@@ -333,16 +339,16 @@ class TenantService:
     async def find_vehicles_owned_by_driver(self, driver_id: int):
         try:
             await self._validate_driver_id(driver_id)
-            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.current_tenants.id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_tenants.id,
+            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.current_user.id}")
+            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_user.id,
                                                             self.vehicle_table.driver_id == driver_id)
             vehicle_obj = vehicle_query.all()
                     
 
             if not vehicle_obj:
-                logger.warning(f"Driver {driver_id} does not have an assigned a vehicle {self.current_tenants.id}")
+                logger.warning(f"Driver {driver_id} does not have an assigned a vehicle {self.current_user.id}")
                 raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-                                    detail = f"Driver {driver_id} does not have an assigned a vehicle {self.current_tenants.id}")
+                                    detail = f"Driver {driver_id} does not have an assigned a vehicle {self.current_user.id}")
             return success_resp(data=vehicle_obj, msg=f"Vehicles for driver {driver_id} retrieved successfully", meta={"count": len(vehicle_obj), "driver_id": driver_id})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
@@ -372,96 +378,21 @@ class TenantService:
             self.db_exceptions.handle(e, self.db)
         return success_resp(data={"driver_id": payload.driver_id, "vehicle_id": vehicle_id}, msg=f"Driver {payload.driver_id} has been assigned to vehicle: {vehicle_id}")
 
-    async def get_all_bookings(self):
-        try:
-            booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id)
-            booking_obj = booking_query.all()
-            
-            if not booking_obj:
-                logger.info(f"There are no bookings for tenant {self.current_tenants.id}")
-                return success_resp(data=[], msg="Bookings retrieved successfully", meta={"count": 0})
-            
-            result = []
-            for ride in booking_obj:
-                driver_full_name = None
-                vehicle = None
-                
-                if ride.driver_id:
-                    driver_full_name = await BookingService(db = self.db, current_user=None)._get_driver_fullname(driver_id=ride.driver_id)
-                if ride.vehicle_id:
-                    vehicle = await BookingService(db = self.db, current_user=None)._get_vehicle(vehicle_id=ride.vehicle_id)
-               
 
-                ride_dict = ride.__dict__.copy()
-                ride_dict["vehicle"] = vehicle
-                ride_dict["driver_fullname"] = driver_full_name
-                
-                result.append(ride_dict)            
+    """BOOKINGS"""
 
-            return success_resp(data=result, msg="Bookings retrieved successfully", meta={"count": len(result)})
-            # return booking_obj
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-            raise HTTPException(status_code=500, detail="Database error occurred")
-        except Exception as e:
-            logger.error(f"Unexpected error in get_all_bookings: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
-
-    async def get_bookings_by(self,booking_id = None ,booking_status: str = None):
-        try:
-            if booking_status:
-                stmt = "select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_fullname, b.booking_status \
-                        from bookings b join drivers d on d.id = b.driver_id join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id\
-                        where b.tenant_id = :tenant_id and b.booking_status = :booking_status"
-                # booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id,
-                #                                             self.booking_table.booking_status == booking_status.lower())
-                booking_query = self.db.execute(text(stmt), {"booking_status":booking_status.lower(), "tenant_id":self.current_tenants.id})
-                
-                det = f"There are no {booking_status} bookings right now...."
-                msg = f"{booking_status.capitalize()} bookings retrieved successfully"
-                # booking_obj = booking_query.all()
-                # meta = None
-                meta = {"status": booking_status}
-            elif booking_id:
-                logger.debug(f"booking_id {booking_id}active")
-                # booking_query = self.db.query(self.booking_table).filter(self.booking_table.tenant_id == self.current_tenants.id,
-                #                                             self.booking_table.id == int(booking_id))
-                stmt = "select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_fullname \
-                        from bookings b join drivers d on d.id = b.driver_id join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id\
-                        where b.tenant_id = :tenant_id and b.id = :booking_id"
-                booking_query = self.db.execute(text(stmt), {"booking_id":booking_id, "tenant_id":self.current_tenants.id})
-                det = f"There is no bokings with id {booking_id} ...."
-                msg = f"Retrieved booking succcessfully"
-                meta = None
-            else: 
-                stmt = "select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_fullname \
-                        from bookings b join drivers d on d.id = b.driver_id join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id\
-                        where b.tenant_id = :tenant_id"
-                booking_query = self.db.execute(text(stmt), {"tenant_id":self.current_tenants.id})
-                det = f"There is no bokings with id {booking_id} ...."
-                msg = f"Retrieved booking succcessfully"
-                meta = None       
-                
-            booking_obj = booking_query.all()
-            logger.debug(booking_obj)
-            if not booking_obj:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= det)
-            return success_resp(data=booking_obj, msg=msg, meta=meta)
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    async def assign_driver_to_rides(self, payload, rider_id: int):
+    async def assign_driver_to_rides(self, payload, booking_id: int):
        try:
-            ride =  self.db.query(self.booking_table).filter(self.booking_table.id == rider_id).first()
+            ride =  self.db.query(self.booking_table).filter(self.booking_table.id == booking_id).first()
 
             if not ride:
-                logger.warning("There are no bookings without assigned drivers....")
+                logger.warning(f"There is no booking with this id {booking_id}...")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= "There are no bookings without assigned drivers....")
-            if ride.driver_id:
+                                    detail= f"There is no booking with this id {booking_id}....")
+            if ride.driver_id and payload.override != True:
+                logger.warning("Driver already assigned to ride....")
                 raise HTTPException(status_code=404,
-                                    detail = "Driver already assigned to ride....")
+                                   detail = "Driver already assigned to ride....")
             
             driver_info = self.db.query(self.driver_table).filter(self.driver_table.id == payload.driver_id).first()
             if not driver_info:
@@ -474,11 +405,14 @@ class TenantService:
             ride.driver_id = payload.driver_id
 
             self.db.commit()
-            return success_resp(data={"driver_id": payload.driver_id, "rider_id": rider_id}, msg=f"Driver {payload.driver_id} has been assigned to {rider_id}")
+            
+            """Email Notificaition"""
+            drivers.DriverEmailServices(to_email=driver_info.email, from_email=self.tenant_email).new_ride(booking_obj=ride, assigned=True)
+            return success_resp(data={"driver_id": payload.driver_id, "booking_id": booking_id}, msg=f"Driver {payload.driver_id} has been assigned to {booking_id}")
        except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
-def get_tenant_service(db = Depends(get_db), current_tenants = Depends(deps.get_current_user)):
-    return TenantService(db=db, current_tenants=current_tenants)
+def get_tenant_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
+    return TenantService(db=db, current_user=current_user)
 def get_unauthorized_tenant_service(db = Depends(get_db)):
-    return TenantService(db=db, current_tenants=None)
+    return TenantService(db=db, current_user=None)

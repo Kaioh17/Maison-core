@@ -8,7 +8,7 @@ from enum import Enum
 import json
 from pathlib import Path
 from datetime import datetime, timezone
-
+from .vehicle import VehicleResponse 
 
 class LocationHelper:
     _airport_data = None
@@ -37,7 +37,7 @@ class PaymentType(str, Enum):
 
 class BoookingBase(BaseModel):
     # driver_id: Optional[int]
-    vehicle_id: Optional[int] = None
+    vehicle_id: int = None
     city: str
     service_type: ServiceType
     pickup_location: str
@@ -88,8 +88,15 @@ class BookingResponse(BoookingBase):
     estimated_price: Optional[float]
     booking_status: str
     customer_name: Optional[str] = None
-    vehicle:  Optional[str] = None
-    driver_fullname: Optional[str] = None
+    vehicle: str
+    # vehicle_details: Optional[VehicleResponse]
+    driver_name: Optional[str] = None
     created_on: Optional[datetime]
     updated_on: Optional[datetime]
    
+    @field_validator("driver_name", mode='after')
+    def check_empty(cls, value:str):
+        if value == " ":
+            value = None
+            return value
+        else: return value

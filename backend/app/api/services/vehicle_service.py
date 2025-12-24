@@ -15,11 +15,12 @@ class VehicleService:
     def __init__(self, db, current_user):
         self.db = db
         self.current_user = current_user
-        self.role = self.current_user.role.lower()
-        if self.role in ['driver','rider']:
-           self.tenant_id = self.current_user.tenant_id
-        else:
-            self.tenant_id = self.current_user.id
+        if self.current_user != None:
+            self.role = self.current_user.role.lower()
+            if self.role in ['driver','rider']:
+                self.tenant_id = self.current_user.tenant_id
+            else:
+                self.tenant_id = self.current_user.id
             # self.slug = self.current_user.slug
             
             
@@ -207,13 +208,17 @@ class VehicleService:
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
     """Delete vehcicles by vehicle_id"""
-    async def delete_vehicle(self, vehcile_id):
+    async def delete_vehicle(self, vehcile_id, approve_delete: bool = False):
         resp = self.db.query(vehicle_table).filter(vehicle_table.id == vehcile_id,
                                             vehicle_table.tenant_id == self.tenant_id).first()
         if not resp:
             logger.warning("Vehicle does not exist to delete")
             raise HTTPException(status_code=404,
                                     detail="Vehicle does not exist to delete")
+        if resp.driver_id and approve_delete != True:
+            logger.warning("Cannot delete vehicles with drivers")
+            raise HTTPException(status_code=401,
+                                    detail="Cannot delete vehicles with drivers")
         files:dict = resp.vehicle_images
         logger.debug(f"Vehicles: {files}")
         file_urls = []

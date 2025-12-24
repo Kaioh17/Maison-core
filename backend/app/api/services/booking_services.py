@@ -8,6 +8,8 @@ from datetime import timedelta, datetime
 from sqlalchemy.exc import *
 from app.schemas.booking import BookingResponse
 from .helper_service import success_resp, success_list_resp
+from .service_context import ServiceContext
+from .email_services import drivers, tenants
 from .helper_service import (
     user_table,
     tenant_table,
@@ -24,11 +26,13 @@ from .helper_service import (
 from app.models import tenant_setting
 db_exceptions = db_error_handler.DBErrorHandler
 
-class BookingService:
+class BookingService(ServiceContext):
     def __init__(self, db, current_user):
-        self.db = db
-        self.current_user=current_user
         
+        super().__init__(db, current_user)
+            
+    db_exceptions = db_error_handler.DBErrorHandler
+            
     role_to_booking_field  = {
         "driver": booking.Bookings.driver_id,
         "rider": booking.Bookings.rider_id,
@@ -64,61 +68,161 @@ class BookingService:
         
             self.db.commit()
             self.db.refresh(new_ride)
-
-            driver_full_name = await self._get_driver_fullname(driver_id = new_ride.driver_id)
-        
+            if vehicle.driver_id:
+                driver_ = await self._get_driver_fullname(driver_id = new_ride.driver_id)
+                driver_full_name = driver_.full_name
+                driver_email = driver_.email
+                ##email
+                # tenants.TenantEmailServices(to_email=self.tenant_email, from_email=self.tenant_email).new_ride(booking)
+                drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).new_ride(booking_obj=new_ride, assigned=False)
+            else:
+                driver_full_name = "No driver assigned"
             logger.info(f"A new ride has been set for {self.current_user.full_name}")
-            return success_resp(msg="Booking Successfull", data= {"driver_fullname": driver_full_name,**new_ride.__dict__})
+            
+            return success_resp(msg="Booking Successfull", data= {"driver_name": driver_full_name,"customer_name": self.full_name,"vehicle": f"{vehicle.make} {vehicle.model} {vehicle.year}",**new_ride.__dict__})
         
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
             
-    async def get_booked_rides(self):
-        try:
-            user = self.current_user.role
-            rows = self.role_to_booking_field.get(user.lower())
+    # async def get_booked_rides(self):
+    #     try:
+    #         user = self.current_user.role
+    #         rows = self.role_to_booking_field.get(user.lower())
 
-            if not rows:
-                raise ValueError("Role not in settings")
+    #         if not rows:
+    #             raise ValueError("Role not in settings")
             
-            logger.info("All bookings..")
-            booked_rides = self.db.query(booking.Bookings).filter(rows == self.current_user.id).all()
+    #         logger.info("All bookings..")
+    #         booked_rides = self.db.query(booking.Bookings).filter(rows == self.current_user.id).all()
 
-            if not booked_rides:
-                raise HTTPException(status_code=404, detail = "There are no scheduled rides available")
+    #         if not booked_rides:
+    #             raise HTTPException(status_code=404, detail = "There are no scheduled rides available")
             
-            # driver_full_name = await _get_driver_fullname(driver_id = booked_rides.driver_id, db=db)
-            # return booked_rides
+    #         # driver_full_name = await _get_driver_fullname(driver_id = booked_rides.driver_id, db=db)
+    #         # return booked_rides
 
-            result = []
-            for ride in booked_rides:
-                # driver_full_name = None
-                if ride.driver_id:
-                    driver_full_name = await self._get_driver_fullname(driver_id=ride.driver_id)
-                    logger.info(f"{driver_full_name} is the driver")
-                # logger.info(f"{driver_full_name} is the driver")
+    #         result = []
+    #         for ride in booked_rides:
+    #             # driver_full_name = None
+    #             if ride.driver_id:
+    #                 driver_full_name = await self._get_driver_fullname(driver_id=ride.driver_id)
+    #                 logger.info(f"{driver_full_name} is the driver")
+    #             # logger.info(f"{driver_full_name} is the driver")
                 
-                logger.info(f"{driver_full_name} is the driver")
+    #             # logger.info(f"{driver_full_name} is the driver")
 
-                ride_dict = ride.__dict__.copy()
-                ride_dict["driver_fullname"] = driver_full_name
-                result.append(ride_dict)
-                # return {"driver_fullname": driver_full_name,
-                        # **booked_rides.__dict__}
-            # logger.info(f"{driver_full_name} is the driver")
+    #             ride_dict = ride.__dict__.copy()
+    #             ride_dict["driver_fullname"] = driver_full_name
+    #             result.append(ride_dict)
+    #             # return {"driver_fullname": driver_full_name,
+    #                     # **booked_rides.__dict__}
+    #         # logger.info(f"{driver_full_name} is the driver")
 
-            logger.debug(f"result: {result}")        
-            return success_resp(msg="Bookings retrieved successfully", data=result)
+    #         logger.debug(f"result: {result}")        
+    #         return success_resp(msg="Bookings retrieved successfully", data=result)
                   
-        except db_exceptions.COMMON_DB_ERRORS as e:
-            db_exceptions.handle(e, self.db)       
+    #     except db_exceptions.COMMON_DB_ERRORS as e:
+    #         db_exceptions.handle(e, self.db)      
+            
+    async def get_bookings_by(self,booking_id = None ,booking_status: str = None):
+        try:
+            ####A booking should always have a vehicle_id but booking will not always hav ea driver
+            logger.debug("I am in here for")
+            if booking_status:              
+               
+                if self.role.lower() == 'tenant':
+                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                        where b.tenant_id = :tenant_id and b.booking_status = :booking_status"""
+                    
+                    booking_query = self.db.execute(text(stmt), {"booking_status":booking_status.lower(), "tenant_id":self.tenant_id})
+                        
+                elif self.role.lower() == 'driver':
+                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id join drivers d on d.id = b.driver_id
+                        where b.tenant_id = :tenant_id and b.booking_status = :booking_status and b.driver_id = :driver_id"""
+                    booking_query = self.db.execute(text(stmt), {"booking_status":booking_status.lower(), "tenant_id":self.tenant_id, "driver_id":self.driver_id})
+                    
+                    
+                elif self.role.lower() == 'rider':
+                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                        where b.tenant_id = :tenant_id and b.booking_status = :booking_status and b.rider_id = :rider_id"""
+                    booking_query = self.db.execute(text(stmt), {"booking_status":booking_status.lower(), "tenant_id":self.tenant_id, "rider_id":self.rider_id})
+                        
+                det = f"There are no {booking_status} bookings right now...."
+                msg = f"{booking_status.capitalize()} bookings retrieved successfully"
+                meta = {"status": booking_status}
+            elif booking_id:
+        
+                if self.role.lower() == 'tenant':
+                    stmt = """select b.* ,  CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                        where b.tenant_id = :tenant_id and b.id = :booking_id"""
+                    
+                    booking_query = self.db.execute(text(stmt), {"booking_id":booking_id, "tenant_id":self.tenant_id})
+                        
+                elif self.role.lower() == 'driver':
+                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id join drivers d on d.id = b.driver_id
+                        where b.tenant_id = :tenant_id and b.id = :booking_id and b.driver_id = :driver_id"""
+                    booking_query = self.db.execute(text(stmt), {"booking_id":booking_id, "tenant_id":self.tenant_id, "driver_id":self.driver_id})
+                    
+                    
+                elif self.role.lower() == 'rider':
+                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                        where b.tenant_id = :tenant_id and b.id = :booking_id and b.rider_id = :rider_id"""
+                # stmt = "select from drivers"
+                    logger.debug(self.tenant_id)
+                    booking_query = self.db.execute(text(stmt), {"booking_id":booking_id, "tenant_id":self.tenant_id, "rider_id":self.rider_id})
+                det = f"There is no bokings with id {booking_id} ...."
+                msg = f"Retrieved booking succcessfully"
+                meta = None
+                
+                
+            ###For all bookings
+            else: 
+                if self.role.lower() == "tenant":
+                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name 
+                            from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                            where b.tenant_id = :tenant_id"""
+                    booking_query = self.db.execute(text(stmt), {"tenant_id":self.tenant_id})  
+                elif self.role.lower() == "rider":
+                    stmt = """select b.* ,  CONCAT(v.make,' ',v.model,' ',v.year) as vehicle , CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name 
+                            from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                            where b.tenant_id = :tenant_id and b.rider_id = :rider_id"""
+                    booking_query = self.db.execute(text(stmt), {"tenant_id":self.tenant_id ,"rider_id": self.rider_id})
+                elif self.role.lower() == "driver":
+                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name 
+                            from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                            where b.tenant_id = :tenant_id and b.driver_id = :driver_id"""
+                    booking_query = self.db.execute(text(stmt), {"tenant_id":self.tenant_id ,"driver_id": self.driver_id})
+                det = f"There are no bookings...."
+                msg = f"Retrieved booking succcessfully"
+                meta = None     
+
+                    # raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You do not meet role requirement to access all bookings") 
+                
+            booking_obj:object = booking_query.all()
+            
+            if not booking_obj:
+                return success_resp(meta={"status" :404},
+                                    data=booking_obj, msg=det)
+                    
+            return success_resp(data=booking_obj, msg=msg, meta=meta)
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(e, self.db)
             
     async def _get_driver_fullname(self, driver_id):
         
 
         driver = self.db.query(driver_table).filter(driver_table.id == driver_id).first()
+        if not driver:
+            logger.debug("Driver not in db")
+            HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Driver not in db")
         logger.info(f"{driver.full_name} is the driver for this ride ")
-        return driver.full_name
+        return driver
 
     async def _get_vehicle(self, vehicle_id):
 
@@ -173,7 +277,7 @@ class BookingService:
             settings = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_user.tenant_id).first()
             vehicle = self.db.query(vehicle_table).filter(vehicle_table.id == payload.vehicle_id).first()
             if not vehicle:
-                logger.error(f"Tenant[{self.current_user.tenant_id}] Vehicle was not found at {vehicle.id}")
+                logger.error(f"Tenant[{self.current_user.tenant_id}] Vehicle was not found at {payload.vehicle_id}")
 
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail = "Vehicle not found")

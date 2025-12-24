@@ -12,11 +12,12 @@ id_seq =  Sequence('id_seq', start= 1050)
 
 class Vehicles(Base):
     __tablename__ = "vehicles"
-    id = Column(Integer, Sequence('id_seq'), primary_key=True)
+    id = Column(Integer, id_seq, primary_key=True, server_default=id_seq.next_value())
 
     # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
 
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    # tenant = relationship("Tenants",foreign_keys=[tenant_id], passive_deletes=True)
     driver_id = Column(Integer, ForeignKey("drivers.id", ondelete="CASCADE"), index=True, nullable=True)
     driver = relationship("Drivers", foreign_keys=[driver_id], passive_deletes=True)
     ##vehicle info
@@ -41,6 +42,7 @@ class Vehicles(Base):
     vehicle_category = relationship("VehicleCategoryRate",
                                     foreign_keys= [vehicle_category_id], 
                                     back_populates = "vehicles")
+    tenants = relationship("Tenants", back_populates="vehicle")
     
     @property
     def vehicle_name(self):

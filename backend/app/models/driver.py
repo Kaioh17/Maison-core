@@ -1,4 +1,4 @@
-from sqlalchemy import Sequence, Column, Integer, String, TIMESTAMP, ForeignKey, func, UniqueConstraint, Boolean
+from sqlalchemy import Sequence,CheckConstraint, Column, Integer, String, TIMESTAMP, ForeignKey, func, UniqueConstraint, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy.orm import relationship
@@ -37,8 +37,9 @@ class Drivers(Base):
     vehicle_id = Column(Integer, ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
 
     driver_token = Column(String,nullable=False)
-    is_registered = Column(String, nullable=False, default="not_registered")
+    is_registered = Column(String, CheckConstraint( "status IN ('registered', 'pending')", name="check_driver_registeration"), nullable=False, default="pending")
     is_active =  Column(Boolean, default=False)
+    is_token = Column(Boolean,default=False)
     status = Column(String(50), default = "available")
     
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
@@ -56,7 +57,7 @@ class Drivers(Base):
     )
     
     #relationships 
-    tenant = relationship("Tenants",passive_deletes=True)
+    tenants = relationship("Tenants",back_populates="drivers",passive_deletes=True)
     vehicle = relationship("Vehicles", foreign_keys=[vehicle_id], passive_deletes=True)
 
 
@@ -68,4 +69,7 @@ class Drivers(Base):
     @property
     def slug(self):
         return self.tenant.slug
+    
+    # @property
+    # def tenant_email(self)
 

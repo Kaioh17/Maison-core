@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, HTTPException, FastAPI, Response,status
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
@@ -36,10 +37,9 @@ async def BookRide(book_ride: booking.CreateBooking, booking_service: BookingSer
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=StandardResponse[list[booking.BookingResponse]])
-async def BookRide(booking_service: BookingService = Depends(get_booking_service)):
+async def BookRide(booking_id: Optional[int] = None, booking_status: Optional[str] = None, booking_service: BookingService = Depends(get_booking_service)):
     
-    booked_rides = await booking_service.get_booked_rides()
-    logger.debug(booked_rides)
+    booked_rides = await booking_service.get_bookings_by(booking_id=booking_id, booking_status=booking_status)
     return booked_rides
 
 
