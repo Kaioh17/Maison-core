@@ -65,10 +65,12 @@ with Session(engine) as session: # Or use an existing session
 
         return success_resp(data=setting_obj, msg="Tenant settings updated successfully")
         
-        return setting_obj
+
 
     async def update_logo(self, logo):
         setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_tenant.id)
+        profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.current_tenant.id).first()
+        
         setting_obj = setting_query.first()
         slug = setting_obj.slug
         logger.debug(slug)
@@ -80,11 +82,11 @@ with Session(engine) as session: # Or use an existing session
                                 detail=f"[{self.current_tenant.id}] Settings not found for user")
         
         setting_obj.logo_url = logo_url
+        profile_obj.logo_url = logo_url
         self.db.commit()
         self.db.refresh(setting_obj)
 
         return success_resp(data=setting_obj, msg="Tenant logo updated successfully")
 
-        return setting_obj
 def get_tenant_setting_service(current_tenant=Depends(deps.get_current_user), db=Depends(get_db)):
     return TenantSettingsService(db=db, current_tenant=current_tenant)

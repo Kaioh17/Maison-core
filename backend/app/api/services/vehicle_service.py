@@ -58,8 +58,7 @@ class VehicleService:
             allowed_types = self.db.query(vehicle_category_table).filter(vehicle_table.tenant_id == self.tenant_id ,
                                                                         ).first().allowed_image_types
             logger.debug(f'allowed_types: {allowed_types}')
-            # logger.info(f"Vehicle image [{vehicle_make}-{vehicle_model}] has been updated")
-            upload_dir = f"app/upload/vehicle_image"
+           
             vehicle_name = vehicle.vehicle_name
             logger.debug(f"Vehicle_name: {vehicle_name}")
         
@@ -67,19 +66,49 @@ class VehicleService:
             logger.debug(vehicle_image)
             image_type = kwargs['image_type']
             
-            response = {}
+            
+            current_types = []
+            current_urls = []
+            file_urls =[]
+            if vehicle.vehicle_images:                
+                response:dict = vehicle.vehicle_images
+                for k, v in response.items():
+                    current_types.append(k)
+                    current_urls.append(v)
+                
+                logger.debug(f"Vehicle saved images {current_types} {current_urls} {response}")
+            else: 
+                response = {}
             for i,image in enumerate(vehicle_image):
                 get_type = image_type[i].lower()
+                
+                ##Delete images going to existing file
+                if get_type in current_types:
+                    logger.debug(f"Deleting previous: {get_type}")
+                    idx = current_types.index(get_type)
+                    url = current_urls[idx]
+                    file_parts = url.split('public/')[1].split('/',1)
+                    logger.debug(f"File parts: {file_parts}")
+                    
+                    bucket_name = file_parts[0]
+                    file_url = file_parts[1]
+                    file_urls.append(file_url)
+                    
+                    await SupaS3.delete_from_s3(bucket_name=bucket_name, file_urls=file_urls)
                 if get_type not in allowed_types:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Image type '{get_type}' is not supported. Allowed types: {', '.join(allowed_types)}")
                 image_url = await SupaS3.upload_to_s3(url=image, slug=slug, bucket_name="vehicles", vehicle_name=vehicle_name, img_type=get_type, vehicle_id=vehicle_id)
                 if image_url:
                     response[get_type] = image_url
-        
-            
-            logger.debug(f"{response}")
+               
+                        
+            logger.debug(f"new images{response}")
             vehicle.vehicle_images = response
+            
             self.db.commit()
+            # self.db.refersh(vehicle)
+            logger.debug(f"After commit {vehicle.vehicle_images}")
+            
             return success_resp(msg="Updated image successfully", meta={"image_types": image_type}, data=response)
 
         except Exception as e:

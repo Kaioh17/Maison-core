@@ -150,6 +150,9 @@ class SupaS3:
     async def delete_from_s3(bucket_name: str, file_urls: list):
         try:
             logger.debug(file_urls)
+            if not file_urls:
+                logger.debug("Nothing to delte")
+                return 
             resp = supa.storage.from_(bucket_name).remove(file_urls)
             if resp[0]['metadata']['httpStatusCode'] != 200:
                 raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Delete failed")

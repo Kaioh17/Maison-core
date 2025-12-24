@@ -13,7 +13,7 @@ ALGORITHM= settings.algorithm
 # def get_tenant_id():
 from . import oauth2
 def get_tenant_id_from_token(token =  Depends(oauth2.oauth2_scheme)):
-        logger.info("retrieving")
+        # logger.info("retrieving")
 
         try:
             payload =jwt.decode(token, SECRET_KEY, algorithms = [ALGORITHM])

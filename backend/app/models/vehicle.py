@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 from .juctions import vehicle_vehicle_config_association
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.mutable import MutableDict
 
 
 id_seq =  Sequence('id_seq', start= 1050)
@@ -26,7 +27,7 @@ class Vehicles(Base):
     model = Column(String(200), nullable=False, index=True)    # e.g. "GLS"
     year = Column(Integer, nullable=True, index=True)
     seating_capacity =  Column(Integer, nullable = True, index=True)
-    vehicle_images = Column(JSONB,nullable=True, index=True) 
+    vehicle_images = Column(MutableDict.as_mutable(JSONB),nullable=True, index=True) 
     vehicle_category_id = Column(Integer, ForeignKey("vehicle_category_rate.id"), nullable = True)
 
     license_plate = Column(String(50), unique=True, nullable=True)
