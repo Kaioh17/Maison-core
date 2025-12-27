@@ -1,4 +1,6 @@
 
+from app.db.database import get_db, get_base_db
+from .helper_service import tenant_profile
 
 
 class ServiceContext:
@@ -16,6 +18,8 @@ class ServiceContext:
             self.role = self.current_user.role.lower()
             if self.role != 'tenant': #not tenant
                 self.tenant_id = self.current_user.tenant_id
+                # print(self.tenant_id)
+                # self.current_user.tenants
                 self.tenant_email = self.current_user.tenants.email
                 self.full_name = self.current_user.full_name
                 if self.role== 'driver':
@@ -26,7 +30,13 @@ class ServiceContext:
             else: # is tenant
                 self.tenant_id = self.current_user.id
                 self.tenant_email = self.current_user.email
+                self.profile_response=self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.tenant_id).first()
+                # print(f"Profile {self.profile_response.subscription_plan}")
+                self.sub_plan = self.profile_response.subscription_plan
+                self.slug = self.current_user.profile.slug
+                # self.sub_status = self.profile_response.subscripton_status
                 
+                                
 # def get_service_(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
 #     return BookingService(db = db, current_user=current_user)
 # def get_unauthorized_booking_service(db = Depends(get_db)):

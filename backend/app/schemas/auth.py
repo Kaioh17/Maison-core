@@ -11,3 +11,4 @@ class TokenData(BaseModel):
     id: Optional[str] = None
     role: str
     tenant_id: Optional[str] = None
+    auto_refresh: Optional[bool]=None

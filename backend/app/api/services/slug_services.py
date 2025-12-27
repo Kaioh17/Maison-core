@@ -10,11 +10,10 @@ from .tenants_service import TenantService
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from .helper_service import success_resp , vehicle_table, tenant_setting_table, tenant_profile
-
-class SlugService:
+from .service_context import ServiceContext
+class SlugService(ServiceContext):
     def __init__(self, db, current_user):
-        self.db = db
-        self.current_user = current_user
+        super().__init__(db=db, current_user=current_user)
     """profile, stats = (
     session.query(TenantProfile, TenantStats)
     .join(TenantStats, TenantStats.tenant_id == TenantProfile.tenant_id)
@@ -51,5 +50,5 @@ class SlugService:
 def get_slug_service(db=Depends(get_base_db)):
     return SlugService(db=db, current_user=None)
 
-def get_slug_authorized_service(db=Depends(get_base_db), current_user = Depends(deps.get_current_user)):
+def get_slug_authorized_service(db=Depends(get_db), current_user = Depends(deps.get_current_user)):
     return SlugService(db=db, current_user=current_user)

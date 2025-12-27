@@ -10,14 +10,16 @@ from .tenants_service import TenantService
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from .helper_service import success_resp , vehicle_table, tenant_setting_table, tenant_profile, SupaS3
+from .service_context import ServiceContext
 
 db_exceptions = db_error_handler.DBErrorHandler
-class TenantSettingsService:
-    def __init__(self, db, current_tenant):
-        self.db=db
-        self.current_tenant = current_tenant
+
+class TenantSettingsService(ServiceContext):
+    def __init__(self, db, current_user):
+        super().__init__(db=db, current_user=current_user)
+
     async def get_tenant_settings(self):
-        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_tenant.id)
+        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.tenant_id)
         setting_obj = setting_query.first()
 
         if not setting_obj:
@@ -42,11 +44,11 @@ with Session(engine) as session: # Or use an existing session
     session.execute(stmt)
     session.commit()
 """
-        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_tenant.id)
+        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.tenant_id)
         setting_obj = setting_query.first()
         
         if payload.slug:
-            stmt = (update(tenant_profile).where(tenant_profile.tenant_id == self.current_tenant.id).values(slug=payload.slug))
+            stmt = (update(tenant_profile).where(tenant_profile.tenant_id == self.tenant_id).values(slug=payload.slug))
             self.db.execute(stmt)
         if not setting_obj:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -68,8 +70,8 @@ with Session(engine) as session: # Or use an existing session
 
 
     async def update_logo(self, logo):
-        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_tenant.id)
-        profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.current_tenant.id).first()
+        setting_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.tenant_id)
+        profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.tenant_id).first()
         
         setting_obj = setting_query.first()
         slug = setting_obj.slug
@@ -79,7 +81,7 @@ with Session(engine) as session: # Or use an existing session
         
         if not setting_obj:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                                detail=f"[{self.current_tenant.id}] Settings not found for user")
+                                detail=f"[{self.tenant_id}] Settings not found for user")
         
         setting_obj.logo_url = logo_url
         profile_obj.logo_url = logo_url
@@ -88,5 +90,5 @@ with Session(engine) as session: # Or use an existing session
 
         return success_resp(data=setting_obj, msg="Tenant logo updated successfully")
 
-def get_tenant_setting_service(current_tenant=Depends(deps.get_current_user), db=Depends(get_db)):
-    return TenantSettingsService(db=db, current_tenant=current_tenant)
+def get_tenant_setting_service(current_user=Depends(deps.get_current_user), db=Depends(get_db)):
+    return TenantSettingsService(db=db, current_user=current_user)

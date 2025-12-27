@@ -8,16 +8,17 @@ from .helper_service import Validations, tenant_stats, tenant_table, tenant_sett
 from sqlalchemy.orm import selectinload
 from datetime import timedelta, datetime, timezone
 from .vehicle_service import VehicleService
+from .service_context import ServiceContext
+from .email_services import drivers, tenants
 db_exceptions = db_error_handler.DBErrorHandler
 # driver_table = driver.Drivers
 # vehicle_table = vehicle.Vehicles
 # booking_table = booking.Bookings
 # tenant_table = tenant.Tenants
 
-class DriverService:
+class DriverService(ServiceContext):
     def __init__(self, db, current_user):
-        self.db = db
-        self.current_user = current_user
+        super().__init__(db=db, current_user=current_user)
     
     async def check_token(self, slug, token):
         try:
@@ -60,7 +61,7 @@ class DriverService:
                                     driver_table.last_name == payload.last_name,
                                     driver_table.email == payload.email,
                                     driver_table.tenant_id == tenant_id)
-            driver_obj =driver_query.first()
+            driver_obj: driver_table =driver_query.first()
             
                 
             await self._table_checks_(driver_obj, payload) 
@@ -121,6 +122,7 @@ class DriverService:
             
             
                 # driver_obj.license_number = payload.license_number
+            ##Add it to the 
             driver_obj.password = hashed_pwd
             driver_obj.is_registered = "registered"
             tenant = self.db.query(tenant_stats).filter(tenant_stats.tenant_id == driver_obj.tenant_id).first()
@@ -130,6 +132,9 @@ class DriverService:
             tenant.drivers_count = tenant_driver
             self.db.commit()
             self.db.refresh(driver_obj)
+            
+            ##send emaill
+            drivers.DriverEmailServices(to_email=payload.email, from_email=driver_obj.tenants.email).welcome_(obj=driver_obj)
             logger.info("Driver succesfully registered")
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
@@ -153,13 +158,13 @@ class DriverService:
 
             logger.info("Getting driver info..")
             
-            driver_query = self.db.query(driver_table).filter(driver_table.tenant_id == self.current_user.tenant_id,
-                                                        driver_table.id == self.current_user.id)  
+            driver_query = self.db.query(driver_table).filter(driver_table.tenant_id == self.tenant_id,
+                                                        driver_table.id == self.driver_id)  
             driver_obj = driver_query.first()
             
                 
             if not driver_obj:
-                logger.warning(f"Driver {self.current_user.id} not found")
+                logger.warning(f"Driver {self.tenant_id} not found")
                 raise HTTPException(status_code=404, detail="Driver was not found..")
             return driver_obj
             
@@ -191,18 +196,32 @@ class DriverService:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail = f"There no {booking_id} bookings")    
             # if ride.booking_satus == "":
-            if action not in {'confirm', 'cancellation'}:
+            if action not in {'confirm', 'cancelled'}:
+                logger.warning("Invalid action: action should be (confirm/cancellation)")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                                     detail= "Invalid action: action should be (confirm/cancellation)")
             
             ride.booking_status = action
             self.db.commit()
             self.db.refresh(ride)
+            
+            return success_resp(msg="UPdated succesfully",data={"booking_id":booking_id,"ride_status": action})
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
-        return ride
-
-
+        
+    async def driver_status(self, is_active:bool):
+        try:
+            
+            obj:driver_table = self.db.query(driver_table).filter(driver_table.tenant_id == self.tenant_id, driver_table.id == self.driver_id).first()
+            Validations(db=self.db)._obj_empty(obj = obj)
+            
+            obj.is_active = is_active
+            self.db.commit()
+            logger.debug(f"{self.current_user.is_active}")
+            
+            return success_resp(msg="Status changes", data = {"is_active":obj.is_active})
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(exc=e, db=self.db)
     async def _ensure_token_not_expired_(self, created_on):
         try:     
             now = datetime.now(timezone.utc)

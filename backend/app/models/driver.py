@@ -68,7 +68,7 @@ class Drivers(Base):
         return f"{self.first_name} {self.last_name}"
     @property
     def slug(self):
-        return self.tenant.slug
+        return self.tenants.slug
     
     # @property
     # def tenant_email(self)

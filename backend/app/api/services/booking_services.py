@@ -124,16 +124,16 @@ class BookingService(ServiceContext):
     #     except db_exceptions.COMMON_DB_ERRORS as e:
     #         db_exceptions.handle(e, self.db)      
             
-    async def get_bookings_by(self,booking_id = None ,booking_status: str = None):
+    async def get_bookings_by(self,booking_id = None ,booking_status: str = None, rider_name: str = None):
         try:
             ####A booking should always have a vehicle_id but booking will not always hav ea driver
-            logger.debug("I am in here for")
+            logger.debug(f"I am in here for {booking_status} for {self.role}")
             if booking_status:              
                
                 if self.role.lower() == 'tenant':
                     stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
                         from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                        where b.tenant_id = :tenant_id and b.booking_status = :booking_status"""
+                        where b.tenant_id = :tenant_id or b.booking_status = :booking_status"""
                     
                     booking_query = self.db.execute(text(stmt), {"booking_status":booking_status.lower(), "tenant_id":self.tenant_id})
                         

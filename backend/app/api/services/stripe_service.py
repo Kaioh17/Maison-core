@@ -18,6 +18,7 @@ class StripeService:
 
         express_account = stripe.Account.create(type="express", country=country,
                                         email=email, 
+                                        
                                         capabilities={
                                             "transfers": {"requested":True},
                                             "card_payments": {"requested":True}

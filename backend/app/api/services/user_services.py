@@ -5,17 +5,16 @@ from app.models import user, driver, tenant
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from .helper_service import Validations
+from .service_context import ServiceContext
 
 from .helper_service import user_table, tenant_table, success_resp
 db_exceptions = db_error_handler.DBErrorHandler
 # user_table = user.Users
 # tenant_table = tenant.Tenants
 
-class UserService:
+class UserService(ServiceContext):
     def __init__(self, db, current_user):
-        self.db = db
-        self.current_user = current_user
-        self.validate = Validations(self.db)
+        super().__init__(db=db, current_user=current_user)
 
     async def create_user(self, payload, tenant_id):
         try:

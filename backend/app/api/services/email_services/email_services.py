@@ -4,7 +4,7 @@ from app.config import Settings
 class EmailServices:
     settings = Settings()
     resend.api_key =settings.resend_key
-
+    BASE_URL = settings.base_url
     def send_email(self,from_email,to_email, subject, html):
         
         params:resend.Emails.SendParams = {

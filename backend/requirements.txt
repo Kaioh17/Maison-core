@@ -67,6 +67,7 @@ python-multipart==0.0.20
 realtime==2.27.0
 redis==6.2.0
 requests==2.32.4
+resend==2.19.0
 rich==14.2.0
 rsa==4.9.1
 s3transfer==0.13.0

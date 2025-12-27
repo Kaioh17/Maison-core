@@ -20,10 +20,11 @@ router = APIRouter(
 
 
 @router.get("/", status_code=200, response_model=resp[list[vehicle.VehicleResponse]])
-async def get_all_vehicles(vehicle_id: Optional[int] = None,
+async def get_all_vehicles(vehicle_id: Optional[int] = None, driver_id: Optional[int] = None,
                            vehicle_service: VehicleService = Depends(get_vehicle_service),
                            ):
-    vehicles =await vehicle_service.get_vehicles(vehicle_id)
+    logger.debug("Vehicles...")
+    vehicles =await vehicle_service.get_vehicles(vehicle_id, driver_id)
     return vehicles
 
 
@@ -32,16 +33,15 @@ async def get_all_vehicles(vehicle_service: VehicleService = Depends(get_vehicle
                            ):
     vehicles=await vehicle_service.get_vehicles()
     return vehicles
+
 @router.get("/image/types", status_code=200, response_model=resp[vehicle.ImageTypes])
-async def get_all_vehicles(vehicle_service: VehicleService = Depends(get_vehicle_service),
+async def get_allowed_image(vehicle_service: VehicleService = Depends(get_vehicle_service),
                            ):
     vehicles =await vehicle_service.get_allowed_image_types()
     return vehicles
 @router.post("/add", status_code=status.HTTP_201_CREATED, response_model=resp[vehicle.VehicleResponse] )
 async def add_vehicles( payload: vehicle.VehicleCreate,
                             vehicle_service: VehicleService = Depends(get_vehicle_service),
-                           
-                    
                      ):
     vehicles = await vehicle_service.add_vehicle(payload)
     return vehicles
@@ -56,10 +56,10 @@ async def set_vehicle_flat_rate(payload: vehicle_config.VehicleRate,
     vehicle_rate = await vehicle_service.set_vehicle_flat_rate(payload)
     return vehicle_rate
 
-@router.get("/category", status_code= status.HTTP_200_OK, response_model=resp[list[vehicle_config.VehicleCategoryRateResponse]])
-async def get_vehicle_flat_rate(vehicle_service: VehicleService = Depends(get_vehicle_service)):
-    
-    vehicle_category =await vehicle_service.get_category()
+@router.get("/category/{tenant_id}", status_code= status.HTTP_200_OK, response_model=resp[list[vehicle_config.VehicleCategoryRateResponse]])
+async def get_vehicle_flat_rate(tenant_id: int, 
+                                vehicle_service: VehicleService = Depends(get_unauthorized_vehicle_service)):
+    vehicle_category =await vehicle_service.get_category(tenant_id)
     return vehicle_category
 
 @router.post("/create_category", status_code=status.HTTP_201_CREATED, response_model=resp[vehicle_config.VehicleCategoryRateResponse])

@@ -16,6 +16,7 @@ vehicle_table = vehicle.Vehicles
 booking_table = booking.Bookings
 # vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 
+
 async def delete_admin(db, tenant_id: int):
     tenant= db.query(tenant_table).filter_by(id=tenant_id).first()
     if not tenant:

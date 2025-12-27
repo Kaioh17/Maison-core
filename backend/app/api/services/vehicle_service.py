@@ -6,23 +6,18 @@ import json
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from pathlib import Path
-from .helper_service import _verify_upload, SupaS3, vehicle_table, vehicle_config_table, vehicle_category_table, success_resp
+from .helper_service import _verify_upload, SupaS3, tenant_profile ,vehicle_table, vehicle_config_table, vehicle_category_table, success_resp
 from typing import Optional
+from sqlalchemy import column, func, select
+from app.policies import plan_policy
+from app.domain import plans
+from .service_context import ServiceContext
 db_exceptions = db_error_handler.DBErrorHandler
 
 
-class VehicleService:
+class VehicleService(ServiceContext):
     def __init__(self, db, current_user):
-        self.db = db
-        self.current_user = current_user
-        if self.current_user != None:
-            self.role = self.current_user.role.lower()
-            if self.role in ['driver','rider']:
-                self.tenant_id = self.current_user.tenant_id
-            else:
-                self.tenant_id = self.current_user.id
-            # self.slug = self.current_user.slug
-            
+        super().__init__(db, current_user)
             
    
     async def update_vehicle_image(self, vehicle_id: int ,**kwargs):
@@ -114,32 +109,62 @@ class VehicleService:
         except Exception as e:
             logger.error(f"There is an unexpected error {e}")
             raise e
-    async def get_vehicles(self, vehicle_id: int =None):
+    async def get_vehicles(self, vehicle_id: int =None, driver_id: int =None):
         try:
-            if vehicle_id:
-                vehicles = self.db.query(vehicle.Vehicles).filter(vehicle.Vehicles.tenant_id == self.tenant_id,vehicle_table.id == vehicle_id).all()
+            logger.debug("Self.role")
+            add ="."
+            if vehicle_id and self.role != 'driver':
+                vehicles = self.db.query(vehicle_table).filter(vehicle_table.tenant_id == self.tenant_id,vehicle_table.id == vehicle_id).all()
+                add=f", with Vehicle [{vehicle_id}]"
+                
+            elif self.role == "driver":
+                vehicles = self.db.query(vehicle_table).filter(vehicle_table.tenant_id == self.tenant_id,vehicle_table.driver_id == self.driver_id).all()
+                add = f". For driver [{self.driver_id}]"
+            elif driver_id:
+                vehicles = self.db.query(vehicle_table).filter(vehicle_table.tenant_id == self.tenant_id,vehicle_table.driver_id == driver_id).all()
+                add=f". For driver [{driver_id}]"
             else:
-                vehicles = self.db.query(vehicle.Vehicles).filter(vehicle.Vehicles.tenant_id == self.tenant_id).all()
+                vehicles = self.db.query(vehicle_table).filter(vehicle_table.tenant_id == self.tenant_id).all()
+                add=f". For tenant [{self.tenant_id}]"
 
             if not vehicles:
+                logger.debug(f"There are no vehicles{add}")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail = "There are no vehicles")
+                                    detail = f"There are no vehicles{add}")
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
         return success_resp(msg="Retrieved successfully", meta=None, data=vehicles)
 
-    async def get_category(self):
-        vehicle_category = self.db.query(vehicle_category_rate.VehicleCategoryRate).filter(vehicle_category_rate.VehicleCategoryRate.tenant_id == self.tenant_id).all()
+    async def get_category(self, tenant_id):
+        vehicle_category = self.db.query(vehicle_category_rate.VehicleCategoryRate).filter(vehicle_category_rate.VehicleCategoryRate.tenant_id == tenant_id).all()
         return success_resp(msg="Retrieved successfully", meta=None, data=vehicle_category)
         
         # return vehicle_category
     async def get_allowed_image_types(self):
         vehicle_category = self.db.query(vehicle_category_rate.VehicleCategoryRate).filter(vehicle_category_rate.VehicleCategoryRate.tenant_id == self.tenant_id).first()
         return success_resp(msg="Retrieved successfully", meta=None, data=vehicle_category)
-        
-    async def add_vehicle(self, payload):
+    def _count_vehicles(self, tenant_id):
         try:
-            tenants = self.db.query(tenant.Tenants).filter(tenant.Tenants.id == self.current_user.id).first()
+            stmt = select(func.count()).where(vehicle_table.tenant_id == tenant_id)
+            count = self.db.scalar(stmt)
+            
+            return count
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, self.db)
+            
+    async def add_vehicle(self, payload):
+        
+        try:
+            # profile_response:tenant_profile =self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.tenant_id).first()
+            # print(f"Profile {profile_response.subscription_plan}")
+            current_vehicle_count = self._count_vehicles(self.tenant_id)
+            
+            #set policy             
+            plan = plans.PLAN_REGISTRY[self.sub_plan]
+            logger.debug(f"Name {plan}")
+            plan_policy.PlanPolicy.can_create_vehicle(plan=plan, current_vehicle_count=current_vehicle_count)
+            
+            tenants = self.db.query(tenant.Tenants).filter(tenant.Tenants.id == self.current_user.id).first()#for drivers TODO -> switch to a dependency injection
             if not tenants:
                 raise HTTPException(status_code=404, detail="Tenants not found")
             
@@ -266,7 +291,7 @@ class VehicleService:
                 
                 # file_url = 
             
-        await SupaS3.delete_from_s3(bucket_name, file_urls)
+            await SupaS3.delete_from_s3(bucket_name, file_urls)
         self.db.delete(resp)
         self.db.commit()
         return
@@ -298,7 +323,7 @@ class VehicleService:
             db_exceptions.handle(e, self.db)
 def get_vehicle_service(db = Depends(get_db),current_user=Depends(deps.get_current_user)):
     return VehicleService(db=db, current_user=current_user)
-def get_unauthorized_vehicle_service(db = Depends(get_db)):
+def get_unauthorized_vehicle_service(db = Depends(get_base_db)):
     return VehicleService(db=db, current_user=None)  
 
 

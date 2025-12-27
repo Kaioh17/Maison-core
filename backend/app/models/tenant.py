@@ -58,7 +58,22 @@ class Tenants(Base):
     def slug(self):
         """Return the full name of the tenant"""
         return self.profile.slug
-   
+    @property
+    def stripe_customer_id(self):
+        """Return the full name of the tenant"""
+        return self.profile.stripe_customer_id
+    @property
+    def cur_subscription_id(self):
+        """Return the full name of the tenant"""
+        return self.profile.cur_subscription_id
+    @property
+    def subscription_status(self):
+        """Return the full name of the tenant"""
+        return self.profile.subscription_status
+    @property
+    def subscription_plan(self):
+        """Return the full name of the tenant"""
+        return self.profile.subscription_plan
     
 class TenantProfile(Base): 
     __tablename__ = "tenants_profile"
@@ -72,8 +87,9 @@ class TenantProfile(Base):
     
     stripe_customer_id = Column(String, nullable=True, index=True)
     stripe_account_id =  Column(String, nullable=True, index=True)
-    subscription_status = Column(String, nullable=True, default= "free")
+    subscription_status = Column(String, nullable=True, default= "inactive")
     subscription_plan = Column(String, nullable=True, default="free")
+    cur_subscription_id = Column(String,nullable=True)
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)

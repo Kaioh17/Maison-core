@@ -9,7 +9,7 @@ tmux has-session -t $SESSION 2>/dev/null
 if [ $? != 0 ]; then 
     tmux set-option -g mouse on
     tmux new-session -d -s $SESSION -n "postgres_container"
-    tmux send-keys -t $SESSION:postgres "sleep 10 && docker exec -it postgres_db psql -U postgres -d maison" C-m
+    tmux send-keys -t $SESSION:postgres "sleep 20 && docker exec -it postgres_db psql -U postgres -d maison" C-m
 
    
 
@@ -27,10 +27,16 @@ if [ $? != 0 ]; then
     tmux send-keys -t $SESSION:docker_alembic "sleep 10 && docker exec  -it maison /bin/bash" C-m
 
     tmux set-option -g mouse on
-    tmux new-window -t $SESSION -n 'npm_servers'
-    tmux send-keys -t $SESSION:npm_servers "cd $PROJECT_DIR/frontend/app" C-m
+    tmux new-window -t $SESSION -n 'git'
+    tmux send-keys -t $SESSION:npm_servers "cd $PROJECT_DIR/app" C-m
     tmux send-keys -t $SESSION:npm_servers "source $VENV_PATH" C-m
-    tmux send-keys -t $SESSION:npm_servers "sleep 10 && npm run dev"
+    tmux send-keys -t $SESSION:npm_servers "sleep 10 && git status && git branch"
+
+    tmux set-option -g mouse on
+    tmux new-window -t $SESSION -n 'stripe_webhook'
+    tmux send-keys -t $SESSION:stripe_webhook "cd $PROJECT_DIR" C-m
+    tmux send-keys -t $SESSION:stripe_webhook "source $VENV_PATH" C-m
+    tmux send-keys -t $SESSION:stripe_webhook "stripe listen --forward-to localhost:8000/api/v1/subscription/webhooks" c-m 
 
     
     

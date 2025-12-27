@@ -37,8 +37,9 @@ def failed_resp(msg: str = "Successful", data: any = None, meta: dict = None):
     return general.StandardResponse(success=True, message=msg, data=data, meta=meta)
 def success_list_resp(msg: str = "Successful", data: any = None):
     general.ListResponse(success=True, message=msg, data=data)
+from app.utils.db_error_handler import DBErrorHandler, DatabaseError
 class Validations:
-    def __init__(self, db):
+    def __init__(self, db = None):
         self.db = db
         
     # @staticmethod
@@ -52,13 +53,19 @@ class Validations:
         
         return tenants
     # @staticmethod
-    def _tenants_exist(self, tenant_id):
-        exists = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+    def _tenants_exist(self, tenant_id = None, obj:object = None):
+        if tenant_id:
+            exists = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+        else: exists=obj
+        logger.debug("Confirming existence")
         if not exists:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail = "Tenant does not exists")
         return exists
     
+    def _obj_empty(self, obj:object|None):
+        if not obj:
+            raise HTTPException(status_code=404, detail="Object is empty")
 @staticmethod
 def _user_exist(db, data):
     exists = db.query(user_table).filter(user_table.email == data.email, 
@@ -123,6 +130,7 @@ class SupaS3:
         """
       
         try:
+            
             contents = await url.read()
 
             try:
@@ -147,11 +155,13 @@ class SupaS3:
         except Exception as e:
             raise e
     
-    async def delete_from_s3(bucket_name: str, file_urls: list):
+    async def delete_from_s3(bucket_name: str, file_urls: list = None):
         try:
+            
             logger.debug(file_urls)
+            
             if not file_urls:
-                logger.debug("Nothing to delte")
+                logger.debug("Nothing to delete")
                 return 
             resp = supa.storage.from_(bucket_name).remove(file_urls)
             if resp[0]['metadata']['httpStatusCode'] != 200:

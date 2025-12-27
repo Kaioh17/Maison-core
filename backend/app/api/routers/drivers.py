@@ -9,7 +9,9 @@ from .dependencies import is_driver
 from typing import Optional
 from app.utils.logging import logger
 from ..services.driver_service import DriverService,RiderDriverService,get_driver_service, get_unauthorized_driver_service, get_rdriver_service
+from ..services.booking_services import get_booking_service, BookingService
 """
+
 TODO drivers endpoint: 
 
 Driver activity toggle (api/v1/driver/active?is_active=true/false)
@@ -21,7 +23,11 @@ router = APIRouter(
     prefix = "/api/v1/driver",
     tags = ["Drivers"]
 )
-# @router.patch("/is_active", status_code=status.HTTP_202_ACCEPTED, response_model=)
+@router.patch("/status", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[dict])
+async def drvier_status(is_active: bool,is_driver: bool = Depends(is_driver),
+                     driver_service: DriverService = Depends(get_driver_service)):
+    status = await driver_service.driver_status(is_active=is_active)
+    return status
 @router.get("/{slug}/verify", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[dict])
 async def get_driver(slug:str,token:str,driver_service: DriverService = Depends(get_unauthorized_driver_service)):
     logger.info("Driver..")
@@ -57,22 +63,15 @@ async def get_driver(driver_id: int = None, driver_service: RiderDriverService =
 
 @router.get("/rides/available", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[list[booking.BookingResponse]])
 async def get_bookings_for_driver(is_driver: bool = Depends(is_driver),
-                                  booking_status: Optional[str] = "pending",driver_service: DriverService = Depends(get_driver_service)):
+                                  booking_status: Optional[str] = None,booking_servcie: BookingService = Depends(get_booking_service)):
     logger.info("Availble rides...")
-    bookings = await driver_service.get_bookings(booking_status)
-    return general.StandardResponse(
-        data=bookings,
-        message="Available response.."
-    )
+    bookings = await booking_servcie.get_bookings_by(booking_status=booking_status)
+    return bookings
 
 """Set ride status"""
-@router.patch("/ride/{booking_id}/decision", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[booking.BookingResponse])
+@router.patch("/ride/{booking_id}/decision", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[dict])
 async def set_ride_status(booking_id: int, action: str =Query(None, description= "Confirm/Cancelled"),
-                       is_driver: bool =  Depends(is_driver), driver_service: DriverService = Depends(get_driver_service),
-                       db: Session = Depends(get_db), current_driver: int = Depends(get_base_db)):
+                       is_driver: bool =  Depends(is_driver), driver_service: DriverService = Depends(get_driver_service)):
     
     ride_decision = await driver_service.driver_ride_response(action, booking_id)
-    return general.StandardResponse(
-        data=ride_decision,
-        message="Available response.."
-    )
+    return ride_decision

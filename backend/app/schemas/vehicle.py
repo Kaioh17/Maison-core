@@ -31,6 +31,7 @@ class VehicleResponse(VehicleBase):
     tenant_id: int 
     id: int 
     created_on: datetime
+    driver_id: Optional[int] = None
     updated_on: Optional[datetime]
     vehicle_category_id: Optional[int]  #revert to not optional after cleaning db
     vehicle_images: Optional[dict]

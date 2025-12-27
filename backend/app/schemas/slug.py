@@ -7,6 +7,7 @@ import re
 # from .tenant_setting import Tenant
 
 class TenantProfile(BaseModel):
+    # tenant_id:str
     company_name: str
 class TenantSettings(BaseModel):
     slug: Optional[str] = None

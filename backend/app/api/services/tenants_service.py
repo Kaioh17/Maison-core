@@ -17,7 +17,7 @@ Dependencies:
 import os
 from typing import Optional
 from fastapi import HTTPException, UploadFile, status, Form, File, Depends
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select
 from pydantic import EmailStr
@@ -26,7 +26,7 @@ from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from datetime import datetime, timedelta 
 import random
-from .stripe_services import StripeService
+# from .stripe_service import StripeService
 import string
 from .booking_services import BookingService
 from app.db.database import get_db, get_base_db
@@ -34,6 +34,10 @@ from ..core import deps
 from .helper_service import success_resp, SupaS3
 from .email_services import drivers, admin
 from .service_context import ServiceContext
+from .stripe_services import stripe_service, stripe_tier_service 
+from app.policies import plan_policy
+from app.domain import plans
+
 class TenantService(ServiceContext):
     def __init__(self, db, current_user):
          super().__init__(db, current_user)
@@ -49,10 +53,10 @@ class TenantService(ServiceContext):
     booking_table = booking.Bookings
     vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 
-    async def create_tenant(self, email,
-                             first_name,
-                             last_name ,
-                            password ,
+    async def create_tenant(self, email:EmailStr,
+                             first_name:str,
+                             last_name:str,
+                            password,
                             phone_no ,
                             company_name ,
                             # logo_url: Optional[UploadFile] = None
@@ -72,12 +76,12 @@ class TenantService(ServiceContext):
             self._check_unique_fields(self.tenant_info, model_map)
             
             """Stripe config"""
-            stripe_customer = StripeService.create_customer(email = email,name = f"{first_name} {last_name}")
-            stripe_express = StripeService.create_express_account(email = email)
+            stripe_customer = stripe_service.StripeService.create_customer(email = email,name = f"{first_name} {last_name}")
+            stripe_express = stripe_service.StripeService.create_express_account(email = email)
 
             """Create new tenants"""
             
-            logo_path = await SupaS3.upload_to_s3(url=logo_url, slug=slug, bucket_name='logos')
+            logo_path = await SupaS3.upload_to_s3(url=logo_url, slug=slug, bucket_name='logos') if logo_url == None else None
 
             hashed_pwd = password_utils.hash(password.strip()) #hash password
           
@@ -113,7 +117,7 @@ class TenantService(ServiceContext):
             self.db.commit()
             self.db.refresh(new_tenant_profile)
             self.db.refresh(new_tenant_stats)
-
+           
             # logger.info(f"new tenant_id {new_tenant.id}")
             response_dict  = {"tenants": new_tenant_info, "profile": new_tenant_profile, "stats": new_tenant_stats}
             """add tenants settings"""
@@ -144,11 +148,11 @@ class TenantService(ServiceContext):
             stmt = self.db.query(self.tenant_info).options(
                         joinedload(self.tenant_info.profile),
                         joinedload(self.tenant_info.stats)
-                    ).where(self.tenant_info.id == self.current_user.id)
+                    ).where(self.tenant_info.id == self.tenant_id)
             result = self.db.execute(stmt).scalars().first()
             logger.debug(f"{result}")
             if not result:
-                logger.warning(f"404: company with id {self.current_user.id} is not in db")
+                logger.warning(f"404: company with id {self.tenant_id} is not in db")
                 raise HTTPException(status_code=404,
                                     detail="Company cannot be found")
             
@@ -221,16 +225,16 @@ class TenantService(ServiceContext):
 
     async def get_all_drivers(self, driver_id):
         try:
-            logger.info(f"Getting all drivers for {self.current_user.id}")
+            logger.info(f"Getting all drivers for {self.tenant_id}")
             if driver_id:
-                drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.current_user.id, self.driver_table.id == driver_id)
+                drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.tenant_id, self.driver_table.id == driver_id)
                 drivers = drivers_query.all()    
             else:    
-                drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.current_user.id)
+                drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.tenant_id)
                 drivers = drivers_query.all()
 
             if not drivers:
-                logger.info(f"There are no drivers for tenant {self.current_user.id}")
+                logger.info(f"There are no drivers for tenant {self.tenant_id}")
                 return success_resp(data=[], msg="Drivers retrieved successfully", meta={"count": 0})
 
             return success_resp(data=drivers, msg="Drivers retrieved successfully", meta={"count": len(drivers)})
@@ -244,7 +248,7 @@ class TenantService(ServiceContext):
     async def _validate_driver_id(self, driver_id):
         try:
             exists = self.db.query(self.driver_table).filter(self.driver_table.id == driver_id, 
-                                                self.driver_table.tenant_id == self.current_user.id).first()
+                                                self.driver_table.tenant_id == self.tenant_id).first()
             if not exists:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                     detail= f"Driver with {driver_id} does not exists") 
@@ -255,7 +259,7 @@ class TenantService(ServiceContext):
         ##verify_email does not exist
         try:
             driver_exists = self.db.query(self.driver_table).filter(self.driver_table.email == payload.email,
-                                                    self.driver_table.tenant_id == self.current_user.id).first()
+                                                    self.driver_table.tenant_id == self.tenant_id).first()
 
             if driver_exists: 
                 logger.warning("Driver with email already exists...")
@@ -267,15 +271,28 @@ class TenantService(ServiceContext):
     async def _onboarding_token(self, length = 10):
         access_token = string.ascii_letters + string.digits
         return ''.join(random.choices(access_token, k=length))
-
+    def _count_drivers(self, tenant_id):
+        try:
+            stmt = select(func.count()).where(self.driver_table.tenant_id == tenant_id)
+            count = self.db.scalar(stmt)
+            logger.debug(f"DRiver counnt {count}")
+            return count
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(exc=e, db=self.db)
     async def onboard_drivers(self, payload):
         try:
+            ##check policies
+            cur_driver_count = self._count_drivers(self.tenant_id)
+            logger.debug(f"DRiver counnt {cur_driver_count}")
+            sub_plan=self.sub_plan
+            plan = plans.PLAN_REGISTRY[sub_plan]
+            plan_policy.PlanPolicy.can_add_driver(plan=plan, current_driver_count=cur_driver_count)
             await self._confirm_driver_email_absence(payload)
             onboard_token = await self._onboarding_token(6)
             logger.info("Starting onboarding process....")
             driver_info = payload.model_dump()
             driver_info.pop("users", None)
-            new_driver = self.driver_table(tenant_id = self.current_user.id,
+            new_driver = self.driver_table(tenant_id = self.tenant_id,
                                       driver_token = onboard_token, 
                                       is_registered = "pending",**driver_info)
 
@@ -285,7 +302,7 @@ class TenantService(ServiceContext):
             self.db.refresh(new_driver)
             
             """email notification"""
-            drivers.DriverEmailServices(to_email='mubskill@gmail.com', from_email='driver').onboarding_email(token=onboard_token)
+            drivers.DriverEmailServices(to_email='mubskill@gmail.com', from_email='driver').onboarding_email(token=onboard_token, slug=self.slug)
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
@@ -303,12 +320,12 @@ class TenantService(ServiceContext):
 
     async def get_all_vehicles(self):
         try:
-            logger.info(f"Getting vehicles for tenant: {self.current_user.id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_user.id)
+            logger.info(f"Getting vehicles for tenant: {self.tenant_id}")
+            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.tenant_id)
             vehicle_obj = vehicle_query.all()
 
             if not vehicle_obj:
-                logger.info(f"There are no vehicles for tenant {self.current_user.id}")
+                logger.info(f"There are no vehicles for tenant {self.tenant_id}")
                 return success_resp(data=[], msg="Vehicles retrieved successfully", meta={"count": 0})
 
             return success_resp(data=vehicle_obj, msg="Vehicles retrieved successfully", meta={"count": len(vehicle_obj)})
@@ -322,16 +339,16 @@ class TenantService(ServiceContext):
     async def fetch_assigned_drivers_vehicles(self):
         try:
             
-            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.current_user.id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_user.id,
+            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.tenant_id}")
+            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.tenant_id,
                                                             self.vehicle_table.driver_id != None)
             vehicle_obj = vehicle_query.all()
                     
 
             if not vehicle_obj:
-                logger.warning(f"There are no vehicles assigned to any drivers {self.current_user.id}")
+                logger.warning(f"There are no vehicles assigned to any drivers {self.tenant_id}")
                 raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-                                    detail = f"Tenant {self.current_user.id} has no vehicles assigned to any drivers")
+                                    detail = f"Tenant {self.tenant_id} has no vehicles assigned to any drivers")
             return success_resp(data=vehicle_obj, msg="Vehicles with assigned drivers retrieved successfully", meta={"count": len(vehicle_obj)})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
@@ -339,31 +356,31 @@ class TenantService(ServiceContext):
     async def find_vehicles_owned_by_driver(self, driver_id: int):
         try:
             await self._validate_driver_id(driver_id)
-            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.current_user.id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.current_user.id,
+            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.tenant_id}")
+            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.tenant_id,
                                                             self.vehicle_table.driver_id == driver_id)
             vehicle_obj = vehicle_query.all()
                     
 
             if not vehicle_obj:
-                logger.warning(f"Driver {driver_id} does not have an assigned a vehicle {self.current_user.id}")
+                logger.warning(f"Driver {driver_id} does not have an assigned a vehicle {self.tenant_id}")
                 raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-                                    detail = f"Driver {driver_id} does not have an assigned a vehicle {self.current_user.id}")
+                                    detail = f"Driver {driver_id} does not have an assigned a vehicle {self.tenant_id}")
             return success_resp(data=vehicle_obj, msg=f"Vehicles for driver {driver_id} retrieved successfully", meta={"count": len(vehicle_obj), "driver_id": driver_id})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
     async def assign_driver_to_vehicle(self, payload, vehicle_id):
         try:
-            vehicle =  self.db.query(self.vehicle_table).filter(self.vehicle_table.id == vehicle_id).first()
+            vehicle =  self.db.query(self.vehicle_table).filter(self.vehicle_table.id == vehicle_id, self.vehicle_table.tenant_id == self.tenant_id).first()
 
             if not vehicle:
                 logger.warning("There are no bookings without assigned drivers....")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail= "There are no bookings without assigned drivers....")
             if vehicle.driver_id:
-                raise HTTPException(status_code=404,
-                                    detail = "Driver already assigned to ride....")
+                raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                    detail = "Driver already assigned to a vehicle....")
             driver_info = self.db.query(self.driver_table).filter(self.driver_table.id == payload.driver_id).first()
             if not driver_info:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -371,12 +388,14 @@ class TenantService(ServiceContext):
             if driver_info.driver_type == None and driver_info.driver_type != "in_house":
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
                                     detail="Outsourced drivers cannot be assigned to rides...")
+                
             vehicle.driver_id = payload.driver_id
 
             self.db.commit()
+            return success_resp(data={"driver_id": payload.driver_id, "vehicle_id": vehicle_id}, msg=f"Driver {payload.driver_id} has been assigned to vehicle: {vehicle_id}")
+            
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
-        return success_resp(data={"driver_id": payload.driver_id, "vehicle_id": vehicle_id}, msg=f"Driver {payload.driver_id} has been assigned to vehicle: {vehicle_id}")
 
 
     """BOOKINGS"""
@@ -414,5 +433,5 @@ class TenantService(ServiceContext):
 
 def get_tenant_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
     return TenantService(db=db, current_user=current_user)
-def get_unauthorized_tenant_service(db = Depends(get_db)):
+def get_unauthorized_tenant_service(db = Depends(get_base_db)):
     return TenantService(db=db, current_user=None)
