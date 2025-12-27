@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from datetime import timedelta, datetime, timezone
 from .vehicle_service import VehicleService
 from .service_context import ServiceContext
-from .email_services import drivers, tenants
+from .email_services import drivers, tenants, riders
 db_exceptions = db_error_handler.DBErrorHandler
 # driver_table = driver.Drivers
 # vehicle_table = vehicle.Vehicles
@@ -201,9 +201,31 @@ class DriverService(ServiceContext):
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                                     detail= "Invalid action: action should be (confirm/cancellation)")
             
+            old_status = ride.booking_status
             ride.booking_status = action
             self.db.commit()
             self.db.refresh(ride)
+            
+            # Email: Send booking status update to rider
+            from .helper_service import user_table
+            rider_obj = self.db.query(user_table).filter(user_table.id == ride.rider_id).first()
+            if rider_obj:
+                tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == ride.tenant_id).first()
+                slug = tenant_profile_obj.slug if tenant_profile_obj else None
+                if slug:
+                    riders.RiderEmailServices(to_email=rider_obj.email, from_email=self.tenant_email).booking_status_update_email(
+                        booking_obj=ride,
+                        rider_obj=rider_obj,
+                        slug=slug,
+                        old_status=old_status
+                    )
+                    # Send cancellation email if status is cancelled
+                    if action == 'cancelled':
+                        riders.RiderEmailServices(to_email=rider_obj.email, from_email=self.tenant_email).booking_cancellation_email(
+                            booking_obj=ride,
+                            rider_obj=rider_obj,
+                            slug=slug
+                        )
             
             return success_resp(msg="UPdated succesfully",data={"booking_id":booking_id,"ride_status": action})
         except db_exceptions.COMMON_DB_ERRORS as e:
@@ -218,6 +240,15 @@ class DriverService(ServiceContext):
             obj.is_active = is_active
             self.db.commit()
             logger.debug(f"{self.current_user.is_active}")
+            
+            # Email: Send status change notification to driver
+            tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.tenant_id).first()
+            slug = tenant_profile_obj.slug if tenant_profile_obj else None
+            if slug:
+                drivers.DriverEmailServices(to_email=obj.email, from_email=self.tenant_email).status_change_email(
+                    obj=obj,
+                    is_active=is_active
+                )
             
             return success_resp(msg="Status changes", data = {"is_active":obj.is_active})
         except db_exceptions.COMMON_DB_ERRORS as e:

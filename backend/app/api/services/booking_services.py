@@ -9,7 +9,7 @@ from sqlalchemy.exc import *
 from app.schemas.booking import BookingResponse
 from .helper_service import success_resp, success_list_resp
 from .service_context import ServiceContext
-from .email_services import drivers, tenants
+from .email_services import drivers, tenants, riders
 from .helper_service import (
     user_table,
     tenant_table,
@@ -74,9 +74,32 @@ class BookingService(ServiceContext):
                 driver_email = driver_.email
                 ##email
                 # tenants.TenantEmailServices(to_email=self.tenant_email, from_email=self.tenant_email).new_ride(booking)
-                drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).new_ride(booking_obj=new_ride, assigned=False)
+                # drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).new_ride(booking_obj=new_ride, assigned=False)
+                drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).new_ride(booking_obj=new_ride, assigned=False, slug=self.slug)
             else:
                 driver_full_name = "No driver assigned"
+            
+            # Email: Send booking confirmation to rider
+            rider_obj = self.db.query(user_table).filter(user_table.id == self.current_user.id).first()
+            vehicle_info = f"{vehicle.make} {vehicle.model} {vehicle.year}"
+            riders.RiderEmailServices(to_email=self.current_user.email, from_email=self.tenant_email).booking_confirmation_email(
+                booking_obj=new_ride,
+                rider_obj=rider_obj,
+                slug=self.slug,
+                vehicle_info=vehicle_info,
+                driver_name=driver_full_name if vehicle.driver_id else None
+            )
+            
+            # Email: Send new booking notification to tenant
+            tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.current_user.tenant_id).first()
+            tenants.TenantEmailServices(to_email=self.tenant_email, from_email=self.tenant_email).booking_notification_email(
+                booking_obj=new_ride,
+                tenant_obj=tenant_obj,
+                slug=self.slug,
+                rider_name=self.full_name,
+                vehicle_info=vehicle_info
+            )
+            
             logger.info(f"A new ride has been set for {self.current_user.full_name}")
             
             return success_resp(msg="Booking Successfull", data= {"driver_name": driver_full_name,"customer_name": self.full_name,"vehicle": f"{vehicle.make} {vehicle.model} {vehicle.year}",**new_ride.__dict__})

@@ -6,6 +6,7 @@ from datetime import timedelta, datetime
 from sqlalchemy.exc import *
 
 from app.models import tenant_setting
+from .email_services import admin
 
 
 db_exceptions = db_error_handler.DBErrorHandler
@@ -23,9 +24,18 @@ async def delete_admin(db, tenant_id: int):
         logger.error(f"Tenant {tenant_id} not found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail = f"Tenant {tenant_id} not found")
+    company_name = tenant.profile.company_name if hasattr(tenant, 'profile') and tenant.profile else None
     db.delete(tenant)
     db.commit()
     logger.info(f"Tenant {tenant_id} has been deleted")
+    
+    # Email: Notify admin of tenant deletion
+    admin.AdminEmailServices(to_email='admin@example.com', from_email='noreply@example.com').tenant_deletion_confirmation_email(
+        tenant_id=tenant_id,
+        company_name=company_name,
+        deleted_by='admin'
+    )
+    
     return {"msg": f"Tenant {tenant_id} has been deleted"}
 
 async def get_all_tenants(db):

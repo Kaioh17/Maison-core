@@ -79,13 +79,14 @@ async def get_drivers(driver_id: Optional[int] = None,tenant_service: TenantServ
     drivers = await tenant_service.get_all_drivers(driver_id)
     return drivers
 
-# Get vehicles for the tenant, optionally filtered by driver or assignment
+# DEPRECATED
 @router.get('/vehicles', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[vehicle.VehicleResponse]])
 async def get_vehicles(
     driver_id: Optional[int] = Query(None, description="Get vehicles for specific driver"),
     assigned_drivers: Optional[bool] = Query(False, description="Get only vehicles assigned to drivers"),
     tenant_service: TenantService = Depends(get_tenant_service)
 ):
+    raise HTTPException(status_code=status.HTTP_410_GONE)
     if assigned_drivers:
         logger.info("Getting vehicles assigned to drivers")
         vehicles = await tenant_service.fetch_assigned_drivers_vehicles()
@@ -129,15 +130,20 @@ async def assign_driver_to_rides(payload: tenant.AssignDriver,
      return assigned_driver
 
 """Assign drivers to vehicles"""
-@router.patch("/vehicles/{vehicle_id}/assign-driver", status_code=status.HTTP_202_ACCEPTED)
-async def assign_driver_to_vehicles(payload: tenant.AssignDriver,
-                        vehicle_id: int,
+@router.patch("/vehicles/{vehicle_id}/assign/{driver_id}", status_code=status.HTTP_202_ACCEPTED)
+async def assign_driver_to_vehicles(driver_id:int, vehicle_id: int,
                         tenant_service: TenantService = Depends(get_tenant_service)):
      
-     assigned_driver = await tenant_service.assign_driver_to_vehicle(payload, vehicle_id)
+     assigned_driver = await tenant_service.assign_driver_to_vehicle(driver_id, vehicle_id)
      return assigned_driver
 
-
+@router.patch("/vehicles/{vehicle_id}/unassign/driver", status_code=status.HTTP_202_ACCEPTED)
+async def unassign_driver_from_vehicle(vehicle_id: int,override:bool = False,
+                        
+                        tenant_service: TenantService = Depends(get_tenant_service)):
+     
+     assigned_driver = await tenant_service.unassign_driver_from_vehicles(override=override, vehicle_id=vehicle_id)
+     return assigned_driver
 
 ###approve rides
 

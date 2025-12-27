@@ -6,8 +6,9 @@ from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from .helper_service import Validations
 from .service_context import ServiceContext
+from .email_services import riders
 
-from .helper_service import user_table, tenant_table, success_resp
+from .helper_service import user_table, tenant_table, tenant_profile, success_resp
 db_exceptions = db_error_handler.DBErrorHandler
 # user_table = user.Users
 # tenant_table = tenant.Tenants
@@ -43,6 +44,16 @@ class UserService(ServiceContext):
             self.db.commit()
             self.db.refresh(new_user)
             logger.debug(f"{type(new_user)}")
+            
+            # Email: Send welcome email to rider
+            tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
+            slug = tenant_profile_obj.slug if tenant_profile_obj else None
+            if slug:
+                riders.RiderEmailServices(to_email=new_user.email, from_email=self.tenant_email if hasattr(self, 'tenant_email') else 'noreply@example.com').welcome_email(
+                    obj=new_user,
+                    slug=slug
+                )
+            
             return success_resp(msg="Successfull Created user")
             
         except db_exceptions.COMMON_DB_ERRORS as e:

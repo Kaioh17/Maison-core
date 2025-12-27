@@ -169,7 +169,7 @@ class AssignDriver(BaseModel):
     """
     AssignDriver schema for assigning a driver to a booking
     """
-    driver_id: int 
+    driver_id: int = Field(default=None)
     override: bool = Field(default=False, description="Flag that allows changing from one driver id to another")
 
 class TenantLogin(BaseModel):

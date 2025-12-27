@@ -8,6 +8,7 @@ from .juctions import vehicle_vehicle_config_association
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
 
+"""A driver can have only one vehicle 1:1 relationship"""
 
 id_seq =  Sequence('id_seq', start= 1050)
 
@@ -19,8 +20,8 @@ class Vehicles(Base):
 
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
     # tenant = relationship("Tenants",foreign_keys=[tenant_id], passive_deletes=True)
-    driver_id = Column(Integer, ForeignKey("drivers.id", ondelete="CASCADE"), index=True, nullable=True)
-    driver = relationship("Drivers", foreign_keys=[driver_id], passive_deletes=True)
+    driver_id = Column(Integer, ForeignKey("drivers.id", ondelete="CASCADE"), index=True, nullable=True, unique=True)
+    driver = relationship("Drivers", back_populates="vehicle",passive_deletes=True)
     ##vehicle info
     
     make = Column(String(200), nullable=False, index=True)     # e.g. "Mercedes"
@@ -43,10 +44,25 @@ class Vehicles(Base):
     vehicle_category = relationship("VehicleCategoryRate",
                                     foreign_keys= [vehicle_category_id], 
                                     back_populates = "vehicles")
+    
     tenants = relationship("Tenants", back_populates="vehicle")
+    # driver = relationship("Drivers", back_populates="vehicle")
+    
+    
     
     @property
     def vehicle_name(self):
         return f"{self.make}-{self.model}-{self.year}"
+    
+    @property
+    def driver_type(self):
+        return self.driver.driver_type if self.driver else None
+    
+    @property
+    def driver_name(self):
+        return self.driver.full_name if self.driver else None
+    # @property
+    # def driver_type(self):
+    #     return self.driver.driver_type if self.driver else None
 
 

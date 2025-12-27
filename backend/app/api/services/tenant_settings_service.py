@@ -9,8 +9,9 @@ from sqlalchemy import update, insert, select, delete
 from .tenants_service import TenantService
 from app.db.database import get_db, get_base_db
 from ..core import deps
-from .helper_service import success_resp , vehicle_table, tenant_setting_table, tenant_profile, SupaS3
+from .helper_service import success_resp , vehicle_table, tenant_setting_table, tenant_profile, tenant_table, SupaS3
 from .service_context import ServiceContext
+from .email_services import tenants
 
 db_exceptions = db_error_handler.DBErrorHandler
 
@@ -64,6 +65,17 @@ with Session(engine) as session: # Or use an existing session
 
         self.db.commit()
         self.db.refresh(setting_obj)
+        
+        # Email: Send settings change notification to tenant
+        tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
+        if tenant_obj:
+            changed_settings = {k: v for k, v in payload.dict().items() if v is not None and hasattr(setting_obj, k)}
+            if changed_settings:
+                tenants.TenantEmailServices(to_email=tenant_obj.email, from_email=tenant_obj.email).settings_change_email(
+                    tenant_obj=tenant_obj,
+                    slug=self.slug,
+                    changed_settings=changed_settings
+                )
 
         return success_resp(data=setting_obj, msg="Tenant settings updated successfully")
         
@@ -87,6 +99,15 @@ with Session(engine) as session: # Or use an existing session
         profile_obj.logo_url = logo_url
         self.db.commit()
         self.db.refresh(setting_obj)
+        
+        # Email: Send logo update confirmation to tenant
+        tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
+        if tenant_obj:
+            tenants.TenantEmailServices(to_email=tenant_obj.email, from_email=tenant_obj.email).logo_update_confirmation_email(
+                tenant_obj=tenant_obj,
+                slug=self.slug,
+                logo_url=logo_url
+            )
 
         return success_resp(data=setting_obj, msg="Tenant logo updated successfully")
 

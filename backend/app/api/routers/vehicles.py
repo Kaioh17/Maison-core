@@ -24,7 +24,7 @@ async def get_all_vehicles(vehicle_id: Optional[int] = None, driver_id: Optional
                            vehicle_service: VehicleService = Depends(get_vehicle_service),
                            ):
     logger.debug("Vehicles...")
-    vehicles =await vehicle_service.get_vehicles(vehicle_id, driver_id)
+    vehicles =await vehicle_service.get_vehicles(vehicle_id=vehicle_id, driver_id=driver_id)
     return vehicles
 
 

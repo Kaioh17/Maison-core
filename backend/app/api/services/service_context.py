@@ -15,7 +15,7 @@ class ServiceContext:
         self.db = db
         self.current_user=current_user
         if self.current_user:
-            self.role = self.current_user.role.lower()
+            self.role = self.current_user.role
             if self.role != 'tenant': #not tenant
                 self.tenant_id = self.current_user.tenant_id
                 # print(self.tenant_id)
@@ -24,7 +24,7 @@ class ServiceContext:
                 self.full_name = self.current_user.full_name
                 if self.role== 'driver':
                     self.driver_id = self.current_user.id
-                    
+                    self.driver_type = self.current_user.driver_type
                 else:
                     self.rider_id = self.current_user.id
             else: # is tenant

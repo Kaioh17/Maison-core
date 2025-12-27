@@ -7,7 +7,7 @@ from app.models.base import Base
 
 id_seq =  Sequence('id_seq', start= 150)
 
- 
+"""A vehicle can have only one driver 1:1 relationship"""
 
 class Drivers(Base):
     __tablename__ = "drivers"
@@ -34,7 +34,7 @@ class Drivers(Base):
 
     
     license_number = Column(String(100), nullable=True)
-    vehicle_id = Column(Integer, ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
+    # vehicle_id = Column(Integer, ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True, unique=True)
 
     driver_token = Column(String,nullable=False)
     is_registered = Column(String, CheckConstraint( "status IN ('registered', 'pending')", name="check_driver_registeration"), nullable=False, default="pending")
@@ -58,7 +58,7 @@ class Drivers(Base):
     
     #relationships 
     tenants = relationship("Tenants",back_populates="drivers",passive_deletes=True)
-    vehicle = relationship("Vehicles", foreign_keys=[vehicle_id], passive_deletes=True)
+    vehicle = relationship("Vehicles",back_populates="driver",passive_deletes=True, uselist=False)
 
 
 

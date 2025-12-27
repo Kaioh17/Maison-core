@@ -32,7 +32,7 @@ from .booking_services import BookingService
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from .helper_service import success_resp, SupaS3
-from .email_services import drivers, admin
+from .email_services import drivers, admin, tenants
 from .service_context import ServiceContext
 from .stripe_services import stripe_service, stripe_tier_service 
 from app.policies import plan_policy
@@ -124,6 +124,17 @@ class TenantService(ServiceContext):
             logger.debug(response_dict)
             await self._set_up_tenant_settings(new_tenant_id, logo_path, slug)
             await self._create_vehicle_category_rate_table(new_tenant_id)
+            
+            # Email: Send welcome email to tenant
+            tenants.TenantEmailServices(to_email=email, from_email=email).welcome_email(
+                obj=new_tenant_info,
+                slug=slug
+            )
+            
+            # Email: Notify admin of new tenant registration
+            admin.AdminEmailServices(to_email='admin@example.com', from_email='noreply@example.com').new_tenant_notification_email(
+                tenant_obj=new_tenant_info
+            )
 
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
@@ -370,18 +381,24 @@ class TenantService(ServiceContext):
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
-    async def assign_driver_to_vehicle(self, payload, vehicle_id):
+    async def assign_driver_to_vehicle(self, driver_id, vehicle_id):
+        """A tenant can only assign a vehicle to one driver at a time"""
         try:
+            vehicle_ =  self.db.query(self.vehicle_table).filter(self.vehicle_table.driver_id == driver_id, self.vehicle_table.tenant_id == self.tenant_id).first()
+            if vehicle_:
+                logger.warning(f"Driver already has a vehicle [{vehicle_.vehicle_name}]")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail= f"Driver already has a vehicle [{vehicle_.vehicle_name}]")
             vehicle =  self.db.query(self.vehicle_table).filter(self.vehicle_table.id == vehicle_id, self.vehicle_table.tenant_id == self.tenant_id).first()
 
             if not vehicle:
-                logger.warning("There are no bookings without assigned drivers....")
+                logger.warning("This vehicle does not exist")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= "There are no bookings without assigned drivers....")
+                                    detail= "This vehicle does not exist")
             if vehicle.driver_id:
                 raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                    detail = "Driver already assigned to a vehicle....")
-            driver_info = self.db.query(self.driver_table).filter(self.driver_table.id == payload.driver_id).first()
+                                    detail = "Vehicle already assigned to a driver.If you need to assign this driver unassign the current driver from that vehicle.")
+            driver_info = self.db.query(self.driver_table).filter(self.driver_table.id == driver_id).first()
             if not driver_info:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail= "Driver info does not exists")
@@ -389,10 +406,18 @@ class TenantService(ServiceContext):
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
                                     detail="Outsourced drivers cannot be assigned to rides...")
                 
-            vehicle.driver_id = payload.driver_id
+            vehicle.driver_id = driver_id
 
             self.db.commit()
-            return success_resp(data={"driver_id": payload.driver_id, "vehicle_id": vehicle_id}, msg=f"Driver {payload.driver_id} has been assigned to vehicle: {vehicle_id}")
+            
+            # Email: Send vehicle assignment notification to driver
+            if driver_info:
+                drivers.DriverEmailServices(to_email=driver_info.email, from_email=self.tenant_email).vehicle_assignment_email(
+                    obj=driver_info,
+                    vehicle_obj=vehicle
+                )
+            
+            return success_resp(data={"driver_id": driver_id, "vehicle_id": vehicle_id}, msg=f"Driver {driver_id} has been assigned to vehicle: {vehicle_id}")
             
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
@@ -402,6 +427,7 @@ class TenantService(ServiceContext):
 
     async def assign_driver_to_rides(self, payload, booking_id: int):
        try:
+            """We can only assign a driver with a vehicle to the pla"""
             ride =  self.db.query(self.booking_table).filter(self.booking_table.id == booking_id).first()
 
             if not ride:
@@ -426,12 +452,56 @@ class TenantService(ServiceContext):
             self.db.commit()
             
             """Email Notificaition"""
-            drivers.DriverEmailServices(to_email=driver_info.email, from_email=self.tenant_email).new_ride(booking_obj=ride, assigned=True)
+            drivers.DriverEmailServices(to_email=driver_info.email, from_email=self.tenant_email).new_ride(booking_obj=ride, assigned=True, slug=self.slug)
             return success_resp(data={"driver_id": payload.driver_id, "booking_id": booking_id}, msg=f"Driver {payload.driver_id} has been assigned to {booking_id}")
        except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
+    async def unassign_driver_from_vehicles(self, override, vehicle_id):
+        try:
+            if override:
+                
+                vehicle =  self.db.query(self.vehicle_table).filter(self.vehicle_table.id == vehicle_id, self.vehicle_table.tenant_id == self.tenant_id).first()
+
+                if not vehicle:
+                    logger.warning("Vehicle not found....")
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                        detail= "Vehicle not found....")
+                if not vehicle.driver_id:
+                    raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                        detail = "Vehicle does not have a driver to unassign")
+                
+                if not vehicle.driver_type or vehicle.driver_type != 'in_house':
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
+                                        detail="Outsourced drivers cannot be unassigned from their vehicles...")
+                
+                # Store driver info for email before unassigning
+                driver_email = vehicle.driver.email
+                driver_obj = vehicle.driver
+                unassigned_driver_id = vehicle.driver_id
+                logger.debug(unassigned_driver_id)
+                # Unassign the driver from the vehicle
+                vehicle.driver_id = None
+
+                self.db.commit()
+                
+                # Email: Send vehicle unassignment notification to driver
+                drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).vehicle_unassignment_email(
+                    obj=driver_obj,
+                    vehicle_obj=vehicle
+                )
+                
+                return success_resp(msg=f"Driver {unassigned_driver_id} has been unassigned from vehicle: {vehicle_id}")
+            else:
+                return success_resp(msg=f"unassign process has been cancelled")
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(e, self.db)
+            
 def get_tenant_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
+    """ext param is used to decide which class we will be using in the tenant service"""
+
     return TenantService(db=db, current_user=current_user)
+
+        
 def get_unauthorized_tenant_service(db = Depends(get_base_db)):
     return TenantService(db=db, current_user=None)
