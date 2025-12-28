@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, TypeAdapter, field_validator, model_validator
 from typing import Optional
+from app.utils.logging import logger
 import re
 from fastapi import HTTPException, status
 from enum import Enum
@@ -34,18 +35,22 @@ class PaymentType(str, Enum):
     CASH = "cash"
     CARD = "card"
     ZELLE = "zelle"
-
+class Payment(BaseModel):
+    is_approved: bool 
+    payment_method: Optional[PaymentType] = Field(None)
 class BoookingBase(BaseModel):
     # driver_id: Optional[int]
     vehicle_id: int = None
-    city: str
+    country: str
     service_type: ServiceType
     pickup_location: str
     pickup_time: datetime
-    dropoff_location: Optional[str]
-    dropoff_time: Optional[datetime]
-    payment_method: PaymentType
-    notes: Optional[str]
+    airport_service: Optional[str] = Field(None)
+    dropoff_location: Optional[str] = Field(None)
+    dropoff_time: Optional[datetime] = Field(None)
+    payment_method: Optional[PaymentType] = Field(None)
+    hours: Optional[float] = Field(None)
+    notes: Optional[str] = Field(None)
 
     @field_validator("pickup_time", "dropoff_time")
     def ensure_timezone(cls, value):
@@ -53,21 +58,34 @@ class BoookingBase(BaseModel):
         if dt.tzinfo is None:
             return dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(timezone.utc)
-
+    
+    @model_validator(mode="after")
+    def enforce_service(self):
+        #For airport services
+        if self.service_type.lower() == ServiceType.AIRPORT and  not self.airport_service:
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, 
+                                detail="Airport rides most have airport_service types [from_airport/to_airport] ")
+        elif self.service_type.lower() == ServiceType.HOURLY and not self.hours:
+            logger.debug("Hours is required")
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, 
+                                detail="Hours is required")
+            
+        else: return self
+  
     @model_validator(mode = "after")
     def check_dropoff_logic(cls, values):
         service_type = values.service_type
-        city = values.city
-        dropoff_location = values.dropoff_location
+        # country = values.country
+        # dropoff_location = values.dropoff_location
 
-        if service_type.lower() == ServiceType.DROP_OFF and not service_type:
+        if service_type.lower() == ServiceType.DROP_OFF and service_type.lower() == ServiceType.AIRPORT:
             raise HTTPException(status_code= 400, detail ="A drop off location is required for dropoffs")
         #airport logic
-        if service_type.lower() ==ServiceType.AIRPORT:
-            airport_info = LocationHelper.get_airport_for_city(city)
+        # if service_type.lower() ==ServiceType.AIRPORT:
+        #     airport_info = LocationHelper.get_airport_for_city(city)
 
-            if not dropoff_location:
-                setattr(values, 'dropoff_location', airport_info['name'])
+        #     if not dropoff_location:
+        #         setattr(values, 'dropoff_location', airport_info['name'])
 
         return values
 
@@ -75,10 +93,15 @@ class BoookingBase(BaseModel):
         "from_attributes": True
 
     }
-
+class Coordinates(BaseModel):
+    plat:float
+    plon:float
+    dlat:float
+    dlon:float
+    
 class CreateBooking(BoookingBase):
-
-    pass    
+    coordinates: Coordinates
+       
 
 class UpdateBookingTenants(BoookingBase):
     pass 

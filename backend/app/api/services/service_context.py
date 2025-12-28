@@ -27,6 +27,8 @@ class ServiceContext:
                     self.driver_type = self.current_user.driver_type
                 else:
                     self.rider_id = self.current_user.id
+                    self.slug = self.current_user.tenants.slug
+                    
             else: # is tenant
                 self.tenant_id = self.current_user.id
                 self.tenant_email = self.current_user.email

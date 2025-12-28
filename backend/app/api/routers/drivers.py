@@ -70,8 +70,8 @@ async def get_bookings_for_driver(is_driver: bool = Depends(is_driver),
 
 """Set ride status"""
 @router.patch("/ride/{booking_id}/decision", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[dict])
-async def set_ride_status(booking_id: int, action: str =Query(None, description= "Confirm/Cancelled"),
+async def set_ride_status(booking_id: int, action: str =Query(None, description= "Confirm/Cancelled"), approve_action: bool = False,
                        is_driver: bool =  Depends(is_driver), driver_service: DriverService = Depends(get_driver_service)):
     
-    ride_decision = await driver_service.driver_ride_response(action, booking_id)
+    ride_decision = await driver_service.driver_ride_response(action, booking_id, approve_action=approve_action)
     return ride_decision

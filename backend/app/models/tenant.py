@@ -41,14 +41,14 @@ class Tenants(Base):
         cascade="all, delete-orphan"
     )
     
-    settings = relationship("TenantSettings",
-                            uselist=False,
-                            cascade="all, delete-orphan")
+    settings = relationship("TenantSettings", uselist=False, cascade="all, delete-orphan")
     users = relationship("Users", back_populates="tenants", cascade= "all, delete", passive_deletes=True)
     drivers = relationship("Drivers", back_populates="tenants", cascade= "all, delete", passive_deletes=True)
-    
     vehicle = relationship("Vehicles", back_populates="tenants", cascade= "all, delete" , passive_deletes=True)
-
+    branding = relationship("TenantBranding", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
+    pricing = relationship("TenantPricing", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
+    
+    
     @property
     def full_name(self):
         """Return the full name of the tenant"""

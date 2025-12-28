@@ -18,12 +18,15 @@ user_table = user.Users
 tenant_table = tenant.Tenants
 tenant_profile = tenant.TenantProfile
 tenant_stats = tenant.TenantStats
+tenant_branding = tenant_setting.TenantBranding
+tenant_pricing = tenant_setting.TenantPricing
 driver_table = driver.Drivers
 booking_table = booking.Bookings
 tenant_setting_table = tenant_setting.TenantSettings  
 vehicle_config_table = vehicle_config.VehicleConfig
 vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 vehicle_table = vehicle.Vehicles
+
 from app.schemas import general
 
 # class JsonResponse:

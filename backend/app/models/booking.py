@@ -16,17 +16,19 @@ class Bookings(Base):
     tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete= "CASCADE"), nullable=False)
     vehicle_id = Column(Integer,ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=False)
     service_type = Column(String, nullable=False)
+    airport_service = Column(String,CheckConstraint("airport_service IN ('from_airport', 'to_airport')", name='airport_service_check'),nullable=True ) #from_airport or to_airport
     rider_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable=False)
     pickup_location = Column(String, nullable=False)
     pickup_time = Column(TIMESTAMP(timezone=True), nullable=False)
+    hours = Column(Float, nullable=True) 
     dropoff_location = Column(String, nullable=True)
     dropoff_time = Column(TIMESTAMP(timezone=True), nullable=True)
-    city = Column(String, nullable=True)
+    country = Column(String, nullable=True)
     booking_status = Column(String,CheckConstraint("booking_status IN ('pending', 'completed', 'cancelled', 'delayed')",name="booking_status_check_connstraint") ,nullable=False, default = 'pending', server_default=text("'pending'"))
     estimated_price =  Column(Float, nullable=True)
     payment_method = Column(String, nullable=True)
-    notes = Column(String, nullable=False)
-
+    notes = Column(String, nullable=True)
+    is_approved=Column(Boolean, nullable=True, default=False) ## column to check if ride was approved by rider 
     #Stripe payment configuratioin
     stripe_payment_intent_id = Column(String(255), nullable=True)
     platform_fee_amount = Column(Float, nullable=True)
@@ -37,6 +39,7 @@ class Bookings(Base):
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)
 
+    vehicle = relationship("Vehicles", back_populates="bookings", uselist=False)
 
     __table_args__ = (
         UniqueConstraint('driver_id', 'pickup_time', 'dropoff_time', name = 'uq_driver_booking'),

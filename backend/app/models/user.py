@@ -46,4 +46,4 @@ class Users(Base):
     def full_name(self):
         """Return the full name of the users"""
         return f"{self.first_name} {self.last_name}"
-
+    

@@ -31,7 +31,7 @@ import string
 from .booking_services import BookingService
 from app.db.database import get_db, get_base_db
 from ..core import deps
-from .helper_service import success_resp, SupaS3
+from .helper_service import *
 from .email_services import drivers, admin, tenants
 from .service_context import ServiceContext
 from .stripe_services import stripe_service, stripe_tier_service 
@@ -179,19 +179,44 @@ class TenantService(ServiceContext):
     async def _set_up_tenant_settings(self, new_tenant_id, logo_url, slug):
         try: 
             new_tenants_settings = TenantSettings(
-                tenant_id = new_tenant_id,
-                logo_url = logo_url, 
-                slug = slug,
-                theme = "dark",  # Default theme
-                enable_branding = False,  # Default to false
-                base_fare = 0.0,  # Default base fare
-                per_mile_rate = 0.0,  # Default per mile rate
-                per_minute_rate = 0.0,  # Default per minute rate
-                per_hour_rate = 0.0,  # Default per hour rate
-                rider_tiers_enabled = False,  # Default to false
-                cancellation_fee = 0.0,  # Default cancellation fee
-                discounts = False  # Default to false
-            )
+                            tenant_id = new_tenant_id,
+                            logo_url = logo_url, 
+                            slug = slug,
+                            theme = "dark",  # Default theme
+                            enable_branding = False,  # Default to false
+                            base_fare = 0.0,  # Default base fare
+                            per_mile_rate = 0.0,  # Default per mile rate
+                            per_minute_rate = 0.0,  # Default per minute rate
+                            per_hour_rate = 0.0,  # Default per hour rate
+                            rider_tiers_enabled = False,  # Default to false
+                            cancellation_fee = 0.0,  # Default cancellation fee
+                            discounts = False  # Default to false
+                        )
+            new_tenant_branding = TenantBranding(
+                            tenant_id=new_tenant_id,
+                            logo_url=logo_url,
+                            slug=slug,
+                            theme="dark",
+                            enable_branding=False,
+                            primary_color=None,
+                            secondary_color=None,
+                            accent_color=None,
+                            favicon_url=None,
+                            email_from_name=None,
+                            email_from_address=None
+                        )
+            new_tenant_pricing = TenantPricing(
+                            tenant_id=new_tenant_id,
+                            base_fare=0.0,
+                            per_mile_rate=0.0,
+                            per_minute_rate=0.0,
+                            per_hour_rate=0.0,
+                            cancellation_fee=0.0,
+                            discounts=False
+                        )
+
+            self.db.add(new_tenant_branding)
+            self.db.add(new_tenant_pricing)            
             self.db.add(new_tenants_settings)
             self.db.commit()
             logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")

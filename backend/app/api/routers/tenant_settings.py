@@ -11,25 +11,38 @@ from typing import Optional
 
 
 router = APIRouter(
-    prefix = "/api/v1/tenant_setting",
-    tags = ["tenant_settings"]
+    prefix = "/api/v1/tenant/config",
+    tags = ["Tenant Config"]
 )
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=general.StandardResponse[tenant_setting.TenantResponse])
-async def get_tenant_settings(tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
+@router.get("/{config_type}", status_code=status.HTTP_200_OK, response_model=general.StandardResponse[tenant_setting.TenantConfigResponse])
+async def get_tenant_settings(config_type:Optional[tenant_setting.ConfigTypes]=None ,tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
     logger.info("Getting tenant settings")
-    tenant_setting_obj = await tenant_settings_service.get_tenant_settings()
+    tenant_setting_obj = await tenant_settings_service.get_tenant_settings(config_type=config_type)
     return tenant_setting_obj
 
-@router.patch("/", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[tenant_setting.UpdateTenantSetting])
+@router.patch("/settings", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[tenant_setting.UpdateTenantSetting])
 async def update_tenant_settings( payload: tenant_setting.UpdateTenantSetting,
                                  tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
     logger.info("Updating settings...")
     upated_tenant_setting =await tenant_settings_service.update_tenant_settings(payload)
     
     return upated_tenant_setting
-
-@router.patch("/logo", status_code=status.HTTP_202_ACCEPTED, response_model = general.StandardResponse[tenant_setting.updated_vicuals] )
+@router.patch("/pricing", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[tenant_setting.TenantPricingResponse])
+async def update_tenant_pricing( payload: tenant_setting.TenantPricingUpdate,
+                                 tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
+    logger.info("Updating pricing config...")
+    upated_tenant_setting =await tenant_settings_service.update_tenant_pricing(payload)
+    
+    return upated_tenant_setting
+@router.patch("/branding", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[tenant_setting.TenantBrandingResponse])
+async def update_tenant_settings( payload: tenant_setting.TenantBrandingUpdate,
+                                 tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
+    logger.info("Updating branidng...")
+    upated_tenant_setting =await tenant_settings_service.update_tenant_branding(payload)
+    
+    return upated_tenant_setting
+@router.patch("/logo", status_code=status.HTTP_202_ACCEPTED, response_model = general.StandardResponse[tenant_setting.updated_visuals] )
 async def update_logo (tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service),
                        logo_url: Optional[UploadFile] = File(None)):
     

@@ -27,19 +27,26 @@ def public_info():
     return {"msg": "test endpoint"}
 
 @router.post("/set", status_code=status.HTTP_201_CREATED,response_model= StandardResponse[booking.BookingResponse])
-async def BookRide(book_ride: booking.CreateBooking, booking_service: BookingService = Depends(get_booking_service),current_rider =  Depends(deps.get_current_user) 
+async def book_ride(book_ride: booking.CreateBooking, booking_service: BookingService = Depends(get_booking_service),current_rider =  Depends(deps.get_current_user) 
              ,db: Session= Depends(get_db), rider = Depends(is_rider)):
     
     # ride_booked = await booking_services.book_ride(book_ride, db, current_rider)
     ride_booked = await booking_service.book_ride(book_ride)
     
     return ride_booked
-
+@router.patch("/{booking_id}", status_code=status.HTTP_201_CREATED,response_model= StandardResponse[dict])
+async def approve_ride(booking_id: int, payload: booking.Payment,booking_service: BookingService = Depends(get_booking_service), is_rider = Depends(is_rider)):
+    
+    # ride_booked = await booking_services.book_ride(book_ride, db, current_rider)
+    ride_approved = await booking_service.confirm_ride(booking_id=booking_id,payload=payload )
+    
+    return ride_approved
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=StandardResponse[list[booking.BookingResponse]])
-async def BookRide(booking_id: Optional[int] = None, booking_status: Optional[str] = None, booking_service: BookingService = Depends(get_booking_service)):
+async def BookRide(booking_id: Optional[int] = None, booking_status: Optional[str] = None, service_type: Optional[str] =None, vehicle_id: Optional[int] =None,
+                   booking_service: BookingService = Depends(get_booking_service)):
     
-    booked_rides = await booking_service.get_bookings_by(booking_id=booking_id, booking_status=booking_status)
+    booked_rides = await booking_service.get_bookings_by(booking_id=booking_id, booking_status=booking_status, service_type=service_type, vehicle_id=vehicle_id)
     return booked_rides
 
 

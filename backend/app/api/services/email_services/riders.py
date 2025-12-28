@@ -92,7 +92,7 @@ class RiderEmailServices(EmailServices):
         )
         self._email(subject, html)
     
-    def booking_confirmation_email(self, booking_obj, rider_obj: Users, slug: str, vehicle_info: str = None, driver_name: str = None):
+    async def booking_confirmation_email(self, booking_obj, rider_obj: Users, slug: str, vehicle_info: str = None, driver_name: str = None):
         """Send booking confirmation email to rider"""
         subject = "Booking Confirmed - Your Ride is Scheduled"
         

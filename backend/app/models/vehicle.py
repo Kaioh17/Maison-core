@@ -46,7 +46,7 @@ class Vehicles(Base):
                                     back_populates = "vehicles")
     
     tenants = relationship("Tenants", back_populates="vehicle")
-    # driver = relationship("Drivers", back_populates="vehicle")
+    bookings = relationship("Bookings", back_populates="vehicle")
     
     
     

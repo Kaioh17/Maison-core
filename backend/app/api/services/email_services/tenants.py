@@ -95,7 +95,7 @@ class TenantEmailServices(EmailServices):
         )
         self._email(subject, html)
     
-    def booking_notification_email(self, booking_obj, tenant_obj: Tenants, slug: str, rider_name: str = None, vehicle_info: str = None):
+    async def booking_notification_email(self, booking_obj, tenant_obj: Tenants, slug: str, rider_name: str = None, vehicle_info: str = None):
         """Send email notification to tenant when a new booking is created"""
         subject = "New Booking Received"
         
