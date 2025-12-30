@@ -235,95 +235,66 @@ class BookingService(ServiceContext):
             
       
             
-    async def get_bookings_by(self,booking_id = None ,booking_status: str = None,service_type: str =None,vehicle_id: int =None, limit: int = None ):
+    async def get_bookings_by(self,booking_id = None ,booking_status: str = None,
+                              service_type: str =None,vehicle_id: int =None, limit: int = None ):
         try:
+            limit_per_user = {"rider": 5, "tenant": 25, "driver":5}
+            limit = limit_per_user[self.role.lower()] if limit == None else limit
+            execute_params ={"booking_status":booking_status, "tenant_id":self.tenant_id,
+                                         "service_type":service_type, "vehicle_id":vehicle_id, "booking_id":booking_id, "limit":limit}
+                                
+            
             ####A booking should always have a vehicle_id but booking will not always hav ea driver
-            if booking_status or service_type or vehicle_id or limit:              
-                logger.debug(f"I am in here for {service_type or booking_status or vehicle_id} for {self.role}")
-                
-                
+                 
+            logger.debug(f"I am in here for {service_type or booking_status or vehicle_id} for {self.role}")
+            
+            
+            logger.debug(f"service_type{service_type}")
+            if self.role.lower() == 'tenant':
                 logger.debug(f"service_type{service_type}")
-                if self.role.lower() == 'tenant':
-                    logger.debug(f"service_type{service_type}")
-                    
-                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
-                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                        where b.tenant_id = :tenant_id and ((:booking_status is null or b.booking_status = :booking_status) 
-                        and (:service_type is null or b.service_type = :service_type) 
-                        and (:vehicle_id is null or b.vehicle_id=:vehicle_id))
-                        and (:booking_id is null or b.id=:booking_id)
-                        order by b.created_on desc
-                        """
-                    
-                    booking_query = self.db.execute(text(stmt), {"booking_status":booking_status, "tenant_id":self.tenant_id, "service_type":service_type, "vehicle_id":vehicle_id, "booking_id":booking_id})
-                        
-                elif self.role.lower() == 'driver':
-                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
-                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id join drivers d on d.id = b.driver_id
-                        where b.tenant_id = :tenant_id and b.booking_status = :booking_status and b.driver_id = :driver_id order by b.created_on desc"""
-                    booking_query = self.db.execute(text(stmt), {"booking_status":booking_status.lower(), "tenant_id":self.tenant_id, "driver_id":self.driver_id})
-                    
-                    
-                elif self.role.lower() == 'rider':
-                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
-                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                        where b.tenant_id = :tenant_id and b.booking_status = :booking_status and b.rider_id = :rider_id order by b.created_on desc"""
-                    booking_query = self.db.execute(text(stmt), {"booking_status":booking_status.lower(), "tenant_id":self.tenant_id, "rider_id":self.rider_id})
+                      
+                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                    from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                    where b.tenant_id = :tenant_id and ((:booking_status is null or b.booking_status = :booking_status) 
+                    and (:service_type is null or b.service_type = :service_type) 
+                    and (:vehicle_id is null or b.vehicle_id=:vehicle_id))
+                    and (:booking_id is null or b.id=:booking_id)
+                    order by b.created_on desc
+                    limit :limit
+                    """
                 
-                det = f"There are no {booking_status} bookings right now...."
-                msg = f"bookings retrieved successfully"
-                meta = {"status": booking_status}
-            elif booking_id:
-        
-                if self.role.lower() == 'tenant':
-                    stmt = """select b.* ,  CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
-                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                        where b.tenant_id = :tenant_id and b.id = :booking_id order by b.created_on desc"""
+                booking_query = self.db.execute(text(stmt), execute_params)
                     
-                    booking_query = self.db.execute(text(stmt), {"booking_id":booking_id, "tenant_id":self.tenant_id})
-                        
-                elif self.role.lower() == 'driver':
-                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
-                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id join drivers d on d.id = b.driver_id
-                        where b.tenant_id = :tenant_id and b.id = :booking_id and b.driver_id = :driver_id order by b.created_on desc"""
-                    booking_query = self.db.execute(text(stmt), {"booking_id":booking_id, "tenant_id":self.tenant_id, "driver_id":self.driver_id})
-                    
-                    
-                elif self.role.lower() == 'rider':
-                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
-                        from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                        where b.tenant_id = :tenant_id and b.id = :booking_id and b.rider_id = :rider_id order by b.created_on desc"""
-                # stmt = "select from drivers"
-                    logger.debug(self.tenant_id)
-                    booking_query = self.db.execute(text(stmt), {"booking_id":booking_id, "tenant_id":self.tenant_id, "rider_id":self.rider_id})
-                det = f"There is no bokings with id {booking_id} ...."
-                msg = f"Retrieved booking succcessfully"
-                meta = None
+            elif self.role.lower() == 'driver':
+                execute_params['driver_id'] = self.driver_id
+                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                    from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                    where b.tenant_id = :tenant_id and b.driver_id = :driver_id and ((:booking_status is null or b.booking_status = :booking_status) 
+                    and (:service_type is null or b.service_type = :service_type) 
+                    and (:vehicle_id is null or b.vehicle_id=:vehicle_id))
+                    and (:booking_id is null or b.id=:booking_id)
+                    order by b.created_on desc
+                    limit :limit"""
+                booking_query = self.db.execute(text(stmt), execute_params)
                 
                 
-            ###For all bookings
-            else: 
-                if self.role.lower() == "tenant":
-                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name 
-                            from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                            where b.tenant_id = :tenant_id order by b.created_on desc"""
-                    booking_query = self.db.execute(text(stmt), {"tenant_id":self.tenant_id})  
-                elif self.role.lower() == "rider":
-                    stmt = """select b.* ,  CONCAT(v.make,' ',v.model,' ',v.year) as vehicle , CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name 
-                            from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                            where b.tenant_id = :tenant_id and b.rider_id = :rider_id order by b.created_on desc"""
-                    booking_query = self.db.execute(text(stmt), {"tenant_id":self.tenant_id ,"rider_id": self.rider_id})
-                elif self.role.lower() == "driver":
-                    stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name 
-                            from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                            where b.tenant_id = :tenant_id and b.driver_id = :driver_id order by b.created_on desc"""
-                    booking_query = self.db.execute(text(stmt), {"tenant_id":self.tenant_id ,"driver_id": self.driver_id})
-                det = f"There are no bookings...."
-                msg = f"Retrieved booking succcessfully"
-                meta = None     
-
-                    # raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You do not meet role requirement to access all bookings") 
+            elif self.role.lower() == 'rider':
+                execute_params['rider_id'] = self.rider_id
                 
+                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                    from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
+                    where b.tenant_id = :tenant_id and b.rider_id = :rider_id and ((:booking_status is null or b.booking_status = :booking_status) 
+                    and (:service_type is null or b.service_type = :service_type) 
+                    and (:vehicle_id is null or b.vehicle_id=:vehicle_id))
+                    and (:booking_id is null or b.id=:booking_id)
+                    order by b.created_on desc
+                    limit :limit"""
+                booking_query = self.db.execute(text(stmt), execute_params)
+            
+            det = f"There are no bookings right now...."
+            msg = f"bookings retrieved successfully"
+            meta = None
+           
             booking_obj:object = booking_query.all()
             
             if not booking_obj:

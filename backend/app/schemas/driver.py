@@ -8,13 +8,13 @@ from .vehicle import VehicleResponse, VehicleCreate
 import re
 
 class DriverBase(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field()
     phone_no: str = Field(..., pattern = r'^\+?[\d\s\-\(\)]+$')
     first_name: str = Field(..., min_length=1, max_length=200)
     last_name: str = Field(..., min_length=1, max_length=200)
-    state: Optional[str] = None
-    postal_code: Optional[str] = None
-    license_number: Optional[str] = None
+    state: Optional[str] = Field(None)
+    postal_code: Optional[str] = Field(None)
+    license_number: Optional[str] = Field(None)
     
 
     @field_validator('email')
@@ -23,8 +23,8 @@ class DriverBase(BaseModel):
 
 class DriverCreate(DriverBase):
     # driver_token: str 
-    password: str
-    vehicle: Optional[VehicleCreate] = None #outsourced/contracted type only
+    password: str = Field()
+    vehicle: Optional[VehicleCreate] = Field(None) #outsourced/contracted type only
     ##for inhouse -- due    
     
 
@@ -51,6 +51,22 @@ class DriverResponse(DriverBase):
     updated_on: Optional[datetime] = None
     vehicle: Optional[VehicleResponse] = None
     phone_no: Optional[str] = Field(None, pattern = r'^\+?[\d\s\-\(\)]+$')  # Make optional for response
+
+    model_config = {
+        "from_attributes": True
+
+    }
+    
+
+class DriverPublic(DriverBase):
+    id: int = Field(exclude=True)
+    created_on: datetime = Field(exclude=True)
+    updated_on: Optional[datetime] = Field(exclude=True)
+    driver_type: str
+    completed_rides: int
+    is_active: bool = True
+    is_registered: str
+    status: Optional[str] = "available"
 
     model_config = {
         "from_attributes": True

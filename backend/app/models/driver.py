@@ -30,7 +30,7 @@ class Drivers(Base):
     driver_type = Column(String, nullable=False)
     
 
-    completed_rides = Column(String, nullable=False, default=0, server_default=text("0"))
+    completed_rides = Column(Integer, nullable=False, default=0)
 
     
     license_number = Column(String(100), nullable=True)

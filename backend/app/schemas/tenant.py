@@ -59,20 +59,20 @@ class TenantUpdate(BaseModel):
     
     
 class TenantProfile(BaseModel):
-    tenant_id: int
+    tenant_id: int = Field(exclude=True)
     company_name: str = Field(..., max_length=200)
-    logo_url: Optional[str] = None
-    slug: str
-    address: Optional[str] = None
-    city: str
+    logo_url: Optional[str] = Field(None)
+    slug: str = Field()
+    address: Optional[str] = Field(None)
+    city: str = Field()
     role: str = Field(default="tenant")
-    stripe_customer_id: Optional[str] = None
-    stripe_account_id: Optional[str] = None
+    stripe_customer_id: Optional[str] = Field(None)
+    stripe_account_id: Optional[str] = Field(None)
     subscription_status: Optional[str] = Field(default="free")
     subscription_plan: Optional[str] = Field(default="free")
-    created_on: datetime
-    updated_on: Optional[datetime] = None
-    company: Optional[str] = None  # Computed property
+    created_on: datetime = Field()
+    updated_on: Optional[datetime] = Field(None)
+    company: Optional[str] = Field(None)  # Computed property
 
     class Config:
         from_attributes = True
@@ -95,14 +95,14 @@ class TenantProfile(BaseModel):
             }
         }
 class TenantInfo(BaseModel):
-    id: int
-    email: EmailStr
+    id: int = Field()
+    email: EmailStr = Field()
     first_name: str = Field(..., max_length=200)
     last_name: str = Field(..., max_length=200)
     phone_no: str = Field(..., max_length=200)
-    created_on: datetime
-    updated_on: Optional[datetime] = None
-    full_name: Optional[str] = None  # Computed property
+    created_on: datetime = Field()
+    updated_on: Optional[datetime] = Field(None)
+    full_name: Optional[str] = Field(None)  # Computed property
 
     class Config:
         from_attributes = True
@@ -120,13 +120,13 @@ class TenantInfo(BaseModel):
         }
 
 class TenantStats(BaseModel):
-    tenant_id: int
-    drivers_count: int
+    tenant_id: int = Field(exclude=True)
+    drivers_count: int = Field()
     daily_ride_count: int = Field(default=0)
-    last_ride_count_reset: Optional[datetime] = None
+    last_ride_count_reset: Optional[datetime] = Field(None)
     total_ride_count: int = Field(default=0)
-    created_on: datetime
-    updated_on: Optional[datetime] = None
+    created_on: datetime = Field()
+    updated_on: Optional[datetime] = Field(None)
 
     class Config:
         from_attributes = True
@@ -143,12 +143,12 @@ class TenantStats(BaseModel):
         }
     
 class TenantRsponse(BaseModel):
-    tenants: TenantInfo
-    profile: TenantProfile
-    stats: TenantStats
+    tenants: TenantInfo = Field()
+    profile: TenantProfile = Field()
+    stats: TenantStats = Field()
 class TenantResponse(TenantInfo):
-    profile: TenantProfile 
-    stats: TenantStats
+    profile: TenantProfile = Field()
+    stats: TenantStats = Field()
 
    
 """schema to onboard driver """

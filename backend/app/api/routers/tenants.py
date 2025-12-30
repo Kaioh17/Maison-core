@@ -99,7 +99,7 @@ async def get_vehicles(
     return vehicles
 
 # Get bookings for the tenant, optionally filtered by status
-@router.get('/bookings', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[booking.BookingResponse]])
+@router.get('/bookings', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[booking.BookingPublic]])
 async def get_bookings(
     booking_id: Optional[str] = None,
     booking_status: Optional[str] = Query(None, description="only this labels can be passed 'pending', 'confirmed', 'active', 'cancelled', 'no_show'"),service_type: Optional[booking.ServiceType] =None, vehicle_id: Optional[int] =None,limit: Optional[int] =None, 

@@ -11,7 +11,6 @@ class ConfigTypes(str, Enum):
     ALL = "all"
 class UpdateTenantSetting(BaseModel):
     rider_tiers_enabled: Optional[bool] = None
-    updated_on: Optional[datetime] = None
     config:Optional[dict]=None
 
 
@@ -61,6 +60,11 @@ class TenantBrandingResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class TenantBrandingPublic(TenantBrandingResponse):
+    id: int = Field(exclude=True)
+    tenant_id: int = Field(exclude=True)
+    created_on: datetime = Field(exclude=True)
+    updated_on: Optional[datetime] = Field(exclude=True)
 class TenantPricingResponse(BaseModel):
     id: int
     tenant_id: int
@@ -75,16 +79,22 @@ class TenantPricingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+class TenantPricingPublic(TenantPricingResponse):
+    id: int = Field(exclude=True)
+    tenant_id: int = Field(exclude=True)
+    created_on: datetime = Field(exclude=True)
+    updated_on: Optional[datetime] = Field(exclude=True)
 class TenantResponse(UpdateTenantSetting):
-    id: int 
-    tenant_id: int
-    created_on: datetime
-    updated_on: Optional[datetime] = None
+    pass
+    # id: int 
+    # tenant_id: in
+    # created_on: datetime
+    # updated_on: Optional[datetime] = None
 class TenantConfigResponse(BaseModel):
     # config_dict = {"settings":settings.__dict__, "pricing":pricing.__dict__, "branding":branding.__dict__}
     settings: Optional[TenantResponse] = None
-    pricing: Optional[TenantPricingResponse] = None
-    branding: Optional[TenantBrandingUpdate] = None
+    pricing: Optional[TenantPricingPublic] = None
+    branding: Optional[TenantBrandingPublic] = None
     
 
 

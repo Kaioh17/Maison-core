@@ -5,14 +5,14 @@ from typing import Optional
 import re
 
 class VehicleConfigResponse(BaseModel):
-    vehicle_category: Optional[str]
-    vehicle_flat_rate: float
+    vehicle_category: Optional[str] = Field(None)
+    vehicle_flat_rate: float = Field()
 
 
 class VehicleRate(BaseModel):
-    vehicle_category: Optional[str]
+    vehicle_category: Optional[str] = Field(None)
     # seating_capacity: int
-    vehicle_flat_rate: float
+    vehicle_flat_rate: float = Field()
 
 class VehicleConfig(BaseModel):
 #     vehicle_category: Optional[str]
@@ -22,10 +22,10 @@ class VehicleConfig(BaseModel):
 
 
 class VehicleCategoryRateResponse(BaseModel):
-    id: int 
-    tenant_id: int
-    vehicle_category: Optional[str]
-    vehicle_flat_rate: float
-    created_on: datetime
-    allowed_image_types: list
-    updated_on: Optional[datetime]
+    id: int = Field()
+    tenant_id: int = Field(exclude=True)
+    vehicle_category: Optional[str] = Field(None)
+    vehicle_flat_rate: float = Field()
+    created_on: datetime = Field()
+    allowed_image_types: list = Field()
+    updated_on: Optional[datetime] = Field(None)

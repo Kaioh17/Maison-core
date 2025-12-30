@@ -28,14 +28,14 @@ async def update_tenant_settings( payload: tenant_setting.UpdateTenantSetting,
     upated_tenant_setting =await tenant_settings_service.update_tenant_settings(payload)
     
     return upated_tenant_setting
-@router.patch("/pricing", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[tenant_setting.TenantPricingResponse])
+@router.patch("/pricing", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[tenant_setting.TenantPricingPublic])
 async def update_tenant_pricing( payload: tenant_setting.TenantPricingUpdate,
                                  tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
     logger.info("Updating pricing config...")
     upated_tenant_setting =await tenant_settings_service.update_tenant_pricing(payload)
     
     return upated_tenant_setting
-@router.patch("/branding", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[tenant_setting.TenantBrandingResponse])
+@router.patch("/branding", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[tenant_setting.TenantBrandingPublic])
 async def update_tenant_settings( payload: tenant_setting.TenantBrandingUpdate,
                                  tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
     logger.info("Updating branidng...")

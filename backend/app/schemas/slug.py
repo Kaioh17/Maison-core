@@ -17,11 +17,11 @@ class TenantSettings(BaseModel):
 class TenantSlugResponse(BaseModel):
     settings: TenantSettings 
     profile: TenantProfile
-    branding: TenantBrandingResponse
+    branding: TenantBrandingPublic
     
 
 class TenantSetupResponse(BaseModel):
     settings: TenantSettings 
     profile: TenantProfile
-    branding: TenantBrandingResponse
-    pricing: Optional[TenantPricingResponse] =None
+    branding: TenantBrandingPublic
+    pricing: Optional[TenantPricingPublic] =None

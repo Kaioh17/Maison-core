@@ -61,10 +61,11 @@ async def get_driver(driver_id: int = None, driver_service: RiderDriverService =
     driver = await driver_service.get_driver_info(driver_id = driver_id)
     return driver
 
-@router.get("/rides/available", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[list[booking.BookingResponse]])
+@router.get("/rides/available", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[list[booking.BookingPublic]])
 async def get_bookings_for_driver(is_driver: bool = Depends(is_driver),
                                   booking_status: Optional[str] = None,booking_servcie: BookingService = Depends(get_booking_service)):
     logger.info("Availble rides...")
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail= "Endpoint deprecated")
     bookings = await booking_servcie.get_bookings_by(booking_status=booking_status)
     return bookings
 

@@ -11,6 +11,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from .vehicle import VehicleResponse 
 
+
 class LocationHelper:
     _airport_data = None
 
@@ -105,6 +106,7 @@ class CreateBooking(BoookingBase):
 
 class UpdateBookingTenants(BoookingBase):
     pass 
+
 class BookingResponse(BoookingBase):
     id: int
     tenant_id: Optional[int]
@@ -112,14 +114,20 @@ class BookingResponse(BoookingBase):
     booking_status: str
     customer_name: Optional[str] = None
     vehicle: str
-    # vehicle_details: Optional[VehicleResponse]
     driver_name: Optional[str] = None
     created_on: Optional[datetime]
     updated_on: Optional[datetime]
-   
+
     @field_validator("driver_name", mode='after')
     def check_empty(cls, value:str):
         if value == " ":
             value = None
             return value
         else: return value
+class BookingPublic(BookingResponse):
+    # id: int = Field(exclude=True)
+    vehicle_id: int  = Field(exclude=True)
+    tenant_id: int = Field(exclude=True)
+    created_on: Optional[datetime] = Field(exclude=True)
+    updated_on: Optional[datetime] = Field(exclude=True)
+        

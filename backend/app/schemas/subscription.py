@@ -17,7 +17,7 @@ class CheckoutSessionResponse(BaseModel):
     #                                     'sub_total': checkout_session.amount_subtotal}
     
     Checkout_session_url: str
-    tenant_id: int
+    # tenant_id: int
     customer_id: str
     product_type: str
     sub_total: int

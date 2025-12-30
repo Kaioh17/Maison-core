@@ -187,12 +187,14 @@ class DriverService(ServiceContext):
         return booked_rides
 
     ##update booked ride response
+ 
     async def driver_ride_response(self,action, booking_id, approve_action):
         try:
           
             if approve_action:
                 ride = self.db.query(booking_table).filter(booking_table.id == booking_id).first()
-
+                driver:driver_table = self.db.query(driver_table).filter(booking_table.id == booking_id, 
+                                                                         driver_table.id == ride.driver_id).first()
                 if not ride:
                     logger.warning("There are no booked_rides..")
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -209,6 +211,8 @@ class DriverService(ServiceContext):
                 
                 old_status = ride.booking_status
                 ride.booking_status = action
+                if action == "completed":
+                    driver.completed_rides += 1
                 self.db.commit()
                 self.db.refresh(ride)
                 

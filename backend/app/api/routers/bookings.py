@@ -26,7 +26,7 @@ def public_info():
     logger.info("Public test started")
     return {"msg": "test endpoint"}
 
-@router.post("/set", status_code=status.HTTP_201_CREATED,response_model= StandardResponse[booking.BookingResponse])
+@router.post("/set", status_code=status.HTTP_201_CREATED,response_model= StandardResponse[booking.BookingPublic])
 async def book_ride(book_ride: booking.CreateBooking, booking_service: BookingService = Depends(get_booking_service),current_rider =  Depends(deps.get_current_user) 
              ,db: Session= Depends(get_db), rider = Depends(is_rider)):
     
@@ -42,11 +42,12 @@ async def approve_ride(booking_id: int, payload: booking.Payment,booking_service
     
     return ride_approved
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=StandardResponse[list[booking.BookingResponse]])
-async def BookRide(booking_id: Optional[int] = None, booking_status: Optional[str] = None, service_type: Optional[str] =None, vehicle_id: Optional[int] =None,
+@router.get("/", status_code=status.HTTP_200_OK, response_model=StandardResponse[list[booking.BookingPublic]])
+async def BookRide(booking_id: Optional[int] = None, booking_status: Optional[str] = None, limit: Optional[int] = None,
+                   service_type: Optional[str] =None, vehicle_id: Optional[int] =None,
                    booking_service: BookingService = Depends(get_booking_service)):
     
-    booked_rides = await booking_service.get_bookings_by(booking_id=booking_id, booking_status=booking_status, service_type=service_type, vehicle_id=vehicle_id)
+    booked_rides = await booking_service.get_bookings_by(booking_id=booking_id, booking_status=booking_status, limit=limit, service_type=service_type, vehicle_id=vehicle_id)
     return booked_rides
 
 
