@@ -23,6 +23,8 @@ class Users(Base):
     state = Column(String, nullable=True, index=True)
     country = Column(String, nullable=True, index = True)
     postal_code = Column(String, nullable=True)
+    stripe_customer_id = Column(String, nullable=True, index=True)
+    #switc to nullable false after cleaning db
 
     
     role = Column(String, nullable=False, index=True, default='rider')
@@ -39,6 +41,7 @@ class Users(Base):
     
     #relationships 
     tenants = relationship("Tenants", back_populates="users")
+    bookings = relationship("Bookings", back_populates='rider')
 
 
 

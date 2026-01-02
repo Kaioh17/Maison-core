@@ -47,6 +47,8 @@ class Tenants(Base):
     vehicle = relationship("Vehicles", back_populates="tenants", cascade= "all, delete" , passive_deletes=True)
     branding = relationship("TenantBranding", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
     pricing = relationship("TenantPricing", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
+    bookings = relationship("Bookings", back_populates='tenant', cascade="all, delete",passive_deletes=True)
+    booking_pricing = relationship("TenantBookingPricing", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
     
     
     @property
@@ -85,11 +87,13 @@ class TenantProfile(Base):
     address = Column(String, nullable=True)
     city = Column(String, nullable=False, index=True)   
     
-    stripe_customer_id = Column(String, nullable=True, index=True)
-    stripe_account_id =  Column(String, nullable=True, index=True)
+    stripe_customer_id = Column(String, nullable=True, index=True, unique=True)
+    stripe_account_id =  Column(String, nullable=True, index=True, unique=True)
+    charges_enabled = Column(Boolean, nullable=True, index=False, default=False)
     subscription_status = Column(String, nullable=True, default= "inactive")
     subscription_plan = Column(String, nullable=True, default="free")
-    cur_subscription_id = Column(String,nullable=True)
+    
+    cur_subscription_id = Column(String,nullable=True, unique=True)
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)

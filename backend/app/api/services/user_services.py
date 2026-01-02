@@ -8,7 +8,7 @@ from .helper_service import Validations
 from .service_context import ServiceContext
 from .email_services import riders
 
-from .helper_service import user_table, tenant_table, tenant_profile, success_resp
+from .helper_service import *
 db_exceptions = db_error_handler.DBErrorHandler
 # user_table = user.Users
 # tenant_table = tenant.Tenants
@@ -16,7 +16,7 @@ db_exceptions = db_error_handler.DBErrorHandler
 class UserService(ServiceContext):
     def __init__(self, db, current_user):
         super().__init__(db=db, current_user=current_user)
-
+        self.validate = Validations(self.db)
     async def create_user(self, payload, tenant_id):
         try:
             exists = self.db.query(user_table).filter(user_table.email == payload.email, 
@@ -54,7 +54,7 @@ class UserService(ServiceContext):
                     slug=slug
                 )
             
-            return success_resp(msg="Successfull Created user")
+            return success_resp(msg="Successfull Created user", data=new_user)
             
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)

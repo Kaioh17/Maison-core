@@ -13,6 +13,7 @@ from sqlalchemy.exc import *
 from app.schemas.booking import BookingResponse
 from .helper_service import success_resp, success_list_resp
 from .service_context import ServiceContext
+from .stripe_services.checkout import BookingCheckout
 from .email_services import drivers, tenants, riders
 from .helper_service import (
     user_table,
@@ -75,12 +76,13 @@ class BookingService(ServiceContext):
     async def _eta(self, distance, booking_obj:object):
         try:
             logger.debug(f"{booking_obj.service_type}")
+            start_time = booking_obj.pickup_time
+            
             if booking_obj.service_type != "hourly":
                 
                 logger.debug(f"{distance}")
                 
                 duration = (distance/45) * 3600
-                start_time = booking_obj.pickup_time
                 det_est_time =  start_time + timedelta(seconds=duration)
                 # booking_obj.dropoff_time = 
                 return det_est_time
@@ -120,6 +122,7 @@ class BookingService(ServiceContext):
     async def confirm_ride(self, booking_id: int, payload):
         try:
             is_approved = payload.is_approved
+            add_ = "None"
             if is_approved:
                 response:booking_table = self.db.query(booking_table).filter(booking_table.tenant_id == self.tenant_id, booking_table.id == booking_id).first()
                 if not response:
@@ -128,6 +131,12 @@ class BookingService(ServiceContext):
                 response.is_approved = is_approved
                 response.payment_method = payload.payment_method
                 self.db.commit()
+                if payload.payment_method == 'card':
+                    
+                    stripe_payment_url = await BookingCheckout(self.current_user, self.db).checkout_session(booking_obj=response)
+                    add_ = stripe_payment_url.data
+                
+                
                 #send email
                 
                 if response.driver_id:
@@ -164,7 +173,7 @@ class BookingService(ServiceContext):
                 )
                 
                 logger.info(f"A new ride has been set for {self.current_user.full_name}")
-                return success_resp(msg="Ride was approved", data={"is_approved": is_approved})
+                return success_resp(msg="Ride was approved", data={"is_approved": is_approved, "payment":add_})
             
             else:
                 #sendemail

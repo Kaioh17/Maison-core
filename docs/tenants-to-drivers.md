@@ -64,7 +64,8 @@
 `PATCH /driver/register`
 
 **Flow:**
-- **Input:** Driver registration data (token, personal info, password, vehicle info if outsourced).
+- **Verify token:** Driver Verifies otp
+- **Input:** Driver registration data ( personal info, password, vehicle info if outsourced).
 - **Process:**
   1. **Token & Identity Validation:**  
      `_table_checks_` verifies the token, name, and email match the pending driver row.

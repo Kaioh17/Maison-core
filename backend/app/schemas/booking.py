@@ -128,6 +128,6 @@ class BookingPublic(BookingResponse):
     # id: int = Field(exclude=True)
     vehicle_id: int  = Field(exclude=True)
     tenant_id: int = Field(exclude=True)
-    created_on: Optional[datetime] = Field(exclude=True)
-    updated_on: Optional[datetime] = Field(exclude=True)
+    created_on: Optional[datetime] = Field(exclude=False)
+    updated_on: Optional[datetime] = Field(exclude=False)
         

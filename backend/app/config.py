@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     api_url: str
     webhook_secret: str
     environment: str
-    
+    connect_webhook_secret:str
     class Config:
         # env_file = "/backend/docker/.env"
         env_file ="/backend/app/.env"

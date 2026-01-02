@@ -15,7 +15,7 @@ class Bookings(Base):
     driver_id = Column(Integer,ForeignKey("drivers.id"), nullable=True)
     tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete= "CASCADE"), nullable=False)
     vehicle_id = Column(Integer,ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=False)
-    service_type = Column(String, nullable=False)
+    service_type = Column(String, nullable=False) # airport service, 
     airport_service = Column(String,CheckConstraint("airport_service IN ('from_airport', 'to_airport')", name='airport_service_check'),nullable=True ) #from_airport or to_airport
     rider_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable=False)
     pickup_location = Column(String, nullable=False)
@@ -30,16 +30,20 @@ class Bookings(Base):
     notes = Column(String, nullable=True)
     is_approved=Column(Boolean, nullable=True, default=False) ## column to check if ride was approved by rider 
     #Stripe payment configuratioin
-    stripe_payment_intent_id = Column(String(255), nullable=True)
+    # payment_status = Column(Boolean,CheckConstraint("booking_status IN ('declined', 'paid')",name="payment_status"), nullable=True, default=False)
     platform_fee_amount = Column(Float, nullable=True)
-    payment_status = Column(String, nullable=True, default="pending", server_default= "pending")
-
+    payment_status = Column(String,CheckConstraint("payment_status IN ('pending', 'full_paid', 'deposit_paid', 'balance_paid')",name="booking_status_check_connstraint"), nullable=True, default="pending", server_default= "pending")
+    deposit_intent_id = Column(String, nullable=True, index=True)#switc to nullable false after cleaning db
+    balance_intent_id = Column(String, nullable=True, index=True)#switc to nullable false after cleaning db
+    payment_id = Column(String, nullable=True, index=True)#switc to nullable false after cleaning db
 
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)
 
     vehicle = relationship("Vehicles", back_populates="bookings", uselist=False)
+    tenant = relationship("Tenants", back_populates='bookings', uselist=False)
+    rider = relationship("Users", back_populates='bookings', uselist=False)
 
     __table_args__ = (
         UniqueConstraint('driver_id', 'pickup_time', 'dropoff_time', name = 'uq_driver_booking'),

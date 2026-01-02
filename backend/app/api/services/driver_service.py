@@ -10,6 +10,8 @@ from datetime import timedelta, datetime, timezone
 from .vehicle_service import VehicleService
 from .service_context import ServiceContext
 from .email_services import drivers, tenants, riders
+from ..services.stripe_services import checkout
+
 db_exceptions = db_error_handler.DBErrorHandler
 # driver_table = driver.Drivers
 # vehicle_table = vehicle.Vehicles
@@ -187,44 +189,48 @@ class DriverService(ServiceContext):
         return booked_rides
 
     ##update booked ride response
- 
     async def driver_ride_response(self,action, booking_id, approve_action):
         try:
-          
+            logger.debug(f"driver chose {action}")
             if approve_action:
-                ride = self.db.query(booking_table).filter(booking_table.id == booking_id).first()
+                booking_obj = self.db.query(booking_table).filter(booking_table.id == booking_id).first()
                 driver:driver_table = self.db.query(driver_table).filter(booking_table.id == booking_id, 
-                                                                         driver_table.id == ride.driver_id).first()
-                if not ride:
+                                                                         driver_table.id == booking_obj.driver_id).first()
+                if not booking_obj:
                     logger.warning("There are no booked_rides..")
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                         detail = f"There no {booking_id} bookings")   
-                if ride.booking_status == "completed":
-                    logger.error( f"Ride already {ride.booking_status}. Cannot set to `{action}`")
+                if booking_obj.booking_status == "completed":
+                    logger.error( f"Ride already {booking_obj.booking_status}. Cannot set to `{action}`")
                     raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                        detail = f"Ride already {ride.booking_status}. Cannot set to `{action}`")
+                                        detail = f"Ride already {booking_obj.booking_status}. Cannot set to `{action}`")
                 # if ride.booking_satus == "":
                 if action not in {'confirm', 'cancelled', 'completed', 'delayed'}:
                     logger.warning("Invalid action: action should be ('confirm', 'cancelled', 'completed', 'delayed')")
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                                         detail= "Invalid action: action should be ('confirm', 'cancelled', 'completed', 'delayed')")
                 
-                old_status = ride.booking_status
-                ride.booking_status = action
+                old_status = booking_obj.booking_status
+                old_payment_status = booking_obj.payment_status
+                booking_obj.booking_status = action
+                logger.debug(f"UPdated {booking_obj.booking_status}")
                 if action == "completed":
                     driver.completed_rides += 1
+                if action == 'completed' and old_payment_status == 'deposit_paid': 
+                    logger.debug("Checkout statrted")
+                    await checkout.BookingCheckout(self.current_user, self.db).checkout_session(booking_obj=booking_obj)
                 self.db.commit()
-                self.db.refresh(ride)
+                self.db.refresh(booking_obj)
                 
                 # Email: Send booking status update to rider
                 from .helper_service import user_table
-                rider_obj = self.db.query(user_table).filter(user_table.id == ride.rider_id).first()
+                rider_obj = self.db.query(user_table).filter(user_table.id == booking_obj.rider_id).first()
                 if rider_obj:
-                    tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == ride.tenant_id).first()
+                    tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == booking_obj.tenant_id).first()
                     slug = tenant_profile_obj.slug if tenant_profile_obj else None
                     if slug:
                         riders.RiderEmailServices(to_email=rider_obj.email, from_email=self.tenant_email).booking_status_update_email(
-                            booking_obj=ride,
+                            booking_obj=booking_obj,
                             rider_obj=rider_obj,
                             slug=slug,
                             old_status=old_status
@@ -232,12 +238,13 @@ class DriverService(ServiceContext):
                         # Send cancellation email if status is cancelled
                         if action == 'cancelled':
                             riders.RiderEmailServices(to_email=rider_obj.email, from_email=self.tenant_email).booking_cancellation_email(
-                                booking_obj=ride,
+                                booking_obj=booking_obj,
                                 rider_obj=rider_obj,
                                 slug=slug
                             )
+                logger.debug({"booking_id":booking_id,"ride_status": action})
                 
-                return success_resp(msg="UPdated succesfully",data={"booking_id":booking_id,"ride_status": action})
+                return success_resp(msg="Updated succesfully",data={"booking_id":booking_id,"ride_status": action})
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
         

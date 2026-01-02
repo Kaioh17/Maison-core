@@ -76,8 +76,8 @@ class TenantService(ServiceContext):
             self._check_unique_fields(self.tenant_info, model_map)
             
             """Stripe config"""
-            stripe_customer = stripe_service.StripeService.create_customer(email = email,name = f"{first_name} {last_name}")
-            stripe_express = stripe_service.StripeService.create_express_account(email = email)
+            stripe_customer = stripe_service.StripeService(self.current_user, self.db).create_customer(email = email,name = f"{first_name} {last_name}")
+            # stripe_express = stripe_service.StripeService(self.current_user, self.db).create_express_account(tenant_obj=obj)
 
             """Create new tenants"""
             
@@ -104,7 +104,7 @@ class TenantService(ServiceContext):
                                                     city=city,                                
                                                     logo_url = logo_path,
                                                     stripe_customer_id = stripe_customer,
-                                                    stripe_account_id = stripe_express,
+
                                                     )
             new_tenant_stats = self.tenant_stats(tenant_id = new_tenant_id, 
                                                  drivers_count=drivers_count)
@@ -140,6 +140,14 @@ class TenantService(ServiceContext):
             self.db_exceptions.handle(e, self.db)
         
         return success_resp(data=response_dict, msg="Tenant created successfully")
+    def stripe_account_setup(self):
+        try:
+            obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
+            stripe_express = stripe_service.StripeService(self.current_user, self.db).create_express_account(tenant_obj=obj)
+            
+            return success_resp(data={'onboarding_link':stripe_express['onboarding_link']})
+        except Exception as e:
+            raise e 
     def _check_unique_fields(self, model, fields: dict):
         try:
             for field_name, value in fields.items():

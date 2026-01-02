@@ -20,6 +20,7 @@ tenant_profile = tenant.TenantProfile
 tenant_stats = tenant.TenantStats
 tenant_branding = tenant_setting.TenantBranding
 tenant_pricing = tenant_setting.TenantPricing
+tenant_booking_price = tenant_setting.TenantBookingPricing
 driver_table = driver.Drivers
 booking_table = booking.Bookings
 tenant_setting_table = tenant_setting.TenantSettings  
@@ -131,7 +132,6 @@ class SupaS3:
         Note:
             Creates the bucket if it doesn't exist. Bucket is set to public with 5MB file size limit.
         """
-      
         try:
             
             contents = await url.read()
@@ -143,6 +143,7 @@ class SupaS3:
                 supa.storage.create_bucket(
                     bucket_name,
                     options={"public": True, "file_size_limit":'5MB'}
+                   
                     )
 
             logger.debug(f"Starting s3 upload for url {url.filename} of size {url.size} to {bucket_name}")
@@ -151,7 +152,23 @@ class SupaS3:
 
             supa.storage.from_(bucket_name).upload(path=_file_path, file=contents, file_options={'upsert':'true'})
             logger.debug("Upload successfull")
-            public_url = supa.storage.from_(bucket_name).get_public_url(_file_path)
+            transform =     {'logos':{ 'transform': {                            
+                                        'width': 800,
+                                        'height': 400, 
+                                        'resize': 'cover',
+                                        'quality': 75,
+                                    }   
+                                    },
+                             'favicon': { 'transform': {
+                                                'width': 32,
+                                                'height': 32,
+                                                'resize': 'cover',
+                                                'quality': 75,
+                                            }
+                                       }}
+            dim_ = transform[bucket_name] if bucket_name in ['favicon','logos'] else {'transform': {'width': 800,'height': 400, 'resize': 'cover','quality': 90,}}
+            public_url =( supa.storage.from_(bucket_name)
+                                    .get_public_url(_file_path, dim_))
             
             logger.debug(public_url)
             return public_url

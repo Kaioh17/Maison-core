@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, FastAPI, Response,status
+from fastapi import APIRouter, HTTPException, FastAPI, Request, Response,status
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db
@@ -10,7 +10,7 @@ from app.schemas.general import StandardResponse
 from ..core import deps
 from .dependencies import is_rider
 from app.utils.logging import logger
-
+from ..services.stripe_services.checkout import BookingCheckout, get_checkout_service, get_unauthorized_checkout_service
 
 
 router = APIRouter(
@@ -35,7 +35,9 @@ async def book_ride(book_ride: booking.CreateBooking, booking_service: BookingSe
     
     return ride_booked
 @router.patch("/{booking_id}", status_code=status.HTTP_201_CREATED,response_model= StandardResponse[dict])
-async def approve_ride(booking_id: int, payload: booking.Payment,booking_service: BookingService = Depends(get_booking_service), is_rider = Depends(is_rider)):
+async def approve_ride(booking_id: int, payload: booking.Payment,
+                    # checkout_service: BookingCheckout = Depends(get_checkout_service),
+                    booking_service: BookingService = Depends(get_booking_service), is_rider = Depends(is_rider)):
     
     # ride_booked = await booking_services.book_ride(book_ride, db, current_rider)
     ride_approved = await booking_service.confirm_ride(booking_id=booking_id,payload=payload )
@@ -50,6 +52,13 @@ async def BookRide(booking_id: Optional[int] = None, booking_status: Optional[st
     booked_rides = await booking_service.get_bookings_by(booking_id=booking_id, booking_status=booking_status, limit=limit, service_type=service_type, vehicle_id=vehicle_id)
     return booked_rides
 
-
+@router.post("/stripe{booking_id}", status_code=status.HTTP_201_CREATED,response_model= StandardResponse[dict])
+async def book_ride(booking_id: int,
+                    checkout_service: BookingCheckout = Depends(get_checkout_service),
+                    is_rider = Depends(is_rider)):
+    
+    # ride_booked = await booking_services.book_ride(book_ride, db, current_rider)
+    ride_booked = await checkout_service.checkout_session(booking_id = booking_id)
+    return ride_booked
 
 

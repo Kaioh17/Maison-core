@@ -142,8 +142,14 @@ async def unassign_driver_from_vehicle(vehicle_id: int,override:bool = False,
                         
                         tenant_service: TenantService = Depends(get_tenant_service)):
      
-     assigned_driver = await tenant_service.unassign_driver_from_vehicles(override=override, vehicle_id=vehicle_id)
-     return assigned_driver
+    assigned_driver = await tenant_service.unassign_driver_from_vehicles(override=override, vehicle_id=vehicle_id)
+    return assigned_driver
+@router.post("/stripe", status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[dict])
+async def setup_stripe_express_account(tenant_service: TenantService = Depends(get_tenant_service)):
+     
+    setup_account = tenant_service.stripe_account_setup()
+    return setup_account
+
 
 ###approve rides
 
@@ -151,3 +157,11 @@ async def unassign_driver_from_vehicle(vehicle_id: int,override:bool = False,
 # @router.patch('/settings', status_code=status.HTTP_202_ACCEPTED)
 # async def update_settings(db: Session):
 #     pass
+
+from ..services.stripe_services.stripe_service import StripeService, get_stripe_service
+@router.get('/stripe/link', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[dict])
+async def get_bookings(
+    stripe_service: StripeService = Depends(get_stripe_service)
+):
+   login_link = stripe_service.get_account_link()
+   return login_link

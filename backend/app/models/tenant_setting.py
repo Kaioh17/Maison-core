@@ -1,5 +1,5 @@
 from app.models.base import Base
-from sqlalchemy import CheckConstraint, Sequence, Column, Integer, Float, String, TIMESTAMP, ForeignKey,Boolean, func
+from sqlalchemy import CheckConstraint, Sequence, Column, Integer, Float, String, TIMESTAMP, ForeignKey,Boolean, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
@@ -27,7 +27,13 @@ class TenantSettings(Base):
     """{
   "booking": {
     "allow_guest_bookings": true,
-    "show_vehicle_images": false
+    "show_vehicle_images": false,
+    "types": {"airport":{"is_deposit_required":false}
+                         
+              "dropoffs":{"is_deposit_required":false}
+                          
+              "hourly": {"is_deposit_required":false}
+              }
   },
   "branding": {
     "button_radius": 8,
@@ -64,7 +70,26 @@ class TenantBranding(Base):
     
     #relationships
     tenant = relationship("Tenants", back_populates="branding", uselist=False)
+
+class TenantBookingPricing(Base):
+    __tablename__ = "tenant_booking_price"
+    id = Column(Integer, id_seq, primary_key=True, server_default=id_seq.next_value())
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete = "CASCADE"),nullable=False)
+    service_type = Column(String,nullable=False, index=True) #Airport, dropoff, or hourly
+    deposit_type = Column(String,CheckConstraint("deposit_type IN ('percentage', 'flat')", name="check_deposit_type"), nullable = False, default=None, index=True) #percentage, flat fee
+    deposit_fee = Column(Float, nullable=True, default=0.0) #0.5 --> 50% and $50.0
+    created_on = Column(TIMESTAMP(timezone = True), nullable=False
+                        ,server_default=text('now()'))
+    updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)
     
+    #relationships
+    tenant = relationship("Tenants", back_populates='booking_pricing', uselist=True)
+    
+    __table_args__ = (
+      UniqueConstraint('service_type', 'tenant_id', name = 'uq_tenant_booking'),
+      # UniqueConstraint('vehicle_id', 'pickup_time', 'dropoff_time', name = 'uq_vehicle_booking')
+    )
+  
 class TenantPricing(Base):
     __tablename__ = "tenant_pricing"
     
@@ -75,6 +100,16 @@ class TenantPricing(Base):
     per_mile_rate = Column(Float, nullable=False, default=0.0, server_default=text('0.0'))
     per_minute_rate = Column(Float, nullable=True, default=0.0, server_default=text('0.0'))
     per_hour_rate = Column(Float, nullable=False, default=0.0, server_default=text('0.0'))
+    
+    # deposit_config = Column(JSONB, nullable=True, default=0.0)
+    # """
+    # {
+    #   "booking_deposits":{
+    #   "airport":{"deposit_fee":0.0},
+    #   "dropoffs":{"deposit_fee":0.0},
+    #   "hourly": {"deposit_fee":0.0}
+    # }}  
+    # """
     cancellation_fee =  Column(Float, nullable=False, default= 0.0, server_default= '0.0')
     discounts = Column(Boolean, nullable=False, default=False, server_default=text('false'))
     created_on = Column(TIMESTAMP(timezone = True), nullable=False

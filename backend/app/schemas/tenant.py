@@ -68,6 +68,7 @@ class TenantProfile(BaseModel):
     role: str = Field(default="tenant")
     stripe_customer_id: Optional[str] = Field(None)
     stripe_account_id: Optional[str] = Field(None)
+
     subscription_status: Optional[str] = Field(default="free")
     subscription_plan: Optional[str] = Field(default="free")
     created_on: datetime = Field()
@@ -103,6 +104,7 @@ class TenantInfo(BaseModel):
     created_on: datetime = Field()
     updated_on: Optional[datetime] = Field(None)
     full_name: Optional[str] = Field(None)  # Computed property
+    is_verified: bool = Field(...)
 
     class Config:
         from_attributes = True

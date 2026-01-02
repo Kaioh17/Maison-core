@@ -38,8 +38,8 @@ class StripeService(ServiceContext):
                     'quantity':1
                 }],
                 mode='subscription',
-                success_url= f"{self.BASE_URL}/success",
-                cancel_url= f"{self.BASE_URL}/cancel",
+                success_url= f"http://{self.BASE_URL}/success",
+                cancel_url= f"http://{self.BASE_URL}/cancel",
                 metadata= {
                     'tenant_id': self.current_user.id,
                     'product_type': product_type.lower()

@@ -8,12 +8,96 @@ class ConfigTypes(str, Enum):
     BRANDING = "branding"
     PRICING =  "pricing"
     SETTING = "setting"
+    BOOKING = "booking"
     ALL = "all"
+class DepositType(str, Enum):
+    PERCENTAGE = "percentage"
+    FLAT =  "flat"
+from typing import Optional
+from pydantic import BaseModel, Field
+
+
+class BookingTypeConfig(BaseModel):
+    is_deposit_required: Optional[bool] = Field(None,description="Whether this booking type requires a deposit to confirm.")
+class BookingTypesConfig(BaseModel):
+    airport: Optional[BookingTypeConfig] = Field(
+        None,
+        description="Configuration for airport transfer bookings."
+    )
+    dropoff: Optional[BookingTypeConfig] = Field(
+        None,
+        description="Configuration for point-to-point / dropoff bookings."
+    )
+    hourly: Optional[BookingTypeConfig] = Field(
+        None,
+        description="Configuration for hourly / charter bookings."
+    )
+
+
+class BookingConfig(BaseModel):
+    allow_guest_bookings: Optional[bool] = Field(
+        None,
+        description="Allow riders to book without creating an account."
+    )
+    show_vehicle_images: Optional[bool] = Field(
+        None,
+        description="Show vehicle images in the booking flow."
+    )
+    types: Optional[BookingTypesConfig] = Field(
+        None,
+        description="Per-service-type booking behavior configuration."
+    )
+
+
+class BrandingConfig(BaseModel):
+    button_radius: Optional[int] = Field(
+        None,
+        description="Border radius (in pixels) for primary buttons in the UI."
+    )
+    font_family: Optional[str] = Field(
+        None,
+        description="Primary font family used across the tenant’s interface."
+    )
+
+
+class FeaturesConfig(BaseModel):
+    vip_profiles: Optional[bool] = Field(
+        None,
+        description="Enable VIP rider profiles with saved preferences."
+    )
+    show_loyalty_banner: Optional[bool] = Field(
+        None,
+        description="Display a loyalty/status banner in the rider experience."
+    )
+
+
+class TenantConfig(BaseModel):
+    booking: Optional[BookingConfig] = Field(
+        None,
+        description="Configuration related to booking behavior and flows."
+    )
+    branding: Optional[BrandingConfig] = Field(
+        None,
+        description="UI branding options for this tenant."
+    )
+    features: Optional[FeaturesConfig] = Field(
+        None,
+        description="Feature toggles controlling optional product capabilities."
+    )
 class UpdateTenantSetting(BaseModel):
     rider_tiers_enabled: Optional[bool] = None
-    config:Optional[dict]=None
-
-
+    config:Optional[TenantConfig]=None
+    
+class TenantBookingPublic(BaseModel):
+    deposit_fee: Optional[float] = Field(None)
+    deposit_type: Optional[DepositType] = Field(None)
+    service_type: str = Field(...)
+    updated_on: Optional[datetime] = Field(None)
+class TenantBookingUpdate(BaseModel):
+    # service_type: str=Field(exclude=True)  
+    # updated_on: datetime = Field(exclude=True)
+    deposit_fee: Optional[float] = Field(None)
+    deposit_type: Optional[DepositType] = Field(None)
 class TenantBrandingUpdate(BaseModel):
     theme: Optional[str] = None
     primary_color: Optional[str] = None
@@ -95,8 +179,10 @@ class TenantConfigResponse(BaseModel):
     settings: Optional[TenantResponse] = None
     pricing: Optional[TenantPricingPublic] = None
     branding: Optional[TenantBrandingPublic] = None
-    
+    booking: Optional[list[TenantBookingPublic]] = None
 
 
 class updated_visuals(BaseModel):
     logo_url: Optional[str] = None
+    favicon_url: Optional[str] = None
+    

@@ -29,6 +29,9 @@ class TenantSettingsService(ServiceContext):
                 
             case "setting":
                 config_query = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.tenant_id)
+            case "booking":
+                config_query = self.db.query(tenant_booking_price).filter(tenant_booking_price.tenant_id == self.tenant_id)
+                
             case "all":
                 """profile, stats = (
                     session.query(TenantProfile, TenantStats)
@@ -38,18 +41,39 @@ class TenantSettingsService(ServiceContext):
                 )
                 """
               
-                settings, pricing, branding = (
-                    self.db.query(TenantSettings, TenantPricing, TenantBranding)
+                rows= (
+                    self.db.query(TenantSettings, TenantPricing, TenantBranding, TenantBookingPricing)
                     .join(TenantPricing, TenantPricing.tenant_id == TenantSettings.tenant_id)
                     .join(TenantBranding, TenantBranding.tenant_id == TenantSettings.tenant_id)
+                    .outerjoin(TenantBookingPricing, TenantBookingPricing.tenant_id == TenantSettings.tenant_id)                    
                     .filter(TenantSettings.tenant_id == self.tenant_id)
-                    .one()
+                    .all()
                 )
-            
-                config_dict = {"settings":settings.__dict__, "pricing":pricing.__dict__, "branding":branding.__dict__}
-        
+                # extract parent (same for all rows)
+                if not rows:
+                    return None  # or handle no tenant found
+
+                settings, pricing, branding, _ = rows[0]
+
+                # collect all booking rows
+                booking_list = [row[3] for row in rows if row[3] is not None]
+
+                # build dict
+                config_dict = {
+                    "settings": settings.__dict__,
+                    "pricing": pricing.__dict__,
+                    "branding": branding.__dict__,
+                    "booking": [b.__dict__ for b in booking_list],
+                }
+
+                logger.debug(f"New config {config_dict}")
+                # config_dict = {"settings":settings.__dict__, "pricing":pricing.__dict__, "branding":branding.__dict__, "booking":list[booking.__dict__]}
+                # logger.debug(f"New config {config_dict}")
+
         config_obj = config_query.first() if config_type != 'all' else None
-        
+        if config_type == 'booking':
+            config_obj = config_query.all()
+            logger.debug(f"New config {config_obj}")
         if not config_obj:
             if not config_dict:
                 
@@ -82,10 +106,13 @@ with Session(engine) as session: # Or use an existing session
                                 detail = "Settings not found ")
         data_mapped = setting_obj.__dict__
         logger.debug(data_mapped)
+        
         for field, value in payload.dict().items():
             if value == None:                
                 value = data_mapped[field] 
-    
+            # if payload.config:
+            #     setting_obj.config =  payload.config
+                
             if hasattr(setting_obj, field):
                 setattr(setting_obj, field, value)
 
@@ -148,28 +175,54 @@ with Session(engine) as session: # Or use an existing session
             return success_resp(msg='Updated branding config successfuly', data=response)
         except  db_exceptions.COMMON_DB_ERRORS as d:
             db_exceptions.handle(d, self.db)
-    async def update_logo(self, logo):
+    async def update_tenant_booking(self,service_type, payload):
+        try:
+            response = self.db.query(tenant_booking_price).filter(tenant_booking_price.tenant_id == self.tenant_id,
+                                                                  tenant_booking_price.service_type == service_type).first()
+            if not response:
+                logger.error("Booking config not found ")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,  detail = "Branding config not found ")
+                
+            data_mapped = response.__dict__
+            for k,v in payload.dict().items():
+                if v == None:
+                    v = data_mapped[k]
+                if hasattr(response, k):
+                    setattr(response, k, v)
+            self.db.commit()
+            self.db.refresh(response)
+            
+            
+            return success_resp(msg='Updated booking config successfuly', data=response)
+        except  db_exceptions.COMMON_DB_ERRORS as d:
+            db_exceptions.handle(d, self.db)
+    async def update_logo(self, logo = None, favicon = None):
         branding_query = self.db.query(tenant_branding).filter(tenant_branding.tenant_id == self.tenant_id)
         profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.tenant_id).first()
         
         branding_obj = branding_query.first()
         slug = branding_obj.slug
         logger.debug(slug)
-        logo_url = await SupaS3.upload_to_s3(url=logo, slug=slug, bucket_name="logos") 
-       
+        
         
         if not branding_obj:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                                 detail=f"[{self.tenant_id}] Settings not found for user")
         
-        branding_obj.logo_url = logo_url
-        profile_obj.logo_url = logo_url
+        if favicon:
+            favicon_url = await SupaS3.upload_to_s3(url=favicon, slug=slug, bucket_name = 'favicon')
+            branding_obj.favicon_url = favicon_url
+        if logo:
+            logo_url = await SupaS3.upload_to_s3(url=logo, slug=slug, bucket_name="logos") 
+            branding_obj.logo_url = logo_url      
+            profile_obj.logo_url = logo_url
+
         self.db.commit()
         self.db.refresh(branding_obj)
         
         # Email: Send logo update confirmation to tenant
         tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
-        if tenant_obj:
+        if tenant_obj and logo:
             tenants.TenantEmailServices(to_email=tenant_obj.email, from_email=tenant_obj.email).logo_update_confirmation_email(
                 tenant_obj=tenant_obj,
                 slug=self.slug,

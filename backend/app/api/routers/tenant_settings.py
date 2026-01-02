@@ -44,7 +44,14 @@ async def update_tenant_settings( payload: tenant_setting.TenantBrandingUpdate,
     return upated_tenant_setting
 @router.patch("/logo", status_code=status.HTTP_202_ACCEPTED, response_model = general.StandardResponse[tenant_setting.updated_visuals] )
 async def update_logo (tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service),
-                       logo_url: Optional[UploadFile] = File(None)):
+                       logo_url: Optional[UploadFile] = File(None), favicon_url: Optional[UploadFile] = File(None)):
     
-    updated_logo = await tenant_settings_service.update_logo(logo_url)
+    updated_logo = await tenant_settings_service.update_logo(logo_url, favicon_url)
+    return updated_logo
+
+@router.patch("/booking/{service_type}", status_code=status.HTTP_202_ACCEPTED, response_model = general.StandardResponse[tenant_setting.TenantBookingPublic] )
+async def update_booking_prices(service_type: str,payload: tenant_setting.TenantBookingUpdate,
+                                tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
+    
+    updated_logo = await tenant_settings_service.update_tenant_booking(service_type=service_type, payload=payload)
     return updated_logo
