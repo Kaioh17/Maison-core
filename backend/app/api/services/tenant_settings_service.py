@@ -66,14 +66,14 @@ class TenantSettingsService(ServiceContext):
                     "booking": [b.__dict__ for b in booking_list],
                 }
 
-                logger.debug(f"New config {config_dict}")
+                # logger.debug(f"New config {config_dict}")
                 # config_dict = {"settings":settings.__dict__, "pricing":pricing.__dict__, "branding":branding.__dict__, "booking":list[booking.__dict__]}
                 # logger.debug(f"New config {config_dict}")
 
         config_obj = config_query.first() if config_type != 'all' else None
         if config_type == 'booking':
             config_obj = config_query.all()
-            logger.debug(f"New config {config_obj}")
+            # logger.debug(f"New config {config_obj}")
         if not config_obj:
             if not config_dict:
                 

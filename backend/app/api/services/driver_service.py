@@ -4,7 +4,7 @@ from app.utils import password_utils, db_error_handler
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from app.utils.logging import logger
-from .helper_service import Validations, tenant_stats, tenant_table, tenant_setting_table, tenant_profile, driver_table,booking_table, vehicle_table, success_resp
+from .helper_service import *
 from sqlalchemy.orm import selectinload
 from datetime import timedelta, datetime, timezone
 from .vehicle_service import VehicleService
@@ -187,8 +187,22 @@ class DriverService(ServiceContext):
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, db)
         return booked_rides
-
-    ##update booked ride response
+    async def _validate_action(self,booking_obj: booking_table, action: str):
+        logger.debug(f"Drop off time is  {action}")
+        
+        arrival_time = booking_obj.dropoff_time
+        logger.debug(f"Drop off time is  {arrival_time}")
+        time_now = datetime.now(timezone.utc)
+        logger.debug(f"Current_time  {time_now}")
+        
+        # formatted_time = time_now.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+        to_local_time = DateTime._to_user_time_zone(dt_utc=time_now)
+        logger.debug(f"Current_time_at local  {to_local_time}")
+        
+        if action == 'completed' and to_local_time < arrival_time:
+            logger.debug(f"A ride cannot be completed until user is droped off...")
+            raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE, f"A ride cannot be completed until user is droped off[{to_local_time}]")
+    ##update booked ride response (driver cannot complete rides before ride drop_off time)
     async def driver_ride_response(self,action, booking_id, approve_action):
         try:
             logger.debug(f"driver chose {action}")
@@ -210,6 +224,9 @@ class DriverService(ServiceContext):
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                                         detail= "Invalid action: action should be ('confirm', 'cancelled', 'completed', 'delayed')")
                 
+                if settings.environment == 'production':
+                    await self._validate_action(booking_obj=booking_obj, action=action)
+                # return
                 old_status = booking_obj.booking_status
                 old_payment_status = booking_obj.payment_status
                 booking_obj.booking_status = action
@@ -223,7 +240,7 @@ class DriverService(ServiceContext):
                 self.db.refresh(booking_obj)
                 
                 # Email: Send booking status update to rider
-                from .helper_service import user_table
+                # from .helper_service import user_table
                 rider_obj = self.db.query(user_table).filter(user_table.id == booking_obj.rider_id).first()
                 if rider_obj:
                     tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == booking_obj.tenant_id).first()

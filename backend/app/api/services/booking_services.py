@@ -15,21 +15,7 @@ from .helper_service import success_resp, success_list_resp
 from .service_context import ServiceContext
 from .stripe_services.checkout import BookingCheckout
 from .email_services import drivers, tenants, riders
-from .helper_service import (
-    user_table,
-    tenant_table,
-    tenant_profile,
-    tenant_stats,
-    tenant_branding,
-    tenant_pricing,
-    driver_table,
-    booking_table,
-    
-    tenant_setting_table,
-    vehicle_config_table,
-    vehicle_category_table,
-    vehicle_table
-)
+from .helper_service import  *
 
 from app.models import tenant_setting
 db_exceptions = db_error_handler.DBErrorHandler
@@ -40,54 +26,104 @@ class BookingService(ServiceContext):
         super().__init__(db, current_user)
             
     db_exceptions = db_error_handler.DBErrorHandler
-            
+    METER_TO_MILE =  0.000621371
+    MS_TO_MPH = 2.237
     role_to_booking_field  = {
         "driver": booking.Bookings.driver_id,
         "rider": booking.Bookings.rider_id,
         "tenant": booking.Bookings.tenant_id,
         }
-    def _distance_in_miles(self,coordinate):
-        # based on distance 
-        ## d prefix -> dropoff_location and p prefix -> pickup_location
-        dlon = coordinate.dlon
-        dlat = coordinate.dlat
-        plat = coordinate.plat
-        plon = coordinate.plon
-        
-        logger.debug(f'Coordinates: {coordinate}')
-        lon1 = math.radians(dlon)
-        lon2 = math.radians(plon)
-        lat1 = math.radians(dlat)
-        lat2 = math.radians(plat)
-        
-        #differences
-        lat_diff = lat2 - lat1
-        lon_diff = lon2 - lon1
-        
-        #haversine formula
-        a = math.sin(lat_diff / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(lon_diff / 2)**2
-        c = 2 * math.asin(math.sqrt(a))
 
         
-        R = 3958.8 #earth radius in miles
-        distance = R*c
-        logger.info(f"latdiffernce{lat_diff} and londiffernce{lon_diff}---->c = {c} distance {distance}")
-        return distance ##returns total distance in miles
-    async def _eta(self, distance, booking_obj:object):
-        try:
-            logger.debug(f"{booking_obj.service_type}")
-            start_time = booking_obj.pickup_time
+    def _distance_in_miles(self,mapbox_response, service_type):
+        # based on distance 
+        ## d prefix -> dropoff_location and p prefix -> pickup_location
+        # dlon = coordinate.dlon
+        # dlat = coordinate.dlat
+        # plat = coordinate.plat
+        # plon = coordinate.plon
+        
+        # logger.debug(f'Coordinates: {coordinate}')
+        # lon1 = math.radians(dlon)
+        # lon2 = math.radians(plon)
+        # lat1 = math.radians(dlat)
+        # lat2 = math.radians(plat)
+        
+        # #differences
+        # lat_diff = lat2 - lat1
+        # lon_diff = lon2 - lon1
+        
+        # #haversine formula
+        # a = math.sin(lat_diff / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(lon_diff / 2)**2
+        # c = 2 * math.asin(math.sqrt(a))
+
+        
+        # R = 3958.8 #earth radius in miles
+        # distance = R*c
+        # logger.info(f"latdiffernce{lat_diff} and londiffernce{lon_diff}---->c = {c} distance {distance}")
+        if service_type != 'hourly':
+            route = mapbox_response['routes'][0]
+            duration_seconds = route['duration']
+            distance_meters = route['distance']
+        
+            distance_miles = distance_meters * self.METER_TO_MILE
+            logger.debug(f"Distance: {distance_miles:.2f} miles")
             
-            if booking_obj.service_type != "hourly":
+            speed_mph = (distance_meters/duration_seconds) * self.MS_TO_MPH
+            logger.debug(f"Average Speed: {speed_mph:.2f} mph")
+            
+            distance_info = {"distance_miles":distance_miles, "speed_mph":speed_mph}
+            return distance_info ##returns total distance in miles
+        return {"distance_miles":None, "speed_mph":None}
+    async def _get_mapbox_json_response(self, payload):
+        from mapbox import Directions
+        
+        try:
+            if payload.service_type != "hourly":
+            
+                coordinates = payload.coordinates
+                service = Directions(access_token=settings.mapbox_api)
+                origin = {
+                    'type': 'Feature',
+                    'geometry': {'type': 'Point', 'coordinates': [coordinates.plon, coordinates.dlat]}
+                }
+                destination = {
+                    'type': 'Feature',
+                    'geometry': {'type': 'Point', 'coordinates': [coordinates.dlon, coordinates.dlat]}
+                }
+                response = service.directions([origin, destination], profile='mapbox/driving-traffic')
+                if response.status_code ==200:
+                    logger.debug(f"\n {response.json()}")
                 
-                logger.debug(f"{distance}")
+                    return response.json()
+                else:
+                    raise HTTPException(status_code=response.status_code)
+            else: return
+        except Exception as e:
+            raise e
+    async def _eta(self, booking_payload:object, mapbox_response):
+        
+        try:
+            start_time = booking_payload.pickup_time
+            
+            if booking_payload.service_type != "hourly":
+                            
+                route = mapbox_response['routes'][0]
+                duration_seconds = route['duration']
+                distance_meters = route['distance']
                 
-                duration = (distance/45) * 3600
-                det_est_time =  start_time + timedelta(seconds=duration)
-                # booking_obj.dropoff_time = 
+                avg_speed = (distance_meters/duration_seconds) # meters per second
+             
+            
+                time_buffer = 0
+                if avg_speed < 10:
+                    time_buffer = 60
+                total_time = duration_seconds + time_buffer
+               
+                det_est_time =  start_time + timedelta(seconds=total_time)
                 return det_est_time
             else:
-                return start_time + timedelta(hours=booking_obj.hours)
+                return start_time + timedelta(hours=booking_payload.hours)
              
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
@@ -181,9 +217,38 @@ class BookingService(ServiceContext):
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
     async def book_ride(self, payload):
+        """
+        Book a ride for a rider.
+        This method orchestrates the complete ride booking workflow:
+        1. **Route Planning**: Retrieves route information from Mapbox API based on pickup/dropoff coordinates
+        2. **Vehicle Validation**: Verifies the requested vehicle exists in the system
+        3. **ETA & Distance Calculation**: Computes estimated time of arrival and distance in miles
+        4. **Price Estimation**: Calculates fare quote based on distance and speed
+        5. **Data Validation**: 
+            - Ensures rider's country is provided
+            - Validates tenant exists
+        6. **Booking Conflict Check**: Verifies no overlapping bookings exist for the rider
+        7. **Database Persistence**: Creates and commits the new booking record
+        8. **Driver Assignment**: Retrieves assigned driver's full name (if available)
+        9. **Response Generation**: Returns booking confirmation with driver info, customer details, vehicle info, and adjusted local time data
+        Args:
+             payload: Booking request payload containing rider coordinates, vehicle_id, pickup_time, and other booking details
+        Returns:
+             dict: Success response containing:
+                  - driver_name: Full name of assigned driver or "No driver assigned"
+                  - customer_name: Full name of the rider
+                  - vehicle: Vehicle description (make, model, year)
+                  - Booking details with localized timestamps
+        Raises:
+             HTTPException: 
+                  - 404 if vehicle not found
+                  - 404 if tenant not found
+                  - 406 if country not provided
+                  - Propagates database errors through error handler
+        """
         """Rider books a ride"""
         try:
-            
+            mapbox_response =await self._get_mapbox_json_response(payload)
             book_ride_info = payload.model_dump(exclude="coordinates")
             logger.debug(f"{book_ride_info}")
             
@@ -192,14 +257,15 @@ class BookingService(ServiceContext):
                 raise HTTPException(status_code=404, detail="vehicle not found")
             
             ##
-            distance = self._distance_in_miles(payload.coordinates)
-            eta = await self._eta(distance=distance, booking_obj=payload)
-                
-            price_estimate = await self._price_quote(payload, distance=distance)
+            distance_info = self._distance_in_miles(mapbox_response=mapbox_response, service_type=payload.service_type)
+            eta = await self._eta(booking_payload=payload, mapbox_response=mapbox_response)
+            logger.debug(f"New eta = {eta}")
+            logger.debug(f"{distance_info}")
+            price_estimate = await self._price_quote(payload, distance=distance_info['distance_miles'], speed=distance_info['speed_mph'])
             book_ride_info['dropoff_time'] = eta
             payload.dropoff_time = eta
             
-            logger.debug(f"Eta {eta} payload {payload.dropoff_time}price {price_estimate} data {book_ride_info}")
+            logger.debug(f"Eta {eta} pickup {payload.pickup_time} \n price {price_estimate} \n data {book_ride_info}")
             new_ride = booking.Bookings(rider_id = self.current_user.id,tenant_id = self.current_user.tenant_id,
                                         estimated_price = price_estimate,driver_id = vehicle.driver_id,**book_ride_info)
 
@@ -250,7 +316,7 @@ class BookingService(ServiceContext):
             limit_per_user = {"rider": 5, "tenant": 25, "driver":5}
             limit = limit_per_user[self.role.lower()] if limit == None else limit
             execute_params ={"booking_status":booking_status, "tenant_id":self.tenant_id,
-                                         "service_type":service_type, "vehicle_id":vehicle_id, "booking_id":booking_id, "limit":limit}
+                            "service_type":service_type, "vehicle_id":vehicle_id, "booking_id":booking_id, "limit":limit}
                                 
             
             ####A booking should always have a vehicle_id but booking will not always hav ea driver
@@ -373,41 +439,46 @@ class BookingService(ServiceContext):
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
         
-    async def _price_quote(self, payload, distance):
+    async def _price_quote(self, payload, distance: float | None, speed: float | None):
         try: 
             logger.debug(f"tenant id {self.current_user.tenant_id}")
 
             pricing = self.db.query(tenant_pricing).filter(tenant_pricing.tenant_id == self.tenant_id).first()
             
-            vehicle = self.db.query(vehicle_table).filter(vehicle_table.id == payload.vehicle_id).first()
+            vehicle:vehicle_table = self.db.query(vehicle_table).filter(vehicle_table.id == payload.vehicle_id).first()
+            vehicle_category = vehicle.vehicle_category
             if not vehicle:
                 logger.error(f"Tenant[{self.current_user.tenant_id}] Vehicle was not found at {payload.vehicle_id}")
 
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail = "Vehicle not found")
             
-            vehicle_base_price = self.db.query(vehicle_category_table).filter(vehicle_category_table.id == vehicle.vehicle_category_id).first()
-            if not vehicle_base_price:
-                logger.error(f"Tenant[{self.current_user.tenant_id}] Vehicle categroy was not found at {vehicle.vehicle_category_id}")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail = "Vehicle category not found")
+            # vehicle_base_price = self.db.query(vehicle_category_table).filter(vehicle_category_table.id == vehicle.vehicle_category_id).first()
+            # if not vehicle_base_price:
+            #     logger.error(f"Tenant[{self.current_user.tenant_id}] Vehicle categroy was not found at {vehicle.vehicle_category_id}")
+            #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+            #                         detail = "Vehicle category not found")
             if not pricing:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail= "pricing config for tenants not found...")
-            #calculate price
-            logger.info(f"base_fare = {pricing.base_fare}")
             base_fare = pricing.base_fare
-            per_mile_rate = pricing.per_mile_rate 
+            vehicle_rate = vehicle_category.vehicle_flat_rate
             
-            per_minute_rate = pricing.per_minute_rate 
-            vehicle_rate = vehicle_base_price.vehicle_flat_rate
-            min_duration = (distance/45) * 360
-            total_quote = base_fare + (per_mile_rate * distance) + (per_minute_rate * min_duration) + vehicle_rate 
+            if payload.service_type.lower() != 'hourly':
+                #calculate price
+                
+                logger.info(f"base_fare = {pricing.base_fare}")
+                per_mile_rate = pricing.per_mile_rate 
+                
+                
+                per_minute_rate = pricing.per_minute_rate 
+                min_duration = (distance/speed) * 360 #duration in minutes 
+                total_quote = base_fare + (per_mile_rate * distance) + (per_minute_rate * min_duration) + vehicle_rate 
             
-            if payload.service_type.lower() == "hourly":
+            else:
                 per_hour_rate = pricing.per_hour_rate
-                hours = payload.hour
-                total_quote = total_quote + (per_hour_rate * hours)
+                hours = payload.hours
+                total_quote = base_fare + vehicle_rate + (per_hour_rate * hours)
 
             return round(total_quote, 2)
 

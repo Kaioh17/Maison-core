@@ -126,7 +126,7 @@ class TenantPricingUpdate(BaseModel):
 
 
 class TenantBrandingResponse(BaseModel):
-    id: int
+    # id: int
     tenant_id: int
     theme: str
     primary_color: Optional[str]
@@ -145,12 +145,12 @@ class TenantBrandingResponse(BaseModel):
         from_attributes = True
 
 class TenantBrandingPublic(TenantBrandingResponse):
-    id: int = Field(exclude=True)
+    # id: int = Field(exclude=True)
     tenant_id: int = Field(exclude=True)
     created_on: datetime = Field(exclude=True)
     updated_on: Optional[datetime] = Field(exclude=True)
 class TenantPricingResponse(BaseModel):
-    id: int
+    # id: int
     tenant_id: int
     base_fare: float
     per_mile_rate: float
@@ -164,7 +164,7 @@ class TenantPricingResponse(BaseModel):
     class Config:
         from_attributes = True
 class TenantPricingPublic(TenantPricingResponse):
-    id: int = Field(exclude=True)
+    # id: int = Field(exclude=True)
     tenant_id: int = Field(exclude=True)
     created_on: datetime = Field(exclude=True)
     updated_on: Optional[datetime] = Field(exclude=True)

@@ -186,7 +186,7 @@ class TenantService(ServiceContext):
             raise HTTPException(status_code=500, detail="Internal server error")
     async def _set_up_tenant_settings(self, new_tenant_id, logo_url, slug):
         try: 
-            new_tenants_settings = TenantSettings(
+            new_tenants_settings = [TenantSettings(
                             tenant_id = new_tenant_id,
                             logo_url = logo_url, 
                             slug = slug,
@@ -199,8 +199,8 @@ class TenantService(ServiceContext):
                             rider_tiers_enabled = False,  # Default to false
                             cancellation_fee = 0.0,  # Default cancellation fee
                             discounts = False  # Default to false
-                        )
-            new_tenant_branding = TenantBranding(
+                        ),
+           TenantBranding(
                             tenant_id=new_tenant_id,
                             logo_url=logo_url,
                             slug=slug,
@@ -212,8 +212,8 @@ class TenantService(ServiceContext):
                             favicon_url=None,
                             email_from_name=None,
                             email_from_address=None
-                        )
-            new_tenant_pricing = TenantPricing(
+                        ),
+            TenantPricing(
                             tenant_id=new_tenant_id,
                             base_fare=0.0,
                             per_mile_rate=0.0,
@@ -221,10 +221,27 @@ class TenantService(ServiceContext):
                             per_hour_rate=0.0,
                             cancellation_fee=0.0,
                             discounts=False
+                        ),
+                        TenantBookingPricing(
+                            tenant_id=new_tenant_id,
+                            service_type = 'airport',
+                            deposit_type = 'percentage',
+                            deposit_fee =  0.3
+                        ),TenantBookingPricing(
+                            tenant_id=new_tenant_id,
+                            service_type = 'dropoff',
+                            deposit_type = 'percentage',
+                            deposit_fee =  0.3
+                        ),TenantBookingPricing(
+                            tenant_id=new_tenant_id,
+                            service_type = 'hourly',
+                            deposit_type = 'percentage',
+                            deposit_fee =  0.3
                         )
+                                        ]
 
-            self.db.add(new_tenant_branding)
-            self.db.add(new_tenant_pricing)            
+            # self.db.add(new_tenant_branding)
+            # self.db.add(new_tenant_pricing)            
             self.db.add(new_tenants_settings)
             self.db.commit()
             logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")

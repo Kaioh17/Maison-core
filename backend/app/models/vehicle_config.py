@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import *
 
 id_seq =  Sequence('id_seq', start= 150)
 
-    
+###DEPRRECATED
 """Vehicle model and rate"""
 class VehicleConfig(Base):
     __tablename__ = "vehicle_config"
@@ -19,6 +19,7 @@ class VehicleConfig(Base):
     vehicle_category = Column(String, nullable=True, index=True)
     seating_capacity = Column(Integer, nullable=True, index=True)
     vehicle_flat_rate = Column(Float, nullable=False, default= 0.0, server_default=text ('0.0'))
+    # vehicle_avg_speed = Column(Float, nullable=True, default=25.0, server_default= text('0.0') )
     # vehicles = relationship(
     #     "Vehicles",
     #     secondary=vehicle_vehicle_config_association,
