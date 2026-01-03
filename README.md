@@ -91,6 +91,8 @@ Maison-core is a scalable backend for luxury car service companies, built with F
 - **Bookings:** Ride requests and management
 - **Vehicle Configurations:** Pricing and capacity settings
 
+> **Database Diagram:** See [docs/DBM Diagram.pdf](docs/DBM%20Diagram.pdf) for a visual representation of the database schema and relationships.
+
 ---
 
 ##  Technology Stack
