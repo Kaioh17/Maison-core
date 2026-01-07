@@ -98,6 +98,12 @@ class TenantBookingUpdate(BaseModel):
     # updated_on: datetime = Field(exclude=True)
     deposit_fee: Optional[float] = Field(None)
     deposit_type: Optional[DepositType] = Field(None)
+    stc_rate: Optional[float] = Field(None) #For airports only  [STC(Surface Transport Charge)]
+    gratuity_rate: Optional[float] = Field(None) #For airports only  [Percentage]
+    airport_gate_fee: Optional[float] = Field(None) #For airports only  [flat fee]
+    meet_and_greet_fee: Optional[float] = Field(None) #For airports only  [flat fee]
+    
+    
 class TenantBrandingUpdate(BaseModel):
     theme: Optional[str] = None
     primary_color: Optional[str] = None

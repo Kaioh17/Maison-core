@@ -54,7 +54,7 @@ class TenantUpdate(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = Field(None, min_length=1, max_length=100)
     drivers: Optional[int] = Field(None, ge=0)
-    plan: Optional[str] = Field(None, pattern=r'^(free|basic|premium|enterprise)$')
+    plan: Optional[str] = Field(None, pattern=r'^(starter|growth|fleet|enterprise)$')
     is_active: Optional[bool] = None
     
     
@@ -89,7 +89,7 @@ class TenantProfile(BaseModel):
                 "stripe_customer_id": "cus_123456",
                 "stripe_account_id": "acct_123456",
                 "subscription_status": "active",
-                "subscription_plan": "premium",
+                "subscription_plan": "growth",
                 "created_on": "2024-01-01T00:00:00Z",
                 "updated_on": None,
                 "company": "Acme Corp"
@@ -178,4 +178,12 @@ class TenantLogin(BaseModel):
     email: EmailStr
     password: str
 
-
+class BookingAnalyticsData(BaseModel):
+    completed_rides: int
+    pending_rides: int
+    available_drivers: int
+    total_revenue: float
+    total_drivers: int
+    total_vehicles: int
+    total_bookings: int
+    todays_revenue: Optional[float] = None

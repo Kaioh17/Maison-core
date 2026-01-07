@@ -39,3 +39,10 @@ class UserResponse(UserBase):
     tier: str
     created_on: Optional[datetime]
     updated_on: Optional[datetime]
+    
+class BookingAnalytucsresponse(BaseModel):
+    confirmed: int
+    completed: int
+    cancelled: int
+    pending: int
+    total: int

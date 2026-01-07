@@ -126,8 +126,15 @@ class BookingResponse(BoookingBase):
         else: return value
 class BookingPublic(BookingResponse):
     # id: int = Field(exclude=True)
+    deposit: Optional[float] = Field(None)
     vehicle_id: int  = Field(exclude=True)
     tenant_id: int = Field(exclude=True)
     created_on: Optional[datetime] = Field(exclude=False)
     updated_on: Optional[datetime] = Field(exclude=False)
-        
+
+class BookingAnalyticsresponse(BaseModel):
+    confirmed: int
+    completed: int
+    cancelled: int
+    pending: int
+    total: int
