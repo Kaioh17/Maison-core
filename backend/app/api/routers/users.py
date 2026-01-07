@@ -8,6 +8,7 @@ from app.schemas import user,driver, general
 from app.schemas.general import StandardResponse
 from ..core import deps
 from app.utils.logging import logger
+from ..services.analytics.riders import get_rider_analytics, RiderAnalyticService
 
 router = APIRouter(
     prefix = "/api/v1/users",
@@ -27,6 +28,12 @@ async def create_user(tenant_id: int, payload: user.UserCreate,user_service: Use
 async def get_user_info(user_service: UserService =  Depends(get_user_service)):
 
     user_info = await user_service.get_user_info()
+
+    return user_info
+@router.get("/booking/analytics", status_code=status.HTTP_200_OK, response_model=StandardResponse[user.BookingAnalytucsresponse])
+async def get_user_info(user_service: RiderAnalyticService =  Depends(get_rider_analytics)):
+
+    user_info = await user_service.booking_analytics()
 
     return user_info
 ##get available bookings available drivers 

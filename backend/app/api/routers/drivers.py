@@ -64,10 +64,42 @@ async def get_driver(driver_id: int = None, driver_service: RiderDriverService =
 @router.get("/rides/available", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[list[booking.BookingPublic]])
 async def get_bookings_for_driver(is_driver: bool = Depends(is_driver),
                                   booking_status: Optional[str] = None,booking_servcie: BookingService = Depends(get_booking_service)):
-    logger.info("Availble rides...")
+    logger.info("Availble rides")
     raise HTTPException(status_code=status.HTTP_410_GONE, detail= "Endpoint deprecated")
     bookings = await booking_servcie.get_bookings_by(booking_status=booking_status)
     return bookings
+
+from ..services.analytics.driver import get_driver_analytics, DriverAnalyticService
+@router.get("/booking/analytics", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[booking.BookingAnalyticsresponse])
+async def get_booking_annalytics(is_driver: bool = Depends(is_driver),
+                                  booking_status: Optional[str] = None,booking_servcie: DriverAnalyticService = Depends(get_driver_analytics)):
+    # logger.info("Boking )
+    # raise HTTPException(status_code=status.HTTP_410_GONE, detail= "Endpoint deprecated")
+    bookings = await booking_servcie.booking_analytics()
+    return bookings
+@router.get("/upcoming/rides", status_code=status.HTTP_200_OK, response_model= general.StandardResponse[list[booking.BookingPublic]])
+async def get_upcoming_rides(is_driver: bool = Depends(is_driver),
+                                booking_servcie: BookingService = Depends(get_booking_service)):
+    logger.info("Availble rides")
+    bookings = await booking_servcie.get_upcoming_rides()
+    # raise HTTPException(status_code=status.HTTP_410_GONE, detail= "Endpoint deprecated")
+    return bookings
+"""Set ride status"""
+@router.patch("/ride/{booking_id}/decision", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[dict])
+async def set_ride_status(booking_id: int, action: str =Query(None, description= "Confirm/Cancelled"), approve_action: bool = False,
+                       is_driver: bool =  Depends(is_driver), driver_service: DriverService = Depends(get_driver_service)):
+    
+    ride_decision = await driver_service.driver_ride_response(action, booking_id, approve_action=approve_action)
+    return ride_decision
+    return bookings
+"""Set ride status"""
+@router.patch("/ride/{booking_id}/decision", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[dict])
+async def set_ride_status(booking_id: int, action: str =Query(None, description= "Confirm/Cancelled"), approve_action: bool = False,
+                       is_driver: bool =  Depends(is_driver), driver_service: DriverService = Depends(get_driver_service)):
+    
+    ride_decision = await driver_service.driver_ride_response(action, booking_id, approve_action=approve_action)
+    return ride_decision
+
 
 """Set ride status"""
 @router.patch("/ride/{booking_id}/decision", status_code=status.HTTP_202_ACCEPTED, response_model=general.StandardResponse[dict])

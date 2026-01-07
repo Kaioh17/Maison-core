@@ -7,9 +7,11 @@ from app.db.database import get_db, get_base_db
 from ..core import deps
 from ..services.booking_services import BookingService, get_booking_service
 from ..services.tenants_service import TenantService, get_tenant_service, get_unauthorized_tenant_service
+from ..services.analytics.tenant import TenantAnalyticService, get_tenant_analytics
 from app.schemas import tenant, driver, vehicle, booking, general
 from ..core import security, deps
 from app.utils.logging import logger
+
 
 # from .dependencies import get_tenant_id_from_token 
 
@@ -165,3 +167,10 @@ async def get_bookings(
 ):
    login_link = stripe_service.get_account_link()
    return login_link
+
+@router.get('/analysis', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[tenant.BookingAnalyticsData])
+async def get_analysis(
+    tenant_service: TenantAnalyticService = Depends(get_tenant_analytics)
+):
+   analytics = await tenant_service.analytics()
+   return analytics
