@@ -1,4 +1,5 @@
 
+from datetime import datetime, timezone
 from app.db.database import get_db, get_base_db
 from .helper_service import tenant_profile
 
@@ -37,7 +38,8 @@ class ServiceContext:
                 self.sub_plan = self.profile_response.subscription_plan
                 self.slug = self.current_user.profile.slug
                 # self.sub_status = self.profile_response.subscripton_status
-                
+        self.time_now = datetime.now(timezone.utc)
+                        
                                 
 # def get_service_(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
 #     return BookingService(db = db, current_user=current_user)

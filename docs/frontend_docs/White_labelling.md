@@ -41,7 +41,7 @@ White-labeling is a business model where one company (us - Maison) creates a pro
 **What tenants can control:**
 - **Remove Features**: Hide features they don't need  
   - Example: Disable luxury car category, remove scheduled rides, hide analytics
-- **Add Features**: Enable premium features based on their plan  
+- **Add Features**: Enable growth features based on their plan  
   - Example: Advanced analytics, custom vehicle types, loyalty programs
 - **Request Features**: Submit requests for custom functionality  
   - Example: Integration with their existing CRM, custom reporting

@@ -176,6 +176,7 @@ class DriverService(ServiceContext):
     ## acheck earnings
 
     ##Check rides
+    
     async def get_bookings(db, current_driver, booking_status):
         try:
             booked_rides = db.query(booking_table).filter(booking_table.driver_id == current_driver.id, 
@@ -201,7 +202,7 @@ class DriverService(ServiceContext):
         
         if action == 'completed' and to_local_time < arrival_time:
             logger.debug(f"A ride cannot be completed until user is droped off...")
-            raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE, f"A ride cannot be completed until user is droped off[{to_local_time}]")
+            raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE, f"A ride cannot be completed until user is droped off [{to_local_time}]")
     ##update booked ride response (driver cannot complete rides before ride drop_off time)
     async def driver_ride_response(self,action, booking_id, approve_action):
         try:
@@ -219,7 +220,7 @@ class DriverService(ServiceContext):
                     raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                         detail = f"Ride already {booking_obj.booking_status}. Cannot set to `{action}`")
                 # if ride.booking_satus == "":
-                if action not in {'confirm', 'cancelled', 'completed', 'delayed'}:
+                if action not in ('confirmed', 'cancelled', 'completed', 'delayed'):
                     logger.warning("Invalid action: action should be ('confirm', 'cancelled', 'completed', 'delayed')")
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                                         detail= "Invalid action: action should be ('confirm', 'cancelled', 'completed', 'delayed')")

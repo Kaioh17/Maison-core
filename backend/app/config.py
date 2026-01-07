@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     webhook_secret: str
     environment: str
     connect_webhook_secret:str
+    mapbox_api: str
     class Config:
         # env_file = "/backend/docker/.env"
         env_file ="/backend/app/.env"

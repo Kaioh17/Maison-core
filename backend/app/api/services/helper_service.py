@@ -1,6 +1,8 @@
 from app.models import * 
 from fastapi import HTTPException, UploadFile,status 
 from app.utils.logging import logger
+from app.config import Settings
+settings = Settings()
 
 
 # table_map = {
@@ -189,6 +191,16 @@ class SupaS3:
             logger.debug("Deleted from bucket")
         except Exception as e:
             raise e
+        
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+class DateTime:
+    def _to_user_time_zone(dt_utc: datetime, user_tz: str = "America/Chicago"):
+        if type(dt_utc) == str:
+            dt_utc = datetime.fromisoformat(dt_utc)
+        tz = dt_utc.astimezone(ZoneInfo(user_tz))
+        return tz
     
 """
 validate ids

@@ -8,7 +8,7 @@ from ..core import deps
 from app.models import *
 from app.utils import db_error_handler
 from app.utils.logging import logger
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from sqlalchemy.exc import *
 from app.schemas.booking import BookingResponse
 from .helper_service import success_resp, success_list_resp
@@ -36,31 +36,7 @@ class BookingService(ServiceContext):
 
         
     def _distance_in_miles(self,mapbox_response, service_type):
-        # based on distance 
-        ## d prefix -> dropoff_location and p prefix -> pickup_location
-        # dlon = coordinate.dlon
-        # dlat = coordinate.dlat
-        # plat = coordinate.plat
-        # plon = coordinate.plon
-        
-        # logger.debug(f'Coordinates: {coordinate}')
-        # lon1 = math.radians(dlon)
-        # lon2 = math.radians(plon)
-        # lat1 = math.radians(dlat)
-        # lat2 = math.radians(plat)
-        
-        # #differences
-        # lat_diff = lat2 - lat1
-        # lon_diff = lon2 - lon1
-        
-        # #haversine formula
-        # a = math.sin(lat_diff / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(lon_diff / 2)**2
-        # c = 2 * math.asin(math.sqrt(a))
-
-        
-        # R = 3958.8 #earth radius in miles
-        # distance = R*c
-        # logger.info(f"latdiffernce{lat_diff} and londiffernce{lon_diff}---->c = {c} distance {distance}")
+     
         if service_type != 'hourly':
             route = mapbox_response['routes'][0]
             duration_seconds = route['duration']
@@ -93,7 +69,7 @@ class BookingService(ServiceContext):
                 }
                 response = service.directions([origin, destination], profile='mapbox/driving-traffic')
                 if response.status_code ==200:
-                    logger.debug(f"\n {response.json()}")
+                    # logger.debug(f"\n {response.json()}")
                 
                     return response.json()
                 else:
@@ -265,9 +241,9 @@ class BookingService(ServiceContext):
             book_ride_info['dropoff_time'] = eta
             payload.dropoff_time = eta
             
-            logger.debug(f"Eta {eta} pickup {payload.pickup_time} \n price {price_estimate} \n data {book_ride_info}")
+            logger.debug(f"Eta {eta} pickup {payload.pickup_time} \n price {price_estimate['total']} \n deposit {price_estimate['deposit']} \n data {book_ride_info}")
             new_ride = booking.Bookings(rider_id = self.current_user.id,tenant_id = self.current_user.tenant_id,
-                                        estimated_price = price_estimate,driver_id = vehicle.driver_id,**book_ride_info)
+                                        estimated_price = price_estimate['total'],driver_id = vehicle.driver_id,**book_ride_info)
 
             
             if not self.db.query(tenant.Tenants).filter(tenant.Tenants.id == self.current_user.tenant_id).first(): 
@@ -303,17 +279,39 @@ class BookingService(ServiceContext):
                 driver_full_name = "No driver assigned"
             
             
-            return success_resp(msg="Booking Successfull", data= {"driver_name":driver_full_name ,"customer_name": self.full_name,"vehicle": f"{vehicle.make} {vehicle.model} {vehicle.year}",**new_data})
+            return success_resp(msg="Booking Successfull", data= {"driver_name":driver_full_name ,"customer_name": self.full_name,"vehicle": f"{vehicle.make} {vehicle.model} {vehicle.year}","deposit":price_estimate['deposit'],**new_data})
         
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
             
-      
-            
-    async def get_bookings_by(self,booking_id = None ,booking_status: str = None,
-                              service_type: str =None,vehicle_id: int =None, limit: int = None ):
+    async def get_upcoming_rides(self):
         try:
-            limit_per_user = {"rider": 5, "tenant": 25, "driver":5}
+            responsse = await self.get_bookings_by(limit = 2000, booking_status='confirmed')
+            responsse_dict = responsse.__dict__
+            data = responsse_dict['data']
+         
+            recent_data = [data[i] for  i in range(len(data)) if data[i]['pickup_time'] > self.time_now]            
+            return success_resp(msg = "Upcoming rides",meta={'count': len(recent_data)},data = recent_data)
+
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, self.db)
+    # async def get_new_requests(self, limit):
+    #     try:
+    #         responsse = await self.get_bookings_by(limit = limit, booking_status='pending')
+    #         responsse_dict = responsse.__dict__
+    #         data = responsse_dict['data']
+         
+    #         # recent_data = [data[i] for  i in range(len(data)) if data[i]['pickup_time'] > self.time_now]            
+    #         # return success_resp(msg = "Upcoming rides",meta={'count': len(recent_data)},data = recent_data)
+
+    #     except db_exceptions.COMMON_DB_ERRORS as e:
+    #         db_exceptions.handle(e, self.db)   
+    async def get_bookings_by(self,booking_id = None ,booking_status: str = None,
+                              service_type: str =None,vehicle_id: int =None, 
+                              limit: int = None ):
+        try:
+            
+            limit_per_user= {"rider": 5, "tenant": 25, "driver":5}
             limit = limit_per_user[self.role.lower()] if limit == None else limit
             execute_params ={"booking_status":booking_status, "tenant_id":self.tenant_id,
                             "service_type":service_type, "vehicle_id":vehicle_id, "booking_id":booking_id, "limit":limit}
@@ -370,7 +368,7 @@ class BookingService(ServiceContext):
             msg = f"bookings retrieved successfully"
             meta = None
            
-            booking_obj:object = booking_query.all()
+            booking_obj:object = booking_query.mappings().all()
             
             if not booking_obj:
                 return success_resp(meta={"status" :404},
@@ -438,13 +436,22 @@ class BookingService(ServiceContext):
                                         detail = "Time slot overlap with existing booking")
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
+    def _is_deposit(self, booking_obj) -> bool:
+        tenant_response:tenant_setting_table = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.tenant_id).first()
+        # logger.debug(f"Config {tenant_response.__dict__}")
+        config = tenant_response.config
         
-    async def _price_quote(self, payload, distance: float | None, speed: float | None):
+        is_deposit = config['booking']['types'][booking_obj.service_type]['is_deposit_required']
+        logger.debug(f"{booking_obj.service_type} deposit:{is_deposit}")
+        return is_deposit
+    async def _price_quote(self, payload, distance: float | None, speed: float | None) -> dict[str:float]:
+        """returns: {"total": round(total_quote, 2), "deposit": round(deposit, 2)}"""
         try: 
             logger.debug(f"tenant id {self.current_user.tenant_id}")
 
             pricing = self.db.query(tenant_pricing).filter(tenant_pricing.tenant_id == self.tenant_id).first()
-            
+            booking_price = self.current_user.tenants.booking_pricing            
+            is_deposit = self._is_deposit(payload)
             vehicle:vehicle_table = self.db.query(vehicle_table).filter(vehicle_table.id == payload.vehicle_id).first()
             vehicle_category = vehicle.vehicle_category
             if not vehicle:
@@ -461,10 +468,17 @@ class BookingService(ServiceContext):
             if not pricing:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail= "pricing config for tenants not found...")
+            service_type = payload.service_type.lower() 
+            for i in range(len(booking_price)):
+                logger.debug(f"{booking_price[i].__dict__['service_type']}")
+                if booking_price[i].__dict__['service_type'] == service_type:
+                    booking_price = booking_price[i]
+                    break
+            logger.debug(booking_price)
             base_fare = pricing.base_fare
             vehicle_rate = vehicle_category.vehicle_flat_rate
             
-            if payload.service_type.lower() != 'hourly':
+            if service_type!= 'hourly':
                 #calculate price
                 
                 logger.info(f"base_fare = {pricing.base_fare}")
@@ -474,13 +488,31 @@ class BookingService(ServiceContext):
                 per_minute_rate = pricing.per_minute_rate 
                 min_duration = (distance/speed) * 360 #duration in minutes 
                 total_quote = base_fare + (per_mile_rate * distance) + (per_minute_rate * min_duration) + vehicle_rate 
+            if payload.service_type.lower() == 'airport':
+                
+                logger.debug(f"{booking_price.__dict__}")
+                
+                stc_rate = booking_price.stc_rate #For airports only  [STC(Surface Transport Charge)]
+                gratuity_rate = booking_price.gratuity_rate  #For airports only  [Percentage]
+                airport_gate_fee = booking_price.airport_gate_fee  #For airports only  [flat fee]
+                meet_and_greet_fee = booking_price.meet_and_greet_fee  #For airports only  [flat fee]
+                logger.debug("Airport calculation in progress ")
             
+                total_quote = total_quote * stc_rate * gratuity_rate + airport_gate_fee + meet_and_greet_fee
             else:
                 per_hour_rate = pricing.per_hour_rate
                 hours = payload.hours
                 total_quote = base_fare + vehicle_rate + (per_hour_rate * hours)
+            
+            deposit = 0.00
+            if is_deposit:
+                deposit_fee = booking_price.deposit_fee
+                deposit_type = booking_price.deposit_type
+                
+                deposit = total_quote * deposit_fee if deposit_type == 'percentage' else deposit_fee
 
-            return round(total_quote, 2)
+            return {"total": round(total_quote, 2), "deposit": round(deposit, 2)} 
+            return round(total_quote, 2) 
 
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)

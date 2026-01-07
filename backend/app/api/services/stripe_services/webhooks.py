@@ -126,7 +126,7 @@ class WebhookServices(ServiceContext):
                 response.payment_status = 'paid'
                 
                 logger.info(f"Payment recieved for tenant {tenant_stripe_id}")
-            elif event['type'] in ('payment_intent.succeeded'):
+            elif event['type'] in ('payment_intent.succeeded', 'charge.succeeded'):
                 try:
                     logger.debug("Payment succeeded")
                     status_dict = {

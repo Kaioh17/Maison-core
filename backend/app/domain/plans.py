@@ -16,16 +16,16 @@ STARTER_PLAN = Plan(
     allow_property_support=False
 )
 
-PREMIUM_PLAN = Plan(
-    name="premium",
+GROWTH_PLAN = Plan(
+    name="growth",
     max_vehicle=7,
     max_driver_count=5,
     maison_fee = 0.02,    
     allow_property_support=False
 )
 
-DIAMOND_PLAN = Plan(
-    name="diamond",
+FLEET_PLAN = Plan(
+    name="fleet",
     max_vehicle= 50,
     max_driver_count=50,
     maison_fee = 0.02,
@@ -34,6 +34,6 @@ DIAMOND_PLAN = Plan(
 
 PLAN_REGISTRY = {
     "starter": STARTER_PLAN,
-    "premium": PREMIUM_PLAN,
-    "diamond": DIAMOND_PLAN,
+    "growth": GROWTH_PLAN,
+    "fleet": FLEET_PLAN,
 }

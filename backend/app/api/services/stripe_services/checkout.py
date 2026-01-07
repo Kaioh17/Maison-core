@@ -40,6 +40,12 @@ class BookingCheckout(ServiceContext):
             if not booking_obj:
                     raise HTTPException(400, "booking_notfount")
             if charges_status:
+                status_dict = {
+                                    'deposit_paid': 'deposit',
+                                    'balance_paid': 'balance',
+                                    'full_paid': 'full',
+                                    'pending': 'pending'
+                                }
                 logger.debug(f"{booking_obj.tenant_id}")
                 
                 booking_id = booking_obj.id
@@ -51,13 +57,14 @@ class BookingCheckout(ServiceContext):
                     
                 
                 unit_amount = self._to_cent(price=booking_obj.estimated_price)
-                payment_type = 'full' if booking_obj.payment_status == 'pending' else 'balance'
-              
-                if payment_type == 'balance' and is_deposit:
-                    balance = self._to_cent(booking_obj.estimated_price) - unit_amount
+                # payment_type = 'full' if booking_obj.payment_status == 'pending' else 'balance'
+                payment_type = status_dict[booking_obj.payment_status]
+                if payment_type == 'deposit' and is_deposit:
+                    balance = unit_amount - self._get_deposit(booking_obj=booking_obj, unit_amount=unit_amount)
                     unit_amount = balance
+                    payment_type = 'full'
                     logger.debug(f"Balance {balance}")
-                if is_deposit:
+                if is_deposit and payment_type =='pending':
                     payment_type = 'deposit' 
                     
                     unit_amount=self._get_deposit(booking_obj=booking_obj, unit_amount=unit_amount)
@@ -68,12 +75,14 @@ class BookingCheckout(ServiceContext):
                 #application fee
                 calc =self._to_dollars(unit_amount) * PLAN_REGISTRY[self.sub_plan].maison_fee
                 maison_fee = self._to_cent(calc)
-                logger.debug(f"Maison fee {self._to_dollars(unit_amount) } * {PLAN_REGISTRY[self.sub_plan].maison_fee} = {maison_fee}") 
+                logger.debug(f"Maison fee {self._to_dollars(unit_amount) } * {PLAN_REGISTRY[self.sub_plan].maison_fee} = {self._to_dollars(maison_fee)}") 
                 confirm =False
                 payment_id = None
                 if self.role == 'driver':
-                    confirm =True 
+                    confirm =True   
                     payment_id = booking_obj.payment_id
+                    logger.debug(f"Payment_id= {payment_id}")
+                    
                 intent =stripe.PaymentIntent.create(
                         amount=unit_amount,
                         currency='usd',
@@ -146,6 +155,7 @@ class BookingCheckout(ServiceContext):
                                 
             deposit_fee= booking_config.deposit_fee
             deposit_type = booking_config.deposit_type  ## unit_amount * %
+            
             if deposit_type == "percentage":
                 deposit = booking_obj.estimated_price * deposit_fee
                 logger.debug(f"Deposit {deposit}")
@@ -155,8 +165,31 @@ class BookingCheckout(ServiceContext):
                 return deposit_cents
             elif deposit_type == "flat":
                 return self._to_cent(price=deposit_fee)
+            
             else:
                 raise ValueError("Deposit type not valid")
+            
+    # def _get_balance(self, booking_obj: object, unit_amount):
+    #     #calculate deposit if deposit
+            
+    #         booking_config:tenant_booking_price = self.db.query(tenant_booking_price).filter(tenant_booking_price.tenant_id == self.tenant_id,
+    #                                                                                             tenant_booking_price.service_type == booking_obj.service_type).first()
+                                
+    #         deposit_fee= booking_config.deposit_fee
+    #         deposit_type = booking_config.deposit_type  ## unit_amount * %
+            
+    #         if deposit_type == "percentage":
+    #             deposit = booking_obj.estimated_price * deposit_fee
+    #             logger.debug(f"Deposit {deposit}")
+    #             deposit_cents = self._to_cent(deposit)
+    #             logger.debug(f"Deposit {deposit_cents}")
+                
+    #             return deposit_cents
+    #         elif deposit_type == "flat":
+    #             return self._to_cent(price=deposit_fee)
+            
+    #         else:
+    #             raise ValueError("Deposit type not valid")
     async def _create_stripe_cutstomer(self):
         try:
             customer = stripe.Customer.create(

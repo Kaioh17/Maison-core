@@ -12,6 +12,7 @@ from ..core import deps
 from .helper_service import *
 from .service_context import ServiceContext
 from .email_services import tenants
+from app.schemas.tenant_setting import *
 
 db_exceptions = db_error_handler.DBErrorHandler
 
@@ -175,14 +176,21 @@ with Session(engine) as session: # Or use an existing session
             return success_resp(msg='Updated branding config successfuly', data=response)
         except  db_exceptions.COMMON_DB_ERRORS as d:
             db_exceptions.handle(d, self.db)
-    async def update_tenant_booking(self,service_type, payload):
+    def _is_airport(self, payload: TenantBookingUpdate, service_type):
+        if service_type.lower() != 'airport' and payload.stc_rate or payload.gratuity_rate or payload.meet_and_greet_fee or payload.airport_gate_fee:
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                detail=f"This [stc_rate, gratuity_rate, meet_and_greet_fee, airport_gate_fee] types only reserved to airport...")
+          
+        return
+    async def update_tenant_booking(self,service_type, payload: TenantBookingUpdate):
         try:
+            self._is_airport(payload=payload, service_type=service_type)
             response = self.db.query(tenant_booking_price).filter(tenant_booking_price.tenant_id == self.tenant_id,
                                                                   tenant_booking_price.service_type == service_type).first()
             if not response:
                 logger.error("Booking config not found ")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,  detail = "Branding config not found ")
-                
+            
             data_mapped = response.__dict__
             for k,v in payload.dict().items():
                 if v == None:

@@ -15,6 +15,8 @@ class VehicleCategoryRate(Base):
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
     vehicle_category = Column(String, nullable=True, index=True)
     vehicle_flat_rate = Column(Float, nullable=False, default= 0.0, server_default=text ('0.0'))
+    # vehicle_avg_speed = Column(Float, nullable=True, default=25.0, server_default= text('25.0') )
+    
     allowed_image_types = Column(ARRAY(String),nullable=True, default=[
                                     "front_exterior",
                                     "rear_exterior",
