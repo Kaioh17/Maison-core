@@ -43,7 +43,7 @@ class BoookingBase(BaseModel):
     # driver_id: Optional[int]
     vehicle_id: int = None
     country: str
-    service_type: ServiceType
+    service_type: str
     pickup_location: str
     pickup_time: datetime
     airport_service: Optional[str] = Field(None)
@@ -63,10 +63,10 @@ class BoookingBase(BaseModel):
     @model_validator(mode="after")
     def enforce_service(self):
         #For airport services
-        if self.service_type.lower() == ServiceType.AIRPORT and  not self.airport_service:
+        if self.service_type.lower() == 'airport' and  not self.airport_service:
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, 
                                 detail="Airport rides most have airport_service types [from_airport/to_airport] ")
-        elif self.service_type.lower() == ServiceType.HOURLY and not self.hours:
+        elif self.service_type.lower() == 'hourly' and not self.hours:
             logger.debug("Hours is required")
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, 
                                 detail="Hours is required")
@@ -79,10 +79,10 @@ class BoookingBase(BaseModel):
         # country = values.country
         # dropoff_location = values.dropoff_location
 
-        if service_type.lower() == ServiceType.DROP_OFF and service_type.lower() == ServiceType.AIRPORT:
+        if service_type.lower() == 'dropoff' and service_type.lower() == 'airport':
             raise HTTPException(status_code= 400, detail ="A drop off location is required for dropoffs")
         #airport logic
-        # if service_type.lower() ==ServiceType.AIRPORT:
+        # if service_type.lower() =='airport':
         #     airport_info = LocationHelper.get_airport_for_city(city)
 
         #     if not dropoff_location:

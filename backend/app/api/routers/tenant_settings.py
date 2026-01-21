@@ -55,3 +55,10 @@ async def update_booking_prices(service_type: str,payload: tenant_setting.Tenant
     
     updated_logo = await tenant_settings_service.update_tenant_booking(service_type=service_type, payload=payload)
     return updated_logo
+
+@router.delete("/settings/{service_type}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_service_type(service_type: str,
+                                tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service)):
+    
+    deleted_service_type = await tenant_settings_service.delete_service_type(service_type=service_type)
+    return  deleted_service_type

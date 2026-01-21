@@ -13,6 +13,9 @@ from .helper_service import *
 from .service_context import ServiceContext
 from .email_services import tenants
 from app.schemas.tenant_setting import *
+from sqlalchemy.orm.attributes import flag_modified
+
+
 
 db_exceptions = db_error_handler.DBErrorHandler
 
@@ -106,13 +109,42 @@ with Session(engine) as session: # Or use an existing session
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail = "Settings not found ")
         data_mapped = setting_obj.__dict__
-        logger.debug(data_mapped)
+        # logger.debug(data_mapped)
         
         for field, value in payload.dict().items():
-            if value == None:                
+            logger.debug(f"{field}")
+            logger.debug(f"{value}")
+            if field == 'config' and value != None and len(value['booking']['types']) > len(data_mapped['config']['booking']['types']):
+                new_type = value['booking']['types']
+                # logger.debug(f"{new_type}")
+                current_types = [k for k, v in data_mapped['config']['booking']['types'].items()]
+                logger.debug(current_types)
+                
+                for k, v in new_type.items():
+                    # logger.debug(f'types {k} :{v}')
+                    if k not in current_types:
+                        _new_type = k
+                        new_type_add = TenantBookingPricing(
+                            tenant_id=self.tenant_id,
+                            service_type = _new_type,
+                            deposit_type = 'percentage',
+                            deposit_fee =  0.3
+                        )
+                        self.db.add(new_type_add)
+            
+            if value == None:          
+                logger.debug(f"I am in None: but i shouldnt be{value}")      
                 value = data_mapped[field] 
             # if payload.config:
             #     setting_obj.config =  payload.config
+            
+           
+            
+            # if field == 'config':
+            #     logger.debug(f"Value {value['booking']['types']}")
+            # logger.debug(f"{field}")
+            # return
+            
                 
             if hasattr(setting_obj, field):
                 setattr(setting_obj, field, value)
@@ -238,6 +270,124 @@ with Session(engine) as session: # Or use an existing session
             )
 
         return success_resp(data=branding_obj, msg="Tenant logo updated successfully")
+    
+    
+    async def delete_service_type(self, service_type: str):
+        try:
+            service_type = service_type.lower()
+            response  = self.db.query(TenantSettings).filter(TenantSettings.tenant_id == self.tenant_id).first()
+            
+            if not response:
+                logger.error("Tenant setting found!!!")
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Tenant setting found!!!")
 
+            config = response.config
+
+            current_service_types = [k for k in config['booking']['types'].keys()]
+            if service_type in ['hourly', 'airport', 'dropoff']:
+                logger.error(f"Cannot delete system types!!!")
+                raise HTTPException(status.HTTP_403_FORBIDDEN, f"Cannot delete system types!!!")
+            if service_type not in current_service_types:
+                logger.error(f"Service not found")
+                raise HTTPException(404, f"Service not found")
+            
+            del config['booking']['types'][service_type]
+            setattr(response, 'config', config)
+     
+            flag_modified(response, "config")
+        
+            self.db.commit()
+            self.db.refresh(response)
+     
+            return 
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, self.db)
 def get_tenant_setting_service(current_user=Depends(deps.get_current_user), db=Depends(get_db)):
     return TenantSettingsService(db=db, current_user=current_user)
+
+
+"""{
+    "success": true,
+    "message": "Tenant ConfigTypes.ALL retrieved successfully",
+    "meta": null,
+    "data": {
+        "settings": {
+            "rider_tiers_enabled": false,
+            "config": {
+                "booking": {
+                    "allow_guest_bookings": true,
+                    "show_vehicle_images": false,
+                    "types": {
+                        "hourly": {
+                            "is_deposit_required": true
+                        },
+                        "airport": {
+                            "is_deposit_required": false
+                        },
+                        "dropoff": {
+                            "is_deposit_required": true
+                        },
+                        "event_dropoff": {
+                            "is_deposit_required": true
+                        }
+                    }
+                },
+                "branding": {
+                    "button_radius": 8,
+                    "font_family": "DM Sans"
+                },
+                "features": {
+                    "vip_profiles": true,
+                    "show_loyalty_banner": false
+                }
+            }
+        },
+        "pricing": {
+            "base_fare": 10.0,
+            "per_mile_rate": 10.0,
+            "per_minute_rate": 10.0,
+            "per_hour_rate": 100.0,
+            "cancellation_fee": 0.0,
+            "discounts": false
+        },
+        "branding": {
+            "theme": "dark",
+            "primary_color": "#831616",
+            "secondary_color": "#d31717",
+            "accent_color": "#a9c035",
+            "favicon_url": "https://bbhtdgtsgjipimdqpixw.supabase.co/storage/v1/object/public/favicon/ridez/ridez_texoc-high-resolution-logo.png",
+            "slug": "ridez",
+            "email_from_name": null,
+            "email_from_address": null,
+            "logo_url": "https://bbhtdgtsgjipimdqpixw.supabase.co/storage/v1/object/public/logos/ridez/ridez_texoc-high-resolution-logo.png",
+            "enable_branding": false
+        },
+        "booking": [
+            {
+                "deposit_fee": 75.0,
+                "deposit_type": "flat",
+                "service_type": "hourly",
+                "updated_on": null
+            },
+            {
+                "deposit_fee": 0.3,
+                "deposit_type": "percentage",
+                "service_type": "airport",
+                "updated_on": null
+            },
+            {
+                "deposit_fee": 0.3,
+                "deposit_type": "percentage",
+                "service_type": "dropoff",
+                "updated_on": "2026-01-02T06:58:04.360999Z"
+            },
+            {
+                "deposit_fee": 0.3,
+                "deposit_type": "percentage",
+                "service_type": "event_dropoff",
+                "updated_on": null
+            }
+        ]
+    },
+    "error": null
+}"""

@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, validator, model_validator, field_validator
-from typing import Optional
+from typing import Any, Dict, Optional
 import re
 class ConfigTypes(str, Enum):
     BRANDING = "branding"
@@ -19,19 +19,21 @@ from pydantic import BaseModel, Field
 
 class BookingTypeConfig(BaseModel):
     is_deposit_required: Optional[bool] = Field(None,description="Whether this booking type requires a deposit to confirm.")
-class BookingTypesConfig(BaseModel):
-    airport: Optional[BookingTypeConfig] = Field(
-        None,
-        description="Configuration for airport transfer bookings."
-    )
-    dropoff: Optional[BookingTypeConfig] = Field(
-        None,
-        description="Configuration for point-to-point / dropoff bookings."
-    )
-    hourly: Optional[BookingTypeConfig] = Field(
-        None,
-        description="Configuration for hourly / charter bookings."
-    )
+    
+    
+# class BookingTypesConfig(BaseModel):
+#     airport: Optional[BookingTypeConfig] = Field(
+#         None,
+#         description="Configuration for airport transfer bookings."
+#     )
+#     dropoff: Optional[BookingTypeConfig] = Field(
+#         None,
+#         description="Configuration for point-to-point / dropoff bookings."
+#     )
+#     hourly: Optional[BookingTypeConfig] = Field(
+#         None,
+#         description="Configuration for hourly / charter bookings."
+#     )
 
 
 class BookingConfig(BaseModel):
@@ -43,7 +45,7 @@ class BookingConfig(BaseModel):
         None,
         description="Show vehicle images in the booking flow."
     )
-    types: Optional[BookingTypesConfig] = Field(
+    types: Optional[Dict[str,  BookingTypeConfig]] = Field(
         None,
         description="Per-service-type booking behavior configuration."
     )
