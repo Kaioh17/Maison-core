@@ -17,13 +17,16 @@ class UserService(ServiceContext):
     def __init__(self, db, current_user):
         super().__init__(db=db, current_user=current_user)
         self.validate = Validations(self.db)
-    async def create_user(self, payload, tenant_id):
+    async def create_user(self, payload, slug):
         try:
+            logger.debug(f"new method hit {slug}")
+            tenant_id = self.validate._verify_slug(slug=slug)
             exists = self.db.query(user_table).filter(user_table.email == payload.email, 
                                                 user_table.tenant_id == tenant_id, 
                                                 user_table.phone_no == payload.phone_no
                                                 ).first()  
             if exists:
+                logger.debug(f"User with {payload.email} already exists")
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                     detail= f"User with {payload.email} already exists")    
             

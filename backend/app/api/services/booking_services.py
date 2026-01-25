@@ -488,17 +488,17 @@ class BookingService(ServiceContext):
                 per_minute_rate = pricing.per_minute_rate 
                 min_duration = (distance/speed) * 360 #duration in minutes 
                 total_quote = base_fare + (per_mile_rate * distance) + (per_minute_rate * min_duration) + vehicle_rate 
-            if payload.service_type.lower() == 'airport':
+                if payload.service_type.lower() == 'airport':
                 
-                logger.debug(f"{booking_price.__dict__}")
+                    logger.debug(f"{booking_price.__dict__}")
+                    
+                    stc_rate = booking_price.stc_rate #For airports only  [STC(Surface Transport Charge)]
+                    gratuity_rate = booking_price.gratuity_rate  #For airports only  [Percentage]
+                    airport_gate_fee = booking_price.airport_gate_fee  #For airports only  [flat fee]
+                    meet_and_greet_fee = booking_price.meet_and_greet_fee  #For airports only  [flat fee]
+                    logger.debug("Airport calculation in progress ")
                 
-                stc_rate = booking_price.stc_rate #For airports only  [STC(Surface Transport Charge)]
-                gratuity_rate = booking_price.gratuity_rate  #For airports only  [Percentage]
-                airport_gate_fee = booking_price.airport_gate_fee  #For airports only  [flat fee]
-                meet_and_greet_fee = booking_price.meet_and_greet_fee  #For airports only  [flat fee]
-                logger.debug("Airport calculation in progress ")
-            
-                total_quote = total_quote * stc_rate * gratuity_rate + airport_gate_fee + meet_and_greet_fee
+                    total_quote = total_quote * stc_rate * gratuity_rate + airport_gate_fee + meet_and_greet_fee
             else:
                 per_hour_rate = pricing.per_hour_rate
                 hours = payload.hours

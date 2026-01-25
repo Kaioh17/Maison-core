@@ -47,7 +47,15 @@ from app.utils.db_error_handler import DBErrorHandler, DatabaseError
 class Validations:
     def __init__(self, db = None):
         self.db = db
-        
+    def _verify_slug(self, slug):
+        # query = "select * from tenant_settings"
+        # resp = self.db.query(tenant_setting_table).filter(tenant_setting_table.slug == slug).first()
+        resp = (self.db.query(tenant_profile)
+                    .filter(tenant_profile.slug == slug).first())
+        if not resp:
+            logger.debug("Slug not in db")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Slug is not in db")
+        return resp.tenant_id
     # @staticmethod
     def _tenant_activity_(self, tenant_id):
         tenants = self._tenants_exist(tenant_id)

@@ -45,6 +45,9 @@ class TenantCreate(BaseModel):
         if not re.search(r'\d', v):
             raise ValueError('Password must contain at least one number')
         return v
+class BeDriver(BaseModel):
+    license_number: Optional[int]
+    state: Optional[str]
 class TenantUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=200)
     last_name: Optional[str] = Field(None, min_length=1, max_length=200)

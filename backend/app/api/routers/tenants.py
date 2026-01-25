@@ -174,3 +174,16 @@ async def get_analysis(
 ):
    analytics = await tenant_service.analytics()
    return analytics
+
+@router.post('/driver', status_code=status.HTTP_201_CREATED)
+async def become_driver(request: Request,tenant_service: TenantService = Depends(get_tenant_service)):
+    be_driver = await tenant_service.be_driver(request=request)
+    return be_driver
+
+
+@router.get('/is_driver', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[dict])
+async def get_analysis(
+    tenant_service: TenantService = Depends(get_tenant_service)
+):
+   analytics = await tenant_service.is_driver()
+   return analytics

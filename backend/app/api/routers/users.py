@@ -16,11 +16,11 @@ router = APIRouter(
 )   
 
 
-@router.post("/add/{tenant_id}", status_code=status.HTTP_201_CREATED, response_model= StandardResponse[dict])
-async def create_user(tenant_id: int, payload: user.UserCreate,user_service: UserService =  Depends(get_unauthorized_service)):
+@router.post("/add/{slug}", status_code=status.HTTP_201_CREATED, response_model= StandardResponse[user.UserResponse])   # changed from tenant id to slug 
+async def create_user(slug: str, payload: user.UserCreate,user_service: UserService =  Depends(get_unauthorized_service)):
 
     logger.info("Creating User")
-    user = await user_service.create_user(payload, tenant_id)
+    user = await user_service.create_user(payload, slug)
     logger.debug(f"{user}")
     return user
 
@@ -30,11 +30,11 @@ async def get_user_info(user_service: UserService =  Depends(get_user_service)):
     user_info = await user_service.get_user_info()
 
     return user_info
-@router.get("/booking/analytics", status_code=status.HTTP_200_OK, response_model=StandardResponse[user.BookingAnalytucsresponse])
+@router.get("/booking/analytics", status_code=status.HTTP_200_OK, response_model=StandardResponse[user.BookingAnalyticsResponse])
 async def get_user_info(user_service: RiderAnalyticService =  Depends(get_rider_analytics)):
 
     user_info = await user_service.booking_analytics()
-
+    logger.debug(f"user_info {user_info}")
     return user_info
 ##get available bookings available drivers 
 #set bookings

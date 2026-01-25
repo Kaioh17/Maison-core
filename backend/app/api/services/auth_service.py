@@ -41,7 +41,8 @@ class AuthService:
             table_dict = {
                 "tenant":tenant_table,
                 "rider":user_table,
-                "driver":driver_table
+                "driver":driver_table,
+                
                         }
             role = role.strip().lower()
             table = table_dict[role]
@@ -58,11 +59,16 @@ class AuthService:
                 max_attempts=self.MAX_ATTEMPTS,
                 window_minutes=self.WINDOW_MINUTES
             )
-
+            logger.debug(f"email: {user_credentials.username}")
             user_query = self.db.query(table).filter(table.email == user_credentials.username)
             user = user_query.first()
+            logger.debug(f"email: {user}")
+            
+            
             
             password = user_credentials.password.strip()
+            logger.debug(f"email: {user}")
+            
 
             if not user:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,

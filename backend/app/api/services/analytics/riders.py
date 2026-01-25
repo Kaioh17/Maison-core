@@ -56,13 +56,16 @@ class RiderAnalyticService(ServiceContext):
             
             
             # count_obj = count_.mappings().all()
-            
+            logger.debug(f"{count_obj}")
+            if count_obj[0]['count_stat'] == 0:
+                return success_resp("No bookings yet")
             aggregates = {}
             for i in range(len(count_obj)):
                 booking_status = count_obj[i]['booking_status']
                 count =  count_obj[i]['count_stat']
                 aggregates[booking_status] = count
-            # logger.debug(f"Count: {aggregate}")
+
+            logger.debug(f"Count: {aggregates}")
             return success_resp(msg="Booking analytics successful",data = aggregates)
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)

@@ -37,6 +37,8 @@ from .service_context import ServiceContext
 from .stripe_services import stripe_service, stripe_tier_service 
 from app.policies import plan_policy
 from app.domain import plans
+from .auth_service import AuthService
+import httpx
 
 class TenantService(ServiceContext):
     def __init__(self, db, current_user):
@@ -160,7 +162,69 @@ class TenantService(ServiceContext):
                     )
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
+    async def is_driver(self):
+        from fastapi.security.oauth2 import OAuth2PasswordRequestForm
+        try:
+            is_driver = self.db.query(driver_table).filter(driver_table.first_name == self.current_user.first_name, 
+                                                           driver_table.last_name == self.current_user.last_name, 
+                                                           driver_table.email == self.current_user.email
+                                                           ).first()
+
+            logger.debug(is_driver)
+            if is_driver:
+                logger.debug('Tenant  is already driver')
+                return success_resp(msg="tenant is Driver", data = {"is_driver":True})
+            return success_resp(msg="tenant is not Driver", data = {"is_driver":False})
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            raise self.db_exceptions.handle(e, db=self.db)
+    async def be_driver(self, request):
+        from fastapi.security.oauth2 import OAuth2PasswordRequestForm
+        try:
+            is_driver = self.db.query(driver_table).filter(driver_table.first_name == self.current_user.first_name, 
+                                                           driver_table.last_name == self.current_user.last_name, 
+                                                           driver_table.email == self.current_user.email
+                                                           ).first()
             
+            if is_driver:
+                logger.debug('Tenant  is already driver...Logging in.... ')
+                auth_service =  AuthService(self.db).login(request=request,
+                                        user_credentials= OAuth2PasswordRequestForm(username=self.tenant_email, 
+                                                                                    password=self.current_user.password),
+                                        role='driver'
+                                        )
+                # logger.debug(f"Auth service {auth_service.access_token}")
+                return auth_service
+                # raise HTTPException(status_code=status.HTTP_302_FOUND, detail = "Tenant is already driver")
+            driver = driver_table(tenant_id = self.tenant_id, 
+                                       first_name = self.current_user.first_name,
+                                        last_name = self.current_user.last_name,
+                                       email = self.current_user.email,
+                                       password = self.current_user.password,
+                                    #    license_number = payload.license_number,
+                                    #    state = payload.state,
+                                        role = 'driver',
+                                        phone_no = self.current_user.phone_no,
+                                        driver_type = 'in_house',
+                                        is_active = True,
+                                        is_registered = 'registered',
+                                        is_token = True,
+                                        driver_token = 'not_needed'
+                                        
+                                       )
+            self.db.add(driver)
+            self.db.commit()
+            self.db.refresh(driver)
+            
+            
+            access_token = AuthService(self.db).login(request=request,
+                                        user_credentials= OAuth2PasswordRequestForm(username=self.tenant_email, 
+                                                                                    password=self.current_user.password),
+                                        role='driver'
+                                        )
+            logger.debug(f"Response {access_token}")
+            return access_token
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            raise self.db_exceptions.handle(e, self.db)
     async def get_company_info(self):
         try: 
             # company = db.execute(text("select * from tenants t join tenants_profile tp on tp.tenant_id = t.id join tenant_stats ts on ts.tenant_id = t.id where tenant_id = "))

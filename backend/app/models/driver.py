@@ -24,7 +24,7 @@ class Drivers(Base):
     password = Column(String, nullable= True)
     state = Column(String, nullable=True, index=True)
     postal_code = Column(String, nullable=True)
-    role = Column(String, nullable = True, default="driver")
+    role = Column(String, nullable = False, default="driver")
 
     ##driver_type 
     driver_type = Column(String, nullable=False)

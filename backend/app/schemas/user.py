@@ -36,13 +36,13 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     role: str
-    tier: str
+    tier: str   
     created_on: Optional[datetime]
     updated_on: Optional[datetime]
     
-class BookingAnalytucsresponse(BaseModel):
-    confirmed: int
-    completed: int
-    cancelled: int
-    pending: int
-    total: int
+class BookingAnalyticsResponse(BaseModel):
+    confirmed: Optional[int] = Field(None)
+    completed: Optional[int] = Field(None)
+    cancelled: Optional[int] = Field(None)
+    pending: Optional[int] = Field(None)
+    total: Optional[int] = Field(None) 
