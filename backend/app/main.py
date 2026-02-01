@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
-from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admin,subscriptions, logs
+from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admin,subscriptions, logs, slug, webhooks
 from app.db.database import engine
 from app.models import *
 # from utils import logging
@@ -101,18 +101,21 @@ app = FastAPI(
             "name": "Authentication",
             "description": "User authentication and authorization"
         }
-    ]
+    ],
+    swagger_ui_parameters={"syntaxHighlight": {"theme": "obsidian"}}
 )
-
+# app = FastAPI(swagger_ui_parameters={"syntaxHighlight": {"theme": "obsidian"}})
 # CORS for frontend (dev: Vite at 3000; docker: nginx serves same-origin and proxies /api)
+# Also includes mobile app origins for Flutter development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
+    allow_origins=[       
         "http://localhost:3000",   
         "http://localhost:3001",    
-
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
+     
+        
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -138,6 +141,8 @@ app.include_router(tenant_settings.router)
 app.include_router(admin.router)
 app.include_router(subscriptions.router)
 app.include_router(logs.router)
+app.include_router(slug.router)
+app.include_router(webhooks.router)
 
 
 

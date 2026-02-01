@@ -176,9 +176,9 @@ class SupaS3:
                                                 'quality': 75,
                                             }
                                        }}
-            dim_ = transform[bucket_name] if bucket_name in ['favicon','logos'] else {'transform': {'width': 800,'height': 400, 'resize': 'cover','quality': 90,}}
-            public_url =( supa.storage.from_(bucket_name)
-                                    .get_public_url(_file_path, dim_))
+            # dim_ = transform[bucket_name] if bucket_name in ['favicon','logos'] else {'transform': {'width': 800,'height': 400, 'resize': 'cover','quality': 90,}}
+            public_url =( supa.storage.from_(bucket_name)   
+                                    .get_public_url(_file_path))
             
             logger.debug(public_url)
             return public_url
@@ -194,8 +194,9 @@ class SupaS3:
                 logger.debug("Nothing to delete")
                 return 
             resp = supa.storage.from_(bucket_name).remove(file_urls)
-            if resp[0]['metadata']['httpStatusCode'] != 200:
-                raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Delete failed")
+            logger.debug(f"Fix: {resp}")
+            # if resp[0]['metadata']['httpStatusCode'] != 200:
+            #     raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Delete failed")
             logger.debug("Deleted from bucket")
         except Exception as e:
             raise e
