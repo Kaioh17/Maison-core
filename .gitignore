@@ -9,7 +9,6 @@ backend/_alembic_setup.sh
 frontend/app/node_modules
 frontend/mobile/node_modules
 
-upload
 # backend/alembic
 *.log
 backend/alembic/versions
