@@ -17,34 +17,65 @@ from app.utils.logging import logger
 
 router = APIRouter(
     prefix="/api/v1/tenant",
-    tags=['Tenant']
+    tags=["Tenant"],
 )
 
 
-# id = security.get_tenant_id
-# Get tenant's company info
-@router.get("/public_test", status_code=status.HTTP_200_OK)
+@router.get(
+    "/public_test",
+    status_code=status.HTTP_200_OK,
+    summary="Health / connectivity test",
+    description="Unauthenticated smoke test returning a static message.",
+    response_description="Simple JSON message.",
+)
 def public_info():
     logger.info("Public test started")
     return {"msg": "test endpoint"}
 
-@router.get("/get_client_info")
+
+@router.get(
+    "/get_client_info",
+    summary="Debug: client host",
+    description="Returns the connecting client's host and base URL (debugging / proxies).",
+    response_description="`client_host` and related info.",
+    deprecated=True
+)
 def get_client_info(request: Request):
     client_host = request.client.host
     client_origin = request.base_url
     logger.info(f"Client: {client_host}, origin: {client_origin}")
-    return {"client_host" : client_host}
+    return {"client_host": client_host}
 
-@router.get('/', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[tenant.TenantResponse])                            
-async def tenants(tenant_service: TenantService = Depends(get_tenant_service)):
+
+@router.get(
+    "/",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[tenant.TenantResponse],
+    summary="Get current tenant company profile",
+    description="Returns the authenticated tenant's company info and related profile fields. Requires **tenant** JWT.",
+    response_description="Tenant profile payload.",
+)
+async def get_tenant_company_info(
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
     logger.info("Tenant's info")
     company = await tenant_service.get_company_info()
     return company
 
-# Create a new tenant
-@router.post('/add', status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[tenant.TenantRsponse])
-    
-async def create_tenants(   email: EmailStr = Form(...),
+
+@router.post(
+    "/add",
+    status_code=status.HTTP_201_CREATED,
+    response_model=general.StandardResponse[tenant.TenantRsponse],
+    summary="Register a new tenant (company)",
+    description=(
+        "Public signup: creates tenant account, company profile, default settings/pricing, optional logo upload. "
+        "Multipart form; **`slug`** must be URL-safe (lowercase, hyphens)."
+    ),
+    response_description="Created tenant + profile.",
+)
+async def create_tenants(
+    email: EmailStr = Form(...),
                             first_name: str = Form(..., min_length=1, max_length=200),
                             last_name: str = Form(..., min_length=1, max_length=200),
                             password: str = Form(min_length=8),
@@ -74,16 +105,33 @@ async def create_tenants(   email: EmailStr = Form(...),
                                                         logo_url=logo_url, )
         return tenant_obj
 
-# Get all drivers for the current tenant
-@router.get('/drivers', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[driver.DriverResponse]])
-async def get_drivers(driver_id: Optional[int] = None,tenant_service: TenantService = Depends(get_tenant_service)):
+
+@router.get(
+    "/drivers",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[list[driver.DriverResponse]],
+    summary="List drivers for this tenant",
+    description="Optional **`driver_id`** to fetch a single driver. Requires **tenant** JWT.",
+    response_description="List of drivers.",
+)
+async def get_tenant_drivers(
+    driver_id: Optional[int] = None,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
     logger.info("Tenant drivers")
     drivers = await tenant_service.get_all_drivers(driver_id)
     return drivers
 
-# DEPRECATED
-@router.get('/vehicles', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[vehicle.VehicleResponse]])
-async def get_vehicles(
+
+@router.get(
+    "/vehicles",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[list[vehicle.VehicleResponse]],
+    summary="[Deprecated] List vehicles",
+    description="**410 Gone** — use `/api/v1/vehicles` instead.",
+    response_description="Not used.",
+)
+async def get_vehicles_deprecated(
     driver_id: Optional[int] = Query(None, description="Get vehicles for specific driver"),
     assigned_drivers: Optional[bool] = Query(False, description="Get only vehicles assigned to drivers"),
     tenant_service: TenantService = Depends(get_tenant_service)
@@ -100,9 +148,19 @@ async def get_vehicles(
         vehicles = await tenant_service.get_all_vehicles()
     return vehicles
 
-# Get bookings for the tenant, optionally filtered by status
-@router.get('/bookings', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[list[booking.BookingPublic]])
-async def get_bookings(
+
+@router.get(
+    "/bookings",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[list[booking.BookingPublic]],
+    summary="List bookings for this tenant",
+    description=(
+        "Filter by **`booking_status`**, **`service_type`**, **`vehicle_id`**, **`booking_id`**, or **`limit`**. "
+        "Requires **tenant** JWT; results scoped to tenant."
+    ),
+    response_description="List of bookings.",
+)
+async def get_tenant_bookings(
     booking_id: Optional[str] = None,
     booking_status: Optional[str] = Query(None, description="only this labels can be passed 'pending', 'confirmed', 'active', 'cancelled', 'no_show'"),service_type: Optional[str] =None, vehicle_id: Optional[int] =None,limit: Optional[int] =None, 
     booking_service: BookingService = Depends(get_booking_service)
@@ -112,8 +170,15 @@ async def get_bookings(
         
     return bookings
 
-# Onboard a new driver for the tenant
-@router.post('/onboard', status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[tenant.OnboardDriverResponse])
+
+@router.post(
+    "/onboard",
+    status_code=status.HTTP_201_CREATED,
+    response_model=general.StandardResponse[tenant.OnboardDriverResponse],
+    summary="Invite / onboard a driver",
+    description="Creates driver invite + onboarding token and notification flow. Requires **tenant** JWT.",
+    response_description="Onboarding result (e.g. token, email status).",
+)
 async def onboard_drivers(
     payload: tenant.OnboardDriver,
     tenant_service: TenantService = Depends(get_tenant_service)
@@ -122,68 +187,129 @@ async def onboard_drivers(
     new_driver = await tenant_service.onboard_drivers(payload)
     return new_driver
 
-"""Assign driver to a booked rides pending drivers"""
-@router.patch("/bookings/{booking_id}/assign-driver", status_code=status.HTTP_202_ACCEPTED)
-async def assign_driver_to_rides(payload: tenant.AssignDriver,
-                                booking_id: int,
-                                tenant_service: TenantService = Depends(get_tenant_service)):
-     
-     assigned_driver = await tenant_service.assign_driver_to_rides(payload, booking_id)
-     return assigned_driver
 
-"""Assign drivers to vehicles"""
-@router.patch("/vehicles/{vehicle_id}/assign/{driver_id}", status_code=status.HTTP_202_ACCEPTED)
-async def assign_driver_to_vehicles(driver_id:int, vehicle_id: int,
-                        tenant_service: TenantService = Depends(get_tenant_service)):
-     
-     assigned_driver = await tenant_service.assign_driver_to_vehicle(driver_id, vehicle_id)
-     return assigned_driver
-
-@router.patch("/vehicles/{vehicle_id}/unassign/driver", status_code=status.HTTP_202_ACCEPTED)
-async def unassign_driver_from_vehicle(vehicle_id: int,override:bool = False,
-                        
-                        tenant_service: TenantService = Depends(get_tenant_service)):
-     
-    assigned_driver = await tenant_service.unassign_driver_from_vehicles(override=override, vehicle_id=vehicle_id)
+@router.patch(
+    "/bookings/{booking_id}/assign-driver",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Assign a driver to a booking",
+    description="Maps a **`driver_id`** to a pending booking. Requires **tenant** JWT.",
+    response_description="Assignment result.",
+)
+async def assign_driver_to_rides(
+    payload: tenant.AssignDriver,
+    booking_id: int,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    assigned_driver = await tenant_service.assign_driver_to_rides(payload, booking_id)
     return assigned_driver
-@router.post("/stripe", status_code=status.HTTP_201_CREATED, response_model=general.StandardResponse[dict])
-async def setup_stripe_express_account(tenant_service: TenantService = Depends(get_tenant_service)):
-     
+
+
+@router.patch(
+    "/vehicles/{vehicle_id}/assign/{driver_id}",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Assign a driver to a vehicle",
+    description="Links fleet vehicle to driver (one-to-one style per business rules). Requires **tenant** JWT.",
+    response_description="Updated vehicle/driver association.",
+)
+async def assign_driver_to_vehicles(
+    driver_id: int,
+    vehicle_id: int,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    assigned_driver = await tenant_service.assign_driver_to_vehicle(driver_id, vehicle_id)
+    return assigned_driver
+
+
+@router.patch(
+    "/vehicles/{vehicle_id}/unassign/driver",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Unassign driver from a vehicle",
+    description="Clears driver assignment on a vehicle; **`override`** may allow forced reassignment. Requires **tenant** JWT.",
+    response_description="Unassignment result.",
+)
+async def unassign_driver_from_vehicle(
+    vehicle_id: int,
+    override: bool = False,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    assigned_driver = await tenant_service.unassign_driver_from_vehicles(
+        override=override, vehicle_id=vehicle_id
+    )
+    return assigned_driver
+
+
+@router.post(
+    "/stripe",
+    status_code=status.HTTP_201_CREATED,
+    response_model=general.StandardResponse[dict],
+    summary="Create Stripe Connect Express account",
+    description="Starts Express onboarding for the tenant to receive payouts. Requires **tenant** JWT.",
+    response_description="Stripe account ids / onboarding payload.",
+)
+async def setup_stripe_express_account(
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
     setup_account = tenant_service.stripe_account_setup()
     return setup_account
 
 
-###approve rides
-
-# # Update tenant settings (future implementation)
-# @router.patch('/settings', status_code=status.HTTP_202_ACCEPTED)
-# async def update_settings(db: Session):
-#     pass
-
 from ..services.stripe_services.stripe_service import StripeService, get_stripe_service
-@router.get('/stripe/link', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[dict])
-async def get_bookings(
-    stripe_service: StripeService = Depends(get_stripe_service)
-):
-   login_link = stripe_service.get_account_link()
-   return login_link
 
-@router.get('/analysis', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[tenant.BookingAnalyticsData])
-async def get_analysis(
-    tenant_service: TenantAnalyticService = Depends(get_tenant_analytics)
-):
-   analytics = await tenant_service.analytics()
-   return analytics
 
-@router.post('/driver', status_code=status.HTTP_201_CREATED)
-async def become_driver(request: Request,tenant_service: TenantService = Depends(get_tenant_service)):
+@router.get(
+    "/stripe/link",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[dict],
+    summary="Get Stripe Express onboarding / login link",
+    description="Returns an Account Link for Connect onboarding or dashboard login. Requires **tenant** JWT.",
+    response_description="URL payload for redirecting the user to Stripe.",
+)
+async def get_stripe_account_link(
+    stripe_service: StripeService = Depends(get_stripe_service),
+):
+    login_link = stripe_service.get_account_link()
+    return login_link
+
+
+@router.get(
+    "/analysis",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[tenant.BookingAnalyticsData],
+    summary="Tenant dashboard analytics",
+    description="Aggregated KPIs: rides, revenue, fleet counts, etc. Requires **tenant** JWT.",
+    response_description="Analytics object.",
+)
+async def get_tenant_analytics(
+    tenant_service: TenantAnalyticService = Depends(get_tenant_analytics),
+):
+    analytics = await tenant_service.analytics()
+    return analytics
+
+
+@router.post(
+    "/driver",
+    status_code=status.HTTP_201_CREATED,
+    summary="Convert tenant user to driver (optional flow)",
+    description="Internal flow to create a driver profile for the current tenant user. Requires **tenant** JWT.",
+    response_description="Result of driver conversion.",
+)
+async def become_driver(
+    request: Request, tenant_service: TenantService = Depends(get_tenant_service)
+):
     be_driver = await tenant_service.be_driver(request=request)
     return be_driver
 
 
-@router.get('/is_driver', status_code=status.HTTP_200_OK, response_model=general.StandardResponse[dict])
-async def get_analysis(
-    tenant_service: TenantService = Depends(get_tenant_service)
+@router.get(
+    "/is_driver",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[dict],
+    summary="Check if tenant also has a driver profile",
+    description="Returns whether this tenant account is linked to a driver record. Requires **tenant** JWT.",
+    response_description="Boolean / status payload.",
+)
+async def get_driver_status_for_tenant(
+    tenant_service: TenantService = Depends(get_tenant_service),
 ):
-   analytics = await tenant_service.is_driver()
-   return analytics
+    analytics = await tenant_service.is_driver()
+    return analytics

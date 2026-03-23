@@ -7,7 +7,9 @@ from sqlalchemy.exc import *
 
 from app.models import tenant_setting
 from .email_services import admin
+from app.config import Settings
 
+settings = Settings()
 
 db_exceptions = db_error_handler.DBErrorHandler
 
@@ -30,7 +32,7 @@ async def delete_admin(db, tenant_id: int):
     logger.info(f"Tenant {tenant_id} has been deleted")
     
     # Email: Notify admin of tenant deletion
-    admin.AdminEmailServices(to_email='admin@example.com', from_email='noreply@example.com').tenant_deletion_confirmation_email(
+    admin.AdminEmailServices(to_email=f'admin@{settings.domain}', from_email='noreply').tenant_deletion_confirmation_email(
         tenant_id=tenant_id,
         company_name=company_name,
         deleted_by='admin'

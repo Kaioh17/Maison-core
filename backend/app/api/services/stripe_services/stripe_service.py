@@ -15,9 +15,8 @@ from app.db.database import get_db, get_base_db
 class StripeService(ServiceContext):
     def __init__(self, current_user, db):
         super().__init__(current_user, db)
-    def create_customer(email: str, name: str):
+    def create_customer(self, email: str, name: str):
         """Create stripe customer for tenants subscription billing"""
-        
         customer = stripe.Customer.create(email=email, name=name)
         logger.info(f"Customer has been created {customer.id}")
         return customer.id

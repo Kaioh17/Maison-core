@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     environment: str
     connect_webhook_secret:str
     mapbox_api: str
+    api_key: str
+    cors_origins: str
+    domain: str
     class Config:
         # env_file = "/backend/docker/.env"
         env_file ="/backend/app/.env"

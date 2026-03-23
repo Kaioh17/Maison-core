@@ -1,5 +1,9 @@
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status, Request, Security
 from ..core import deps
+from app.config import Settings
+from app.utils.logging import logger
+
+settings = Settings()
 
 # from app.api import core
 # import core
@@ -29,5 +33,19 @@ def tenant_and_driver_check(tenants = Depends(is_tenants),
                      driver = Depends(is_driver)):
     return tenants, driver
 
+from fastapi.security import APIKeyHeader
 
 """ensure users exist"""
+ENV = settings.environment
+API_KEY = settings.api_key
+api_key_header = APIKeyHeader(name="X-API-Key")
+def verify_api_key(key: str = Security(api_key_header)):
+    if key != API_KEY:
+        # logger.debug(f'')
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid API key"
+        )
+    
+    
+    return key

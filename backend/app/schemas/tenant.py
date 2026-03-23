@@ -182,11 +182,11 @@ class TenantLogin(BaseModel):
     password: str
 
 class BookingAnalyticsData(BaseModel):
-    completed_rides: int
-    pending_rides: int
-    available_drivers: int
-    total_revenue: float
-    total_drivers: int
-    total_vehicles: int
-    total_bookings: int
+    completed_rides: Optional[int] = None
+    pending_rides: Optional[int] = None
+    available_drivers: Optional[int] = None
+    total_revenue: Optional[float] = None
+    total_drivers: Optional[int] = None
+    total_vehicles: Optional[int] = None
+    total_bookings: Optional[int] = None
     todays_revenue: Optional[float] = None

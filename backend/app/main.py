@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, Security, HTTPException, status
 from fastapi.openapi.utils import get_openapi
-from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admin,subscriptions, logs, slug, webhooks
+from fastapi.security import APIKeyHeader
+from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admin,subscriptions, logs, slug, webhooks, dependencies
 from app.db.database import engine
 from app.models import *
 # from utils import logging
@@ -13,9 +14,9 @@ from slowapi.errors import RateLimitExceeded
 from app.config import Settings
 
 settings = Settings()
+environment = settings.environment
 ##add frontend urls and middleware 
 #user cors
-
 
 ##GEts the ip and Path 
 def ip_and_path(request: Request):
@@ -40,40 +41,84 @@ def custom_openapi():
         description="""
         ## Maison Ride-Sharing Platform API
         
-        A comprehensive multi-tenant ride-sharing platform with support for:
-        - **Tenant Management**: Company registration and settings
-        - **Driver Operations**: Registration, ride management, earnings
-        - **Rider Services**: Booking, ride history, payments
-        - **Vehicle Management**: Fleet tracking, categorization, pricing
+        Multi-tenant luxury car service backend: **tenants** (companies), **drivers**, **riders**, fleet, bookings, Stripe billing & Connect.
         
         ### Authentication
-        Uses JWT Bearer tokens. Get token from `/api/v1/login/{role}` endpoints.
+        Obtain tokens via **`POST /api/v1/auth/login/{role}`** (`tenant` | `driver` | `rider`). Send **`Authorization: Bearer &lt;access_token&gt;`** on protected routes.
         
-        ### Multi-Tenancy
-        All operations are scoped to the authenticated user's tenant.
+        ### Multi-tenancy
+        Data is scoped by **`tenant_id`** embedded in the JWT (except public registration/slug endpoints).
         """,
         routes=app.routes,
         tags=[
             {
                 "name": "Authentication",
-                "description": "Login and token management for all user roles"
+                "description": (
+                    "JWT login, refresh, logout. Login returns `access_token` and sets HttpOnly `refresh_token` cookie."
+                ),
             },
             {
-                "name": "Tenant", 
-                "description": "Company management, driver onboarding, fleet oversight"
+                "name": "Tenant",
+                "description": (
+                    "Tenant (company) lifecycle: registration, profile, drivers, bookings, vehicles, Stripe Express, analytics."
+                ),
             },
             {
                 "name": "Drivers",
-                "description": "Driver registration, available rides, earnings"
+                "description": (
+                    "Driver portal: status, registration token verify, rides, analytics, accept/decline bookings."
+                ),
             },
             {
                 "name": "Bookings",
-                "description": "Ride booking, status updates, history"
+                "description": (
+                    "Create and list ride bookings; rider confirmation and Stripe checkout sessions."
+                ),
             },
             {
                 "name": "Users",
-                "description": "Rider registration and profile management"
-            }
+                "description": (
+                    "Riders: sign up by tenant slug, profile, booking analytics."
+                ),
+            },
+            {
+                "name": "vehicles",
+                "description": (
+                    "Fleet CRUD, categories/rates, vehicle images — scoped to tenant/driver roles."
+                ),
+            },
+            {
+                "name": "Tenant Config",
+                "description": (
+                    "White-label settings: JSON `config`, pricing, branding, per-service booking deposits, logos."
+                ),
+            },
+            {
+                "name": "Subscription",
+                "description": (
+                    "Maison SaaS subscription checkout/upgrades via Stripe (tenant billing, not rider rides)."
+                ),
+            },
+            {
+                "name": "Slug",
+                "description": (
+                    "Public slug lookup for branding/signup and authenticated tenant setup metadata."
+                ),
+            },
+            {
+                "name": "Webhooks",
+                "description": (
+                    "Stripe platform vs Connect webhook receivers — separate URLs and signing secrets."
+                ),
+            },
+            {
+                "name": "logs",
+                "description": "Ingest frontend log batches for debugging (writes to server log files).",
+            },
+            {
+                "name": "admin",
+                "description": "Internal/admin operations (tenant list, destructive actions) — protect in production.",
+            },
         ]
     )
     
@@ -96,10 +141,18 @@ app = FastAPI(
         "name": "Maison Development Team",
         "email": "dev@maison.com"
     },
+    docs_url="/docs" if environment == 'development' else None,
+    redoc_url="/redoc" if environment == 'development' else None,
+    openapi_url="/openapi.json" if environment == 'development' else None,
     openapi_tags=[
         {
             "name": "Authentication",
-            "description": "User authentication and authorization"
+            "description": (
+                "JWT auth for **tenant** (company admin), **driver**, and **rider** roles. "
+                "`POST /api/v1/auth/login/{role}` returns `access_token` and sets an HttpOnly `refresh_token` cookie. "
+                "Use `Authorization: Bearer <token>` on protected routes. "
+                "See each operation for refresh vs manual refresh behavior."
+            ),
         }
     ],
     swagger_ui_parameters={"syntaxHighlight": {"theme": "obsidian"}}
@@ -107,16 +160,10 @@ app = FastAPI(
 # app = FastAPI(swagger_ui_parameters={"syntaxHighlight": {"theme": "obsidian"}})
 # CORS for frontend (dev: Vite at 3000; docker: nginx serves same-origin and proxies /api)
 # Also includes mobile app origins for Flutter development
+_cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[       
-        "http://localhost:3000",   
-        "http://localhost:3001",    
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-     
-        
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -131,8 +178,9 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
+
 app.include_router(tenants.router)
-app.include_router(auth.router)
+app.include_router(auth.router, dependencies=[Depends(dependencies.verify_api_key)])
 app.include_router(drivers.router)
 app.include_router(users.router)
 app.include_router(bookings.router)

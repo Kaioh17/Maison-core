@@ -136,7 +136,7 @@ class DriverService(ServiceContext):
             self.db.refresh(driver_obj)
             
             ##send emaill
-            drivers.DriverEmailServices(to_email=payload.email, from_email=driver_obj.tenants.email).welcome_(obj=driver_obj)
+            drivers.DriverEmailServices(to_email=payload.email, from_email='noreply', display_name=driver_obj.slug).welcome_(obj=driver_obj)
             logger.info("Driver succesfully registered")
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
@@ -280,7 +280,7 @@ class DriverService(ServiceContext):
             tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.tenant_id).first()
             slug = tenant_profile_obj.slug if tenant_profile_obj else None
             if slug:
-                drivers.DriverEmailServices(to_email=obj.email, from_email=self.tenant_email).status_change_email(
+                drivers.DriverEmailServices(to_email=obj.email, from_email='noreply', display_name=slug).status_change_email(
                     obj=obj,
                     is_active=is_active
                 )

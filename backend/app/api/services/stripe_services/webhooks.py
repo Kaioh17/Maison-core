@@ -1,3 +1,17 @@
+"""
+Stripe webhook handlers (HTTP layer lives in api/routers/webhooks.py).
+
+Two pipelines — keep them separate in Stripe Dashboard:
+
+1) webhook() — WEBHOOK_SECRET
+   Platform / billing: Maison tenant subscriptions (checkout.session.completed,
+   customer.subscription.*, invoice.paid, etc.). Updates tenant_profile subscription fields.
+
+2) tenant_connect_webhooks() — CONNECT_WEBHOOK_SECRET
+   Stripe Connect: connected account id on each event (event['account']). Handles
+   account.created / account.updated to persist stripe_account_id and charges_enabled
+   on tenant_profile after Express onboarding; also booking payments on connected accounts.
+"""
 import asyncio
 import stripe
 from .service_context import ServiceContext
@@ -9,12 +23,26 @@ from ...services.helper_service import *
 
 
 class WebhookServices(ServiceContext):
-    """This i is a tripe integration for riders checkout after booking"""
+    """
+    Stripe webhook business logic. Stateless requests: current_user is None;
+    auth is via stripe-signature header + the appropriate webhook secret.
+    """
     def __init__(self, current_user, db):
         super().__init__(current_user, db)
         
-    ##Maison subscription webhook
+    # --- Main platform webhook (WEBHOOK_SECRET): subscriptions & platform checkout ---
     async def webhook(self,request):
+        """
+        Process events signed with WEBHOOK_SECRET (platform webhook endpoint).
+
+        Intended events:
+        - checkout.session.completed: tenant subscribed — set subscription_status, plan, cur_subscription_id
+        - customer.subscription.updated: sync subscription metadata to tenant_profile
+        - invoice.paid: renewal logging (extend as needed)
+        - customer.subscription.deleted: mark subscription inactive
+
+        Does NOT handle Connect account onboarding; use tenant_connect_webhooks for that.
+        """
         try:
             payload = await request.body()
             webhook_secret = self.WEBHOOK_SECRET
@@ -76,8 +104,19 @@ class WebhookServices(ServiceContext):
         self.db.commit()
         return {"status":"success"}
       
-    ##Tenant connect webhook   
+    # --- Connect webhook (CONNECT_WEBHOOK_SECRET): Express accounts + Connect payments ---
     async def tenant_connect_webhooks(self, request):
+        """
+        Process events signed with CONNECT_WEBHOOK_SECRET (Connect webhook endpoint).
+
+        - account.created / account.updated: read metadata.tenant_id; when charges_enabled,
+          set tenant_profile.stripe_account_id from event['account'], charges_enabled, and
+          mark tenant verified/active.
+        - payment_intent.succeeded / charge.succeeded: update booking payment_status from metadata.
+        - checkout.session.completed (Connect context): rider checkout updates (see handler).
+
+        event['account'] is the connected account ID (acct_...) for Connect events.
+        """
         #To set things in play upon success or failed request: if tenant permits fare destrubtion
         try:
             payload = await request.body()
@@ -97,6 +136,7 @@ class WebhookServices(ServiceContext):
         try:
             
             if event['type'] in ('account.updated' ,'account.created'):
+                # Persist Connect account id on tenant_profile once charges can be collected
                 account = event['data']['object']
                 metadata =  account.get('metadata', {})
                 tenant_id = metadata.get('tenant_id')
@@ -115,6 +155,7 @@ class WebhookServices(ServiceContext):
                     self.db.commit()
                     logger.info(f"Tenant {tenant_stripe_id} is now ready to make some cash q(≧▽≦q)")
                 else:
+                    # Onboarding not finished — still save charges_enabled flag
                     response.charges_enabled = account.get('charges_enabled')
                     self.db.commit()    
                     
@@ -220,5 +261,6 @@ class WebhookServices(ServiceContext):
         except Exception as e:
             raise e
 def get_ebhook_services(db = Depends(get_base_db)):
+    """Dependency: webhook routes use base DB session; no logged-in user (Stripe signs requests)."""
     
     return WebhookServices(current_user=None, db=db)

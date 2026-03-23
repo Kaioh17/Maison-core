@@ -131,8 +131,9 @@ class VehicleService(ServiceContext):
 
             if not vehicles:
                 logger.debug(f"There are no vehicles{add}")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail = f"There are no vehicles{add}")
+                return success_resp(msg="Retrieved successfully", meta=None, data=vehicles)
+                # raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                #                     detail = f"There are no vehicles{add}")
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
         return success_resp(msg="Retrieved successfully", meta=None, data=vehicles)

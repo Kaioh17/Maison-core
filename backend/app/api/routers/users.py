@@ -1,40 +1,63 @@
-from fastapi import APIRouter, HTTPException, FastAPI, Response,status
+from fastapi import APIRouter, status
 from fastapi.params import Depends
-from sqlalchemy.orm import Session
-from app.db.database import get_db
-from ..services import tenants_service, user_services
 from ..services.user_services import UserService, get_user_service, get_unauthorized_service
-from app.schemas import user,driver, general
+from app.schemas import user
 from app.schemas.general import StandardResponse
-from ..core import deps
 from app.utils.logging import logger
 from ..services.analytics.riders import get_rider_analytics, RiderAnalyticService
 
 router = APIRouter(
-    prefix = "/api/v1/users",
-    tags = ['Users']
-)   
+    prefix="/api/v1/users",
+    tags=["Users"],
+)
 
 
-@router.post("/add/{slug}", status_code=status.HTTP_201_CREATED, response_model= StandardResponse[user.UserResponse])   # changed from tenant id to slug 
-async def create_user(slug: str, payload: user.UserCreate,user_service: UserService =  Depends(get_unauthorized_service)):
-
+@router.post(
+    "/add/{slug}",
+    status_code=status.HTTP_201_CREATED,
+    response_model=StandardResponse[user.UserResponse],
+    summary="Register a rider under a tenant",
+    description=(
+        "Public signup: creates a **rider** account scoped to the tenant identified by **`slug`** "
+        "(from tenant profile / white-label domain). No JWT required."
+    ),
+    response_description="Created user profile.",
+)
+async def create_user(
+    slug: str,
+    payload: user.UserCreate,
+    user_service: UserService = Depends(get_unauthorized_service),
+):
     logger.info("Creating User")
     user = await user_service.create_user(payload, slug)
     logger.debug(f"{user}")
     return user
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=StandardResponse[user.UserResponse])
-async def get_user_info(user_service: UserService =  Depends(get_user_service)):
 
+@router.get(
+    "/",
+    status_code=status.HTTP_200_OK,
+    response_model=StandardResponse[user.UserResponse],
+    summary="Get current rider profile",
+    description="Returns the authenticated **rider**'s profile. Requires rider JWT.",
+    response_description="User profile.",
+)
+async def get_user_info(user_service: UserService = Depends(get_user_service)):
     user_info = await user_service.get_user_info()
-
     return user_info
-@router.get("/booking/analytics", status_code=status.HTTP_200_OK, response_model=StandardResponse[user.BookingAnalyticsResponse])
-async def get_user_info(user_service: RiderAnalyticService =  Depends(get_rider_analytics)):
 
+
+@router.get(
+    "/booking/analytics",
+    status_code=status.HTTP_200_OK,
+    response_model=StandardResponse[user.BookingAnalyticsResponse],
+    summary="Rider booking analytics",
+    description="Aggregated booking stats for the authenticated rider (history, status breakdown). Requires rider JWT.",
+    response_description="Analytics payload.",
+)
+async def get_rider_booking_analytics(
+    user_service: RiderAnalyticService = Depends(get_rider_analytics),
+):
     user_info = await user_service.booking_analytics()
     logger.debug(f"user_info {user_info}")
     return user_info
-##get available bookings available drivers 
-#set bookings

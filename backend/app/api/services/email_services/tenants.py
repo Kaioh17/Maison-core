@@ -7,14 +7,16 @@ class TenantEmailServices(EmailServices):
     """
         Inherits the parentclass EmailServices with the set
         purpose: As the name implies, it will be used to send tenant related emails for all tenants on our service.
-        The from email used here should be tailored by the tenants, 
+        The from email used here should be tailored by the tenants,
         the content of the email can be tailored too if not there will be a default service that handles this.
     Args:
-        EmailServices (_type_): _description_
+        to_email: Recipient address (dev may redirect to a fixed test inbox).
+        from_email: Mailbox local part only (e.g. noreply, notifications).
+        display_name: Inbox From display name (e.g. tenant company name or slug).
     """
-    def __init__(self, to_email, from_email):
-        self.to_email = 'mubskill@gmail.com'
-        self.from_email = 'Acme <onboarding@resend.dev>'
+    def __init__(self, to_email, from_email: str, display_name: str):
+        self.to_email = 'mubskill@gmail.com' if self.ENV == 'development' else to_email
+        self.from_email = self._format_from(from_email, display_name)
     # from_email = "Acme <onboarding@resend.dev>"
     def onboarding_email(self):
         

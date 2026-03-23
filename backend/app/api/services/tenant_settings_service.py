@@ -55,6 +55,8 @@ class TenantSettingsService(ServiceContext):
                 )
                 # extract parent (same for all rows)
                 if not rows:
+                    return success_resp(data={}, msg=f"Tenant {config_type} retrieved successfully") 
+                    
                     return None  # or handle no tenant found
 
                 settings, pricing, branding, _ = rows[0]
@@ -157,7 +159,7 @@ with Session(engine) as session: # Or use an existing session
         if tenant_obj:
             changed_settings = {k: v for k, v in payload.dict().items() if v is not None and hasattr(setting_obj, k)}
             if changed_settings:
-                tenants.TenantEmailServices(to_email=tenant_obj.email, from_email=tenant_obj.email).settings_change_email(
+                tenants.TenantEmailServices(to_email=tenant_obj.email, from_email='notifications', display_name=self.slug).settings_change_email(
                     tenant_obj=tenant_obj,
                     slug=self.slug,
                     changed_settings=changed_settings
@@ -263,7 +265,7 @@ with Session(engine) as session: # Or use an existing session
         # Email: Send logo update confirmation to tenant
         tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
         if tenant_obj and logo:
-            tenants.TenantEmailServices(to_email=tenant_obj.email, from_email=tenant_obj.email).logo_update_confirmation_email(
+            tenants.TenantEmailServices(to_email=tenant_obj.email, from_email='notifications', display_name=self.slug).logo_update_confirmation_email(
                 tenant_obj=tenant_obj,
                 slug=self.slug,
                 logo_url=logo_url

@@ -78,13 +78,16 @@ class TenantService(ServiceContext):
             self._check_unique_fields(self.tenant_info, model_map)
             
             """Stripe config"""
-            stripe_customer = stripe_service.StripeService(self.current_user, self.db).create_customer(email = email,name = f"{first_name} {last_name}")
+            logger.debug(f"Tenant: {email}")
+            tenant_email =email 
+            stripe_customer = stripe_service.StripeService(self.current_user, self.db).create_customer(email = tenant_email,
+                                                                                                       name = f"{first_name} {last_name}")
             # stripe_express = stripe_service.StripeService(self.current_user, self.db).create_express_account(tenant_obj=obj)
 
             """Create new tenants"""
             
-            logo_path = await SupaS3.upload_to_s3(url=logo_url, slug=slug, bucket_name='logos') if logo_url == None else None
-
+            logo_path = await SupaS3.upload_to_s3(url=logo_url, slug=slug, bucket_name='logos') if logo_url != None else None
+            
             hashed_pwd = password_utils.hash(password.strip()) #hash password
           
             new_tenant_info = self.tenant_info( email=email,
@@ -128,13 +131,13 @@ class TenantService(ServiceContext):
             await self._create_vehicle_category_rate_table(new_tenant_id)
             
             # Email: Send welcome email to tenant
-            tenants.TenantEmailServices(to_email=email, from_email=email).welcome_email(
+            tenants.TenantEmailServices(to_email=email, from_email='noreply', display_name=slug).welcome_email(
                 obj=new_tenant_info,
                 slug=slug
             )
             
             # Email: Notify admin of new tenant registration
-            admin.AdminEmailServices(to_email='admin@example.com', from_email='noreply@example.com').new_tenant_notification_email(
+            admin.AdminEmailServices(to_email=f'admin@{settings.domain}', from_email='noreply').new_tenant_notification_email(
                 tenant_obj=new_tenant_info
             )
 
@@ -248,23 +251,97 @@ class TenantService(ServiceContext):
         except Exception as e:
             logger.error(f"Unexpected error in get_company_info: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
+    # async def _set_up_tenant_settings(self, new_tenant_id, logo_url, slug):
+    #     try: 
+    #         logger.debug(f"Logo url{logo_url}")
+    #         new_tenants_settings = [TenantSettings(
+    #                         tenant_id = new_tenant_id,
+    #                         logo_url = logo_url, 
+    #                         slug = slug,
+    #                         theme = "dark",  # Default theme
+    #                         enable_branding = False,  # Default to false
+    #                         base_fare = 0.0,  # Default base fare
+    #                         per_mile_rate = 0.0,  # Default per mile rate
+    #                         per_minute_rate = 0.0,  # Default per minute rate
+    #                         per_hour_rate = 0.0,  # Default per hour rate
+    #                         rider_tiers_enabled = False,  # Default to false
+    #                         cancellation_fee = 0.0,  # Default cancellation fee
+    #                         discounts = False  # Default to false
+    #                     ),
+    #        TenantBranding(
+    #                         tenant_id=new_tenant_id,
+    #                         logo_url=logo_url,
+    #                         slug=slug,
+    #                         theme="dark",
+    #                         enable_branding=False,
+    #                         primary_color=None,
+    #                         secondary_color=None,
+    #                         accent_color=None,
+    #                         favicon_url=None,
+    #                         email_from_name=None,
+    #                         email_from_address=None
+    #                     ),
+    #         TenantPricing(
+    #                         tenant_id=new_tenant_id,
+    #                         base_fare=0.0,
+    #                         per_mile_rate=0.0,
+    #                         per_minute_rate=0.0,
+    #                         per_hour_rate=0.0,
+    #                         cancellation_fee=0.0,
+    #                         discounts=False
+    #                     ),
+    #                     TenantBookingPricing(
+    #                         tenant_id=new_tenant_id,
+    #                         service_type = 'airport',
+    #                         deposit_type = 'percentage',
+    #                         deposit_fee =  0.3
+    #                     ),TenantBookingPricing(
+    #                         tenant_id=new_tenant_id,
+    #                         service_type = 'dropoff',
+    #                         deposit_type = 'percentage',
+    #                         deposit_fee =  0.3
+    #                     ),TenantBookingPricing(
+    #                         tenant_id=new_tenant_id,
+    #                         service_type = 'hourly',
+    #                         deposit_type = 'percentage',
+    #                         deposit_fee =  0.3
+    #                     )
+    #                                     ]
+
+    #         # self.db.add(new_tenant_branding)
+    #         # self.db.add(new_tenant_pricing)            
+    #         self.db.add(new_tenants_settings)
+    #         self.db.commit()
+    #         logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")
+    #     except self.db_exceptions.COMMON_DB_ERRORS as e:
+    #         self.db_exceptions.handle(e, self.db)
     async def _set_up_tenant_settings(self, new_tenant_id, logo_url, slug):
         try: 
+            logger.debug(f"Logo url{logo_url}")
             new_tenants_settings = [TenantSettings(
-                            tenant_id = new_tenant_id,
-                            logo_url = logo_url, 
-                            slug = slug,
-                            theme = "dark",  # Default theme
-                            enable_branding = False,  # Default to false
-                            base_fare = 0.0,  # Default base fare
-                            per_mile_rate = 0.0,  # Default per mile rate
-                            per_minute_rate = 0.0,  # Default per minute rate
-                            per_hour_rate = 0.0,  # Default per hour rate
-                            rider_tiers_enabled = False,  # Default to false
-                            cancellation_fee = 0.0,  # Default cancellation fee
-                            discounts = False  # Default to false
+                            tenant_id=new_tenant_id,
+                            rider_tiers_enabled=False,
+                            config={
+                                "booking": {
+                                    "allow_guest_bookings": True,
+                                    "show_vehicle_images": False,
+                                    "types": {
+                                        "airport": {"is_deposit_required": False},
+                                        "dropoff": {"is_deposit_required": False},
+                                        "hourly": {"is_deposit_required": False},
+                                    },
+                                },
+                                "branding": {
+                                    "button_radius": 8,
+                                    "font_family": "DM Sans",
+                                },
+                                "features": {
+                                    "vip_profiles": True,
+                                    "show_loyalty_banner": False,
+                                },
+                            },
                         ),
-           TenantBranding(
+                        TenantBranding(
                             tenant_id=new_tenant_id,
                             logo_url=logo_url,
                             slug=slug,
@@ -277,7 +354,7 @@ class TenantService(ServiceContext):
                             email_from_name=None,
                             email_from_address=None
                         ),
-            TenantPricing(
+                        TenantPricing(
                             tenant_id=new_tenant_id,
                             base_fare=0.0,
                             per_mile_rate=0.0,
@@ -288,30 +365,35 @@ class TenantService(ServiceContext):
                         ),
                         TenantBookingPricing(
                             tenant_id=new_tenant_id,
-                            service_type = 'airport',
-                            deposit_type = 'percentage',
-                            deposit_fee =  0.3
-                        ),TenantBookingPricing(
+                            service_type="airport",
+                            stc_rate=None,
+                            gratuity_rate=None,
+                            airport_gate_fee=None,
+                            meet_and_greet_fee=None,
+                            deposit_type="percentage",
+                            deposit_fee=0.3,
+                        ),
+                        TenantBookingPricing(
                             tenant_id=new_tenant_id,
-                            service_type = 'dropoff',
-                            deposit_type = 'percentage',
-                            deposit_fee =  0.3
-                        ),TenantBookingPricing(
+                            service_type="dropoff",
+                            deposit_type="percentage",
+                            deposit_fee=0.3,
+                        ),
+                        TenantBookingPricing(
                             tenant_id=new_tenant_id,
-                            service_type = 'hourly',
-                            deposit_type = 'percentage',
-                            deposit_fee =  0.3
-                        )
+                            service_type="hourly",
+                            deposit_type="percentage",
+                            deposit_fee=0.3,
+                        ),
                                         ]
 
             # self.db.add(new_tenant_branding)
             # self.db.add(new_tenant_pricing)            
-            self.db.add(new_tenants_settings)
+            self.db.add_all(new_tenants_settings)
             self.db.commit()
             logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")
         except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-            
+            self.db_exceptions.handle(e, self.db)    
     async def _create_vehicle_category_rate_table(self, id_tenant):
         try:
             logger.info("Setting new tenant vehicle settings table..")
@@ -427,7 +509,7 @@ class TenantService(ServiceContext):
             self.db.refresh(new_driver)
             
             """email notification"""
-            drivers.DriverEmailServices(to_email='mubskill@gmail.com', from_email='driver').onboarding_email(token=onboard_token, slug=self.slug)
+            drivers.DriverEmailServices(to_email=new_driver.email, from_email='driver', display_name=self.slug).onboarding_email(token=onboard_token, slug=self.slug)
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
@@ -526,7 +608,7 @@ class TenantService(ServiceContext):
             
             # Email: Send vehicle assignment notification to driver
             if driver_info:
-                drivers.DriverEmailServices(to_email=driver_info.email, from_email=self.tenant_email).vehicle_assignment_email(
+                drivers.DriverEmailServices(to_email=driver_info.email, from_email='notifications', display_name=self.slug).vehicle_assignment_email(
                     obj=driver_info,
                     vehicle_obj=vehicle
                 )
@@ -566,7 +648,7 @@ class TenantService(ServiceContext):
             self.db.commit()
             
             """Email Notificaition"""
-            drivers.DriverEmailServices(to_email=driver_info.email, from_email=self.tenant_email).new_ride(booking_obj=ride, assigned=True, slug=self.slug)
+            drivers.DriverEmailServices(to_email=driver_info.email, from_email='notifications', display_name=self.slug).new_ride(booking_obj=ride, assigned=True, slug=self.slug)
             return success_resp(data={"driver_id": payload.driver_id, "booking_id": booking_id}, msg=f"Driver {payload.driver_id} has been assigned to {booking_id}")
        except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
@@ -600,7 +682,7 @@ class TenantService(ServiceContext):
                 self.db.commit()
                 
                 # Email: Send vehicle unassignment notification to driver
-                drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).vehicle_unassignment_email(
+                drivers.DriverEmailServices(to_email=driver_email, from_email='notifications', display_name=self.slug).vehicle_unassignment_email(
                     obj=driver_obj,
                     vehicle_obj=vehicle
                 )

@@ -157,8 +157,8 @@ class BookingService(ServiceContext):
                     driver_email = driver_.email
                     ##email
                     # tenants.TenantEmailServices(to_email=self.tenant_email, from_email=self.tenant_email).new_ride(booking)
-                    # drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).new_ride(booking_obj=new_ride, assigned=False)
-                    drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).new_ride(booking_obj=response, assigned=False, slug=self.slug)
+                    # drivers.DriverEmailServices(to_email=driver_email, from_email='notifications', display_name=self.slug).new_ride(booking_obj=new_ride, assigned=False, slug=self.slug)
+                    drivers.DriverEmailServices(to_email=driver_email, from_email='notifications', display_name=self.slug).new_ride(booking_obj=response, assigned=False, slug=self.slug)
                 else:
                     driver_full_name = "No driver assigned"
                 
@@ -176,7 +176,7 @@ class BookingService(ServiceContext):
                 await asyncio.sleep(3)
                 # Email: Send new booking notification to tenant
                 tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.current_user.tenant_id).first()
-                await tenants.TenantEmailServices(to_email=self.tenant_email, from_email=self.tenant_email).booking_notification_email(
+                await tenants.TenantEmailServices(to_email=self.tenant_email, from_email='notifications', display_name=self.slug).booking_notification_email(
                     booking_obj=response,
                     tenant_obj=tenant_obj,
                     slug=self.slug,
@@ -273,8 +273,7 @@ class BookingService(ServiceContext):
                     # driver_email = driver_.email
                     ##email
                     # tenants.TenantEmailServices(to_email=self.tenant_email, from_email=self.tenant_email).new_ride(booking)
-                    # drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).new_ride(booking_obj=new_ride, assigned=False)
-                    # drivers.DriverEmailServices(to_email=driver_email, from_email=self.tenant_email).new_ride(booking_obj=new_ride, assigned=False, slug=self.slug)
+                    # drivers.DriverEmailServices(to_email=driver_email, from_email='notifications', display_name=self.slug).new_ride(booking_obj=new_ride, assigned=False, slug=self.slug)
             else:
                 driver_full_name = "No driver assigned"
             
