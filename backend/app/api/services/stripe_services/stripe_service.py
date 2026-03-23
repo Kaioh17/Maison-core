@@ -17,6 +17,7 @@ class StripeService(ServiceContext):
         super().__init__(current_user, db)
     def create_customer(self, email: str, name: str):
         """Create stripe customer for tenants subscription billing"""
+        logger.info('Creating stripe customer')
         customer = stripe.Customer.create(email=email, name=name)
         logger.info(f"Customer has been created {customer.id}")
         return customer.id

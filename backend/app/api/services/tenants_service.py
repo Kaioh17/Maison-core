@@ -68,7 +68,6 @@ class TenantService(ServiceContext):
                             drivers_count ,
                             logo_url ):
         try:
-            print("the new method...")
             model_map = {
                 "email": email,
                 # "company_name": company_name,
@@ -78,8 +77,8 @@ class TenantService(ServiceContext):
             self._check_unique_fields(self.tenant_info, model_map)
             
             """Stripe config"""
-            logger.debug(f"Tenant: {email}")
             tenant_email =email 
+            logger.info(f"Tenant: {tenant_email}")
             stripe_customer = stripe_service.StripeService(self.current_user, self.db).create_customer(email = tenant_email,
                                                                                                        name = f"{first_name} {last_name}")
             # stripe_express = stripe_service.StripeService(self.current_user, self.db).create_express_account(tenant_obj=obj)

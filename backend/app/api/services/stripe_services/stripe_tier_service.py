@@ -26,27 +26,28 @@ class StripeService(ServiceContext):
 
     async def create_checkout_session(self, price_id, product_type):
         try: 
+            price_id = 'price_1TDvIxJPGLvkvoDLQhKTg29a'
             logger.info(f"{self.current_user.slug} get customer")
             get_customer = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.current_user.id).first()
             # valid = Validations._tenants_exist(get_customer)
             customer_id = get_customer.stripe_customer_id
-            logger.info(f" creating checkout seqssion {customer_id} ")
-            
+            logger.info(f" creating checkout session {customer_id} ")
+            logger.debug(f"crearing price_id {price_id}")
             checkout_session = stripe.checkout.Session.create(
                 line_items=[{
                     'price': price_id,
                     'quantity':1
                 }],
                 mode='subscription',
-                success_url= f"http://{self.BASE_URL}/success",
-                cancel_url= f"http://{self.BASE_URL}/cancel",
+                success_url= f"{self.BASE_URL}/success",
+                cancel_url= f"{self.BASE_URL}/cancel",
                 metadata= {
                     'tenant_id': self.current_user.id,
                     'product_type': product_type.lower()
                 },
                 customer=customer_id
             )
-            # logger.debug(checkout_session)
+            logger.debug(f"Check out session completed")
             
             return success_resp(msg = "Successfully created checkout session", 
                                 data = {'Checkout_session_url':checkout_session.url,
