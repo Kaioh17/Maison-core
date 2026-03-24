@@ -2,14 +2,14 @@ import stripe
 from app.config import Settings
 from app.utils.logging import logger
 settings = Settings()
-stripe.api_key = settings.sk_test
+stripe.api_key = settings.stripe_secret_key
 
 class ServiceContext:
     def __init__(self, current_user, db):
         self.current_user = current_user
         self.db = db
         settings = Settings()
-        stripe.api_key = settings.sk_test
+        stripe.api_key = settings.stripe_secret_key
         self.BASE_URL = settings.base_url
         self.WEBHOOK_SECRET = settings.webhook_secret
         self.CONNECT_WEBHOOK_SECRET = settings.connect_webhook_secret

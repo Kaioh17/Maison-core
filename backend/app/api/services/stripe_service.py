@@ -2,7 +2,7 @@ import stripe
 from app.config import Settings
 from app.utils.logging import logger
 settings = Settings()
-stripe.api_key = settings.sk_test
+stripe.api_key = settings.stripe_secret_key
 
 class StripeService:
     

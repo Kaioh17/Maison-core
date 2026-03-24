@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings	
 
 
@@ -15,8 +15,8 @@ class Settings(BaseSettings):
 	secret_key: str = "test_secret_key_for_testing_only"
 	algorithm: str = "HS256"
 	access_token_expire_minutes: int = 30
-	pk_test: str = "test_pk"
-	sk_test: str = "test_sk"
+	stripe_public_key: str = Field(default="test_pk", validation_alias=AliasChoices("stripe_public_key", "pk_test"))
+	stripe_secret_key: str = Field(default="test_sk", validation_alias=AliasChoices("stripe_secret_key", "sk_test"))
 
 	class Config:
 		env_file = ".env.test"

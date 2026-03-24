@@ -5,6 +5,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 settings = Settings()
-stripe.api_key = settings.sk_test
+stripe.api_key = settings.stripe_secret_key
 
 logger.info(f"Stripe Account: {stripe.Account.retrieve()}")

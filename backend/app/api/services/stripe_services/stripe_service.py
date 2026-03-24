@@ -10,7 +10,7 @@ from .service_context import ServiceContext
 from fastapi import HTTPException, status, Depends
 from app.db.database import get_db, get_base_db
 # settings = Settings()
-# stripe.api_key = settings.sk_test
+# stripe.api_key = settings.stripe_secret_key
 
 class StripeService(ServiceContext):
     def __init__(self, current_user, db):
@@ -49,8 +49,8 @@ class StripeService(ServiceContext):
         
         onboarding_link = stripe.AccountLink.create(
             account=exp_acct_id,
-            refresh_url=f"http://{self.BASE_URL}/tenant/reauth",
-            return_url=f"http://{self.BASE_URL}/tenant/return",
+            refresh_url=f"{self.BASE_URL}/tenant/reauth",
+            return_url=f"{self.BASE_URL}/tenant/return",
             type="account_onboarding"
         )
         

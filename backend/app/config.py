@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 
 
@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int
     refresh_token_expire_days: int
     
-    pk_test: str
-    sk_test: str
+    stripe_public_key: str = Field(validation_alias=AliasChoices("stripe_public_key", "pk_test"))
+    stripe_secret_key: str = Field(validation_alias=AliasChoices("stripe_secret_key", "sk_test"))
     resend_key:str
     supabase_anon_key: str
     supabase_url: str
