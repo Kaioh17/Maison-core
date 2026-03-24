@@ -144,6 +144,7 @@ app = FastAPI(
     docs_url="/docs" if environment == 'development' else None,
     redoc_url="/redoc" if environment == 'development' else None,
     openapi_url="/openapi.json" if environment == 'development' else None,
+    redirect_slashes=False,
     openapi_tags=[
         {
             "name": "Authentication",

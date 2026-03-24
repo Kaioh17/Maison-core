@@ -86,6 +86,7 @@ class TenantProfile(Base):
     slug = Column(String, unique=True, nullable = False, index=True)
     address = Column(String, nullable=True)
     city = Column(String, nullable=False, index=True)   
+    # state = Column(String, nullable=True, index=True)   
     
     stripe_customer_id = Column(String, nullable=True, index=True, unique=True)
     stripe_account_id =  Column(String, nullable=True, index=True, unique=True)
@@ -94,6 +95,7 @@ class TenantProfile(Base):
     subscription_plan = Column(String, nullable=True, default="free")
     
     cur_subscription_id = Column(String,nullable=True, unique=True)
+    # is_driver = Column(Boolean, nullable=True, index=False, default=False)
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)

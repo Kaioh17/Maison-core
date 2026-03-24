@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 @router.get(
-    "/",
+    "",
     status_code=200,
     response_model=resp[list[vehicle.VehicleResponse]],
     summary="List vehicles (tenant/driver)",
