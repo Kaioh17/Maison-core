@@ -74,7 +74,7 @@ async def get_subscription(
     get_subscription_status = await stripe_tier_service.StripeService.get_customer_subscription_status()
     return {"status": get_subscription_status}
 
-
+"""Deprecated endpoint"""
 @router.post(
     "/webhooks",
     status_code=status.HTTP_201_CREATED,
@@ -84,10 +84,12 @@ async def get_subscription(
         "Prefer **`POST /api/v1/webhooks/`** for platform events; keep secrets aligned."
     ),
     response_description="Webhook handler result.",
+    deprecated=True
 )
 async def subscription_stripe_webhooks(
     request: Request,
     stripe_service: StripeService = Depends(get_unauthorized_subscription_service),
 ):
-    webhooks = await stripe_service.webhook(request)
-    return webhooks
+    # webhooks = await stripe_service.webhook(request)
+    # return webhooks
+    ...

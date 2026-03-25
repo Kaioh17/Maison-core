@@ -31,7 +31,8 @@ class StripeService(ServiceContext):
             get_customer = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == self.current_user.id).first()
             # valid = Validations._tenants_exist(get_customer)
             customer_id = get_customer.stripe_customer_id
-            logger.info(f" creating checkout session {customer_id} ")
+            account_id = get_customer.stripe_account_id
+            logger.info(f" creating checkout session {customer_id} {account_id}")
             logger.info(f"creating price_id {price_id}")
             checkout_session = stripe.checkout.Session.create(
                 line_items=[{
@@ -45,7 +46,8 @@ class StripeService(ServiceContext):
                     'tenant_id': self.current_user.id,
                     'product_type': product_type.lower()
                 },
-                customer=customer_id
+                customer=customer_id 
+                # customer_account=account_id
             )
             logger.debug(f"Check out session completed")
             
@@ -134,67 +136,67 @@ class StripeService(ServiceContext):
 
     
     
-    async def webhook(self,request):
-        try:
-            payload = await request.body()
-            webhook_secret = self.WEBHOOK_SECRET
-            sig_header = request.headers.get("stripe-signature")
-            # logger.info()
-            event = stripe.Webhook.construct_event(
-                payload,
-                sig_header,
-                webhook_secret
-            )
-        except Exception as e:
-            return 
-        logger.debug(f"webhook event")
-        if event['type'] == 'checkout.session.completed' :
-            ##Update status in db version
-            session  =event['data']['object']
+    # async def webhook(self,request):
+    #     try:
+    #         payload = await request.body()
+    #         webhook_secret = self.WEBHOOK_SECRET
+    #         sig_header = request.headers.get("stripe-signature")
+    #         # logger.info()
+    #         event = stripe.Webhook.construct_event(
+    #             payload,
+    #             sig_header,
+    #             webhook_secret
+    #         )
+    #     except Exception as e:
+    #         return 
+    #     logger.debug(f"webhook event")
+    #     if event['type'] == 'checkout.session.completed' :
+    #         ##Update status in db version
+    #         session  =event['data']['object']
             
-            tenant_id = session.get('metadata', {}).get('tenant_id')
-            stripe_customer_id = session.get('customer')
-            plan = session.get('metadata',{}).get('product_type')
-            subscription_id = session.get('subscription')
-            logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] paln [{plan}] sub_id [{subscription_id}]")
-            tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
-            tenant_obj.subscription_status = 'active'
-            tenant_obj.subscription_plan = plan
-            tenant_obj.cur_subscription_id = subscription_id
+    #         tenant_id = session.get('metadata', {}).get('tenant_id')
+    #         stripe_customer_id = session.get('customer')
+    #         plan = session.get('metadata',{}).get('product_type')
+    #         subscription_id = session.get('subscription')
+    #         logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] paln [{plan}] sub_id [{subscription_id}]")
+    #         tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
+    #         tenant_obj.subscription_status = 'active'
+    #         tenant_obj.subscription_plan = plan
+    #         tenant_obj.cur_subscription_id = subscription_id
             
-        elif event['type'] == 'customer.subscription.updated':
-            # session  =event['data']['object']
-            subscription = event['data']['object']
+    #     elif event['type'] == 'customer.subscription.updated':
+    #         # session  =event['data']['object']
+    #         subscription = event['data']['object']
     
             
-            subscription_id = subscription.get('id')
+    #         subscription_id = subscription.get('id')
             
-            stripe_customer_id = subscription.get('customer')
+    #         stripe_customer_id = subscription.get('customer')
             
-            metadata = subscription.get('metadata', {})
-            tenant_id = metadata.get('tenant_id')
-            plan = metadata.get('product_type')
-            logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] paln [{plan}] sub_id [{subscription_id}]")
-            tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
-            tenant_obj.subscription_status = 'active'
-            tenant_obj.subscription_plan = plan
-            tenant_obj.cur_subscription_id = subscription_id
-        elif event['type'] == 'invoice.paid':
-            # this triggers on every renewal
-            invoice = event['data']['object']
-            subscription_id = invoice.get('subscription')
-            logger.debug(f"Payment successfull for sub: {subscription_id}")
+    #         metadata = subscription.get('metadata', {})
+    #         tenant_id = metadata.get('tenant_id')
+    #         plan = metadata.get('product_type')
+    #         logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] paln [{plan}] sub_id [{subscription_id}]")
+    #         tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
+    #         tenant_obj.subscription_status = 'active'
+    #         tenant_obj.subscription_plan = plan
+    #         tenant_obj.cur_subscription_id = subscription_id
+    #     elif event['type'] == 'invoice.paid':
+    #         # this triggers on every renewal
+    #         invoice = event['data']['object']
+    #         subscription_id = invoice.get('subscription')
+    #         logger.debug(f"Payment successfull for sub: {subscription_id}")
             
-            # logger.debug(f"{invoice}")
-            ##send email notifying
-        elif event['type'] == 'customer.subscription.deleted':
-            subscription = event['data']['object']
-            logger.debug(f"Subsripiton {subscription['id']} has ended.")
-            tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
-            tenant_obj.subscription_status = 'inactive'
-            # tenant_obj.subscription_plan = plan
-        self.db.commit()
-        return {"status":"success"}
+    #         # logger.debug(f"{invoice}")
+    #         ##send email notifying
+    #     elif event['type'] == 'customer.subscription.deleted':
+    #         subscription = event['data']['object']
+    #         logger.debug(f"Subsripiton {subscription['id']} has ended.")
+    #         tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
+    #         tenant_obj.subscription_status = 'inactive'
+    #         # tenant_obj.subscription_plan = plan
+    #     self.db.commit()
+    #     return {"status":"success"}
         
         
 def get_stripe_subscription_service(current_user = Depends(deps.get_current_user), db = Depends(get_db)):

@@ -58,10 +58,19 @@ class Validations:
         return resp.tenant_id
     # @staticmethod
     def _tenant_activity_(self, tenant_id):
-        tenants = self._tenants_exist(tenant_id)
+        tenants: tenant_table = self._tenants_exist(tenant_id)
 
         if tenants.is_active is False:
             logger.info(f"Tenant is not active right now")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail= f"Tenant {tenants.company_name} is not currently active")
+        
+        return tenants
+    def _tenant_verification_(self, tenant_id):
+        tenants: tenant_table = self._tenants_exist(tenant_id)
+
+        if tenants.is_verified is False:
+            logger.info(f"Tenant is not verfied right now")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail= f"Tenant {tenants.company_name} is not currently active")
         

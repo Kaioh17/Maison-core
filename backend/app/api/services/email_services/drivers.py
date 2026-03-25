@@ -77,7 +77,7 @@ class DriverEmailServices(EmailServices):
                                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                         <tr>
                                             <td align="center" style="padding: 24px 0 8px 0;">
-                                                <a href="{BASE_URL}/{slug}/driver/verify" style="display: inline-block; padding: 14px 32px; background-color: #9B61D1; color: #ffffff; text-decoration: none; font-family: 'Work Sans', sans-serif; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center;">
+                                                <a href="{slug}.{BASE_URL}/driver/verify" style="display: inline-block; padding: 14px 32px; background-color: #9B61D1; color: #ffffff; text-decoration: none; font-family: 'Work Sans', sans-serif; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center;">
                                                     Complete Registration
                                                 </a>
                                             </td>
@@ -86,8 +86,8 @@ class DriverEmailServices(EmailServices):
                                     
                                     <p style="margin: 16px 0 0 0; font-family: 'Work Sans', sans-serif; font-size: 13px; line-height: 1.5; color: #6b7280; text-align: center;">
                                         Or copy and paste this link into your browser:<br>
-                                        <a href="{BASE_URL}/{slug}/driver/verify" style="color: #9B61D1; text-decoration: underline; word-break: break-all;">
-                                            {BASE_URL}/{slug}/driver/verify
+                                        <a href="{slug}.{BASE_URL}/driver/verify" style="color: #9B61D1; text-decoration: underline; word-break: break-all;">
+                                            {slug}.{BASE_URL}/driver/verify
                                         </a>
                                     </p>
                                 </td>
@@ -425,7 +425,7 @@ class DriverEmailServices(EmailServices):
                             <tr>
                                 <td style="padding: 40px 40px 32px 40px; text-align: center; background: linear-gradient(135deg, {status_color} 0%, {status_color_dark} 100%); border-radius: 8px 8px 0 0;">
                                     <h1 style="margin: 0; font-family: 'DM Sans', sans-serif; font-size: 32px; font-weight: 600; color: #ffffff; line-height: 1.2;">
-                                        Account {status_text.title()}
+                                        Account {heading_title}
                                     </h1>
                                 </td>
                             </tr>
@@ -468,6 +468,7 @@ class DriverEmailServices(EmailServices):
         """.format(
             full_name=obj.full_name,
             status_text=status_text,
+            heading_title=status_text.title(),
             status_color=status_color,
             status_color_dark="#1A6B3A" if is_active else "#B91C1C",
             status_message='<p style="margin: 24px 0; font-family: \'Inter\', system-ui, -apple-system, \'Segoe UI\', Roboto, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1f2937;">You can now accept rides and manage your bookings through the driver dashboard.</p>' if is_active else '<p style="margin: 24px 0; font-family: \'Inter\', system-ui, -apple-system, \'Segoe UI\', Roboto, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1f2937;">Your account is currently inactive. Please contact support if you believe this is an error.</p>',
@@ -535,7 +536,7 @@ class DriverEmailServices(EmailServices):
                                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                         <tr>
                                             <td align="center" style="padding: 24px 0 8px 0;">
-                                                <a href="{base_url}/{slug}/driver/login" style="display: inline-block; padding: 14px 32px; background-color: #9B61D1; color: #ffffff; text-decoration: none; font-family: 'Work Sans', sans-serif; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center;">
+                                                <a href="{slug}.{base_url}/driver/login" style="display: inline-block; padding: 14px 32px; background-color: #9B61D1; color: #ffffff; text-decoration: none; font-family: 'Work Sans', sans-serif; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center;">
                                                     View Vehicle Details
                                                 </a>
                                             </td>

@@ -68,7 +68,7 @@ class TenantEmailServices(EmailServices):
                                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                         <tr>
                                             <td align="center" style="padding: 24px 0 8px 0;">
-                                                <a href="{base_url}/{slug}/tenant/login" style="display: inline-block; padding: 14px 32px; background-color: #9B61D1; color: #ffffff; text-decoration: none; font-family: 'Work Sans', sans-serif; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center;">
+                                                <a href="{base_url}/tenant/login" style="display: inline-block; padding: 14px 32px; background-color: #9B61D1; color: #ffffff; text-decoration: none; font-family: 'Work Sans', sans-serif; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center;">
                                                     Access Dashboard
                                                 </a>
                                             </td>
@@ -176,7 +176,7 @@ class TenantEmailServices(EmailServices):
                                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                         <tr>
                                             <td align="center" style="padding: 24px 0 8px 0;">
-                                                <a href="{base_url}/{slug}/tenant/bookings" style="display: inline-block; padding: 14px 32px; background-color: #9B61D1; color: #ffffff; text-decoration: none; font-family: 'Work Sans', sans-serif; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center;">
+                                                <a href="{base_url}/tenant/bookings" style="display: inline-block; padding: 14px 32px; background-color: #9B61D1; color: #ffffff; text-decoration: none; font-family: 'Work Sans', sans-serif; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center;">
                                                     View Booking
                                                 </a>
                                             </td>

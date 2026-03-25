@@ -37,7 +37,7 @@ class Drivers(Base):
     # vehicle_id = Column(Integer, ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True, unique=True)
 
     driver_token = Column(String,nullable=False)
-    is_registered = Column(String, CheckConstraint( "status IN ('registered', 'pending')", name="check_driver_registeration"), nullable=False, default="pending")
+    is_registered = Column(String, nullable=False, default="pending")
     is_active =  Column(Boolean, default=False)
     is_token = Column(Boolean,default=False)
     status = Column(String(50), default = "available")
@@ -54,6 +54,10 @@ class Drivers(Base):
     
     __table_args__ = (
         UniqueConstraint('email', 'tenant_id','license_number', name = 'unique_driver'),
+        CheckConstraint(
+            "is_registered IN ('registered', 'pending')",
+            name='check_driver_registeration',
+        ),
     )
     
     #relationships 

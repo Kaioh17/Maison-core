@@ -55,7 +55,7 @@ class WebhookServices(ServiceContext):
             )
         except Exception as e:
             return 
-        logger.debug(f"webhook event")
+        
         if event['type'] == 'checkout.session.completed' :
             ##Update status in db version
             session  =event['data']['object']
@@ -70,7 +70,7 @@ class WebhookServices(ServiceContext):
             tenant_obj.subscription_plan = plan
             tenant_obj.cur_subscription_id = subscription_id
             
-        elif event['type'] == 'customer.subscription.updated':
+        elif event['type'] in ('customer.subscription.updated', 'customer.subscription.created'):
             # session  =event['data']['object']
             subscription = event['data']['object']
     
@@ -87,7 +87,7 @@ class WebhookServices(ServiceContext):
             tenant_obj.subscription_status = 'active'
             tenant_obj.subscription_plan = plan
             tenant_obj.cur_subscription_id = subscription_id
-        elif event['type'] == 'invoice.paid':
+        elif event['type'] in ('invoice.paid', 'invoice.finalized', 'invoice.payment_succeded'):
             # this triggers on every renewal
             invoice = event['data']['object']
             subscription_id = invoice.get('subscription')
@@ -109,7 +109,7 @@ class WebhookServices(ServiceContext):
         """
         Process events signed with CONNECT_WEBHOOK_SECRET (Connect webhook endpoint).
 
-        - account.created / account.updated: read metadata.tenant_id; when charges_enabled,
+        - account.created / account.updated / v1.account.updated: read metadata.tenant_id; when charges_enabled,
           set tenant_profile.stripe_account_id from event['account'], charges_enabled, and
           mark tenant verified/active.
         - payment_intent.succeeded / charge.succeeded: update booking payment_status from metadata.
@@ -122,12 +122,12 @@ class WebhookServices(ServiceContext):
             payload = await request.body()
             webhook_secret = self.CONNECT_WEBHOOK_SECRET
             sig_header = request.headers.get("stripe-signature")
-            # logger.info()
             event = stripe.Webhook.construct_event(
                 payload,
                 sig_header,
                 webhook_secret
             )
+            
         except Exception as e:
             raise HTTPException(400)
         tenant_stripe_id = event.get('account')
@@ -135,9 +135,11 @@ class WebhookServices(ServiceContext):
         logger.debug(f"webhook event:[{event['type']}] for {tenant_stripe_id}")
         try:
             
-            if event['type'] in ('account.updated' ,'account.created'):
+            if event['type'] in ('account.updated' ,'account.created', 'v1.account.updated'):
+                logger.debug(event['type'])
                 # Persist Connect account id on tenant_profile once charges can be collected
-                account = event['data']['object']
+                account = event['data']['object'] if event['type'] != 'v1.account.updated' else event['data']
+                
                 metadata =  account.get('metadata', {})
                 tenant_id = metadata.get('tenant_id')
                 response:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
@@ -158,7 +160,7 @@ class WebhookServices(ServiceContext):
                     # Onboarding not finished — still save charges_enabled flag
                     response.charges_enabled = account.get('charges_enabled')
                     self.db.commit()    
-                    
+                
             elif event['type'] == 'checkout.session.completed' :
                 session = event['data']['object']
                 metadata = session.get('metadata', {})

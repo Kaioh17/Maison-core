@@ -161,10 +161,12 @@ app = FastAPI(
 # app = FastAPI(swagger_ui_parameters={"syntaxHighlight": {"theme": "obsidian"}})
 # CORS for frontend (dev: Vite at 3000; docker: nginx serves same-origin and proxies /api)
 # Also includes mobile app origins for Flutter development
-_cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+_cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()] 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
+    # Single pattern: Starlette passes this to re.compile(); must be str, not a tuple.
+    allow_origin_regex=r"^https?://[\w-]+(\.usemaison\.io|\.localhost(:\d+)?)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]

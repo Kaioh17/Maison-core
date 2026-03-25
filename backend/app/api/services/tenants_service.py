@@ -74,18 +74,24 @@ class TenantService(ServiceContext):
                 "phone_no": phone_no,
                 # "slug": slug
             }
+            full_name = f"{first_name} {last_name}"
             self._check_unique_fields(self.tenant_info, model_map)
             
             """Stripe config"""
             tenant_email =email 
             logger.info(f"Tenant: {tenant_email}")
-            stripe_customer = stripe_service.StripeService(self.current_user, self.db).create_customer(email = tenant_email,
-                                                                                                       name = f"{first_name} {last_name}")
-            # stripe_express = stripe_service.StripeService(self.current_user, self.db).create_express_account(tenant_obj=obj)
-
-            """Create new tenants"""
+            stripe_customer_id = stripe_service.StripeService(self.current_user, self.db).create_customer(email = tenant_email,
+                                                                                                       name = full_name)
             
+            """initial stripe express account integration (soley for v2 transition in the future if needed)
+            # stripe_account_id, stripe_customer_id = stripe_service.StripeService(self.current_user, self.db).create_account_v2(email = email, full_name=full_name)
+            
+            # stripe_service.StripeService(self.current_user, self.db).add_account_metdata(tenant_id=new_tenant_id, acct_id=stripe_account_id)
+            """
+            
+            """Save log if there is a logo"""
             logo_path = await SupaS3.upload_to_s3(url=logo_url, slug=slug, bucket_name='logos') if logo_url != None else None
+            """Create new tenants"""
             
             hashed_pwd = password_utils.hash(password.strip()) #hash password
           
@@ -93,22 +99,30 @@ class TenantService(ServiceContext):
                                         first_name=first_name,
                                         last_name=last_name,
                                         password=hashed_pwd,
-                                        phone_no=phone_no)
+                                        phone_no=phone_no,
+                                        
+                                                               
+                                        )
             # new_tenant_info.password = hashed_pwd
             
             self.db.add(new_tenant_info)
             self.db.commit()
             self.db.refresh(new_tenant_info)
             new_tenant_id = new_tenant_info.id
+            
             logger.debug(f"New tenant id: {new_tenant_id}")
+            
+            
+            
+            """set up tenant profile and stats"""
             new_tenant_profile = self.tenant_profile(tenant_id = new_tenant_id,
                                                      company_name=company_name,
                                                     slug=slug,
                                                     address=address,
                                                     city=city,                                
                                                     logo_url = logo_path,
-                                                    stripe_customer_id = stripe_customer,
-
+                                                    stripe_customer_id = stripe_customer_id,
+                                                                                                   
                                                     )
             new_tenant_stats = self.tenant_stats(tenant_id = new_tenant_id, 
                                                  drivers_count=drivers_count)

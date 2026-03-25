@@ -21,10 +21,78 @@ class StripeService(ServiceContext):
         customer = stripe.Customer.create(email=email, name=name)
         logger.info(f"Customer has been created {customer.id}")
         return customer.id
-
+    def create_account_v2(self, email: str, full_name: str):
+        """Create v2 stripe account this initializes an account and returns acct_id and customer_id for db records"""
+        logger.debug(f'Creating v2 account ({email})')
+        account = self.client.v2.core.accounts.create({
+                                "contact_email": email,
+                                "display_name": full_name,
+                                "dashboard": "express",
+                                "identity": {
+                                    # "business_details": {"registered_name": company_name},
+                                    "country": "US",
+                                    "entity_type": "individual",
+                                },
+                                "configuration": {
+                                        "merchant": {
+                                            "capabilities": {
+                                                "card_payments": {"requested": True}
+                                                # "stripe_balance.payouts": {"requested": True}
+                                            },
+                                        },
+                                        "customer":{
+                                            "capabilities":{
+                                                "automatic_indirect_tax": {"requested":True}
+                                            }
+                                        }
+                                },
+                                "defaults": {
+                                    "currency": "usd", 
+                                    "responsibilities": {
+                                        "fees_collector": "stripe",
+                                        "losses_collector": "stripe",
+                                    },
+                                    "locales":["en-US"],
+                                },
+                                
+                                "include": [
+                                        "configuration.customer",
+                                        "configuration.merchant",
+                                        "identity",
+                                        "requirements"
+                                    ],
+                                
+                                }
+                            )
+        account_id = account.id
+        if account.configuration and account.configuration.customer:
+            customer_id = account.configuration.customer.id  # Format: cus_123...
+            logger.debug(f"Account ID: {account_id}, Customer ID: {customer_id}")
+            return (account_id, customer_id)
+        else:
+            logger.debug(f"Account ID: {account_id}, No customer configuration found")
+            logger.error(f"There should be a customer_if. Something is broken.")
+            return account_id, None
+    def update_account_type(self):
+        """This handles account update form individual to rigistered business"""
+        pass
+    def add_account_metdata(self, tenant_id, acct_id):
+        
+        updated_account = self.client.v2.core.accounts.update(
+            acct_id,
+            {
+                "metadata":{
+                    "tenant_id": tenant_id
+                }    
+            }
+        )
+        
+        return updated_account
     def create_express_account(self,tenant_obj: tenant_table, country: str = "US"):
         """Create Express account for tenant"""
         slug = tenant_obj.slug
+        
+        
         express_account = stripe.Account.create(
                             type="express", 
                             country=country,
@@ -44,6 +112,8 @@ class StripeService(ServiceContext):
                                 "tenant_id":tenant_obj.id
                             }
                             )
+        
+        
         exp_acct_id = express_account.id
         logger.info(f"Express account has been created [{exp_acct_id}] for")
         
