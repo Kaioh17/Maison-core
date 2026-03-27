@@ -138,7 +138,7 @@ class WebhookServices(ServiceContext):
             if event['type'] in ('account.updated' ,'account.created', 'v1.account.updated'):
                 logger.debug(event['type'])
                 # Persist Connect account id on tenant_profile once charges can be collected
-                account = event['data']['object'] if event['type'] != 'v1.account.updated' else event['data']
+                account = event['data']['object']
                 logger.info(f"[DEBUG] [webhooks] Account is: {account}")
                 
                 metadata =  account.get('metadata', {})

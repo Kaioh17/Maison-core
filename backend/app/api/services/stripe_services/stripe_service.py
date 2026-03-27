@@ -102,11 +102,10 @@ class StripeService(ServiceContext):
                                 "first_name": tenant_obj.first_name,
                                 "last_name": tenant_obj.last_name,
                                 "email": tenant_obj.email,
-                                },
-                           
+                            },                           
                             capabilities={
                                 "transfers": {"requested":True},
-                                "card_payments": {"requested":True}
+                                "card_payments": {"requested":True} 
                             },
                             metadata={
                                 "tenant_id":tenant_obj.id
