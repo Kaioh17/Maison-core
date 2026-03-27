@@ -139,10 +139,19 @@ class WebhookServices(ServiceContext):
                 logger.debug(event['type'])
                 # Persist Connect account id on tenant_profile once charges can be collected
                 account = event['data']['object'] if event['type'] != 'v1.account.updated' else event['data']
+                logger.info(f"[DEBUG] [webhooks] Account is: {account}")
                 
                 metadata =  account.get('metadata', {})
+                logger.info(f"[DEBUG] [webhooks] Metadata: {metadata}")
                 tenant_id = metadata.get('tenant_id')
+                logger.info(f"[DEBUG] [webhooks] Tenant_id: {tenant_id}")
+                
                 response:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
+                
+                if not response:
+                    raise HTTPException(404, "Tenant not found!")
+                logger.info(f"[DEBUG] [webhooks] respose: {response}")
+                
                 tenant_response:tenant_table = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
                 
                 if account.get('charges_enabled'):
