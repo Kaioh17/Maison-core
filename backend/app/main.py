@@ -144,7 +144,7 @@ app = FastAPI(
     # docs_url="/docs" if environment == 'development' else None,
     docs_url="/docs",
     redoc_url="/redoc" if environment == 'development' else None,
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
     redirect_slashes=False,
     openapi_tags=[
         {
