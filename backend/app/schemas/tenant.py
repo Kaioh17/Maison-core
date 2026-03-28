@@ -5,12 +5,12 @@ from typing import Optional
 import re
 from enum import Enum
 from fastapi import UploadFile, Form
-
+from .general import GlobalValidator
 class DriverType(str, Enum):
     OUTSOURCED = "outsourced"
     IN_HOUSE = "in_house"
 """Tenants Schemas"""
-class TenantCreate(BaseModel):
+class TenantCreate(GlobalValidator):
     email: EmailStr = Form(...)
     first_name: str = Form(..., min_length=1, max_length=200)
     last_name: str = Form(..., min_length=1, max_length=200)
@@ -30,6 +30,7 @@ class TenantCreate(BaseModel):
     def validate_slug(cls, value:str) -> any:
         if value != None:
             return value.lower().strip().replace(' ', '-').replace('_','-')
+    
     # @field_validator('slug')
     # def validate_slug(cls, v):
     #     if not re.match(r'^[a-z0-9-]+$', v):

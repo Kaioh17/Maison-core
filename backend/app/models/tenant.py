@@ -58,23 +58,27 @@ class Tenants(Base):
     
     @property
     def slug(self):
-        """Return the full name of the tenant"""
+        """Return the tenant's profile slug"""
         return self.profile.slug
+    
     @property
     def stripe_customer_id(self):
-        """Return the full name of the tenant"""
+        """Return the tenant's Stripe customer ID"""
         return self.profile.stripe_customer_id
+    
     @property
     def cur_subscription_id(self):
-        """Return the full name of the tenant"""
+        """Return the tenant's current subscription ID"""
         return self.profile.cur_subscription_id
+    
     @property
     def subscription_status(self):
-        """Return the full name of the tenant"""
+        """Return the tenant's subscription status"""
         return self.profile.subscription_status
+    
     @property
     def subscription_plan(self):
-        """Return the full name of the tenant"""
+        """Return the tenant's subscription plan"""
         return self.profile.subscription_plan
     
 class TenantProfile(Base): 

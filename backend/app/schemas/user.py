@@ -3,8 +3,10 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 import re
+from .general import GlobalValidator
 
-class UserBase(BaseModel):
+
+class UserBase(GlobalValidator):
     email: EmailStr
     first_name: str = Field(..., min_length=1, max_length=200)
     last_name: str = Field(..., min_length=1, max_length=200)

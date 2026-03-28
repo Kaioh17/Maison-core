@@ -38,7 +38,9 @@ from .stripe_services import stripe_service, stripe_tier_service
 from app.policies import plan_policy
 from app.domain import plans
 from .auth_service import AuthService
-import httpx
+import httpx 
+
+
 
 class TenantService(ServiceContext):
     def __init__(self, db, current_user):
@@ -72,11 +74,18 @@ class TenantService(ServiceContext):
                 "email": email,
                 # "company_name": company_name,
                 "phone_no": phone_no,
-                # "slug": slug
+                "slug": slug
             }
+            first_name = first_name.strip().capitalize()
+            last_name = last_name.strip().capitalize()
             full_name = f"{first_name} {last_name}"
             self._check_unique_fields(self.tenant_info, model_map)
-            
+            if slug in self.RESERVED_SLUGS:
+                logger.error(f"Tenant creation failed: Reserved slug '{slug}' cannot be used")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"The slug '{slug}' is reserved and cannot be used. Please choose a different slug."
+                )  
             """Stripe config"""
             tenant_email =email 
             logger.info(f"Tenant: {tenant_email}")
@@ -167,10 +176,26 @@ class TenantService(ServiceContext):
         except Exception as e:
             raise e 
     def _check_unique_fields(self, model, fields: dict):
+        """
+        Validate that specified fields contain unique values in the database.
+
+        Args:
+            model: SQLAlchemy model class to query against.
+            fields (dict): Dictionary mapping field names to their values to check for uniqueness.
+                          Example: {'email': 'user@example.com', 'slug': 'my-slug'}
+        Raises:
+            HTTPException: With status code 409 if a duplicate field value is found.
+                          Includes a user-friendly error message indicating which field has the conflict.
+        Handles:
+            Database exceptions are caught and handled via self.db_exceptions.handle().
+        Note:
+            The 'slug' field is handled as a special case and queried from tenant_profile table.
+        """
         try:
             for field_name, value in fields.items():
                 column = getattr(model, field_name)
-                exists = self.db.query(model).filter(column == value).first()
+                
+                exists = self.db.query(model).filter(column == value).first()  if column != 'slug' else self.db.query(self.tenant_profile).filter(column == value).first()
                 if exists:
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
@@ -661,7 +686,11 @@ class TenantService(ServiceContext):
             self.db.commit()
             
             """Email Notificaition"""
-            drivers.DriverEmailServices(to_email=driver_info.email, from_email='notifications', display_name=self.slug).new_ride(booking_obj=ride, assigned=True, slug=self.slug)
+            rider_row = self.db.query(user_table).filter(user_table.id == ride.rider_id).first()
+            rider_nm = rider_row.full_name if rider_row else None
+            drivers.DriverEmailServices(to_email=driver_info.email, from_email='notifications', display_name=self.slug).new_ride(
+                booking_obj=ride, assigned=True, slug=self.slug, rider_name=rider_nm
+            )
             return success_resp(data={"driver_id": payload.driver_id, "booking_id": booking_id}, msg=f"Driver {payload.driver_id} has been assigned to {booking_id}")
        except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)

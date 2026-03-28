@@ -139,9 +139,9 @@ app = FastAPI(
     version="1.0.0",
     contact={
         "name": "Maison Development Team",
-        "email": "dev@maison.com"
+        "email": "dev@usemaison.io"
     },
-    docs_url="/docs" if environment == 'development' else None,
+    # docs_url="/docs" if environment == 'development' else None,
     redoc_url="/redoc" if environment == 'development' else None,
     openapi_url="/openapi.json" if environment == 'development' else None,
     redirect_slashes=False,
@@ -166,7 +166,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     # Single pattern: Starlette passes this to re.compile(); must be str, not a tuple.
-    allow_origin_regex=r"^https?://[\w-]+(\.usemaison\.io|\.localhost(:\d+)?)$",
+    # allow_origin_regex=r"^https?://[\w-]+(\.usemaison\.io|\.localhost(:\d+)?)$",
+    allow_origin_regex=r"^https?://([\w-]+\.)?(usemaison\.io|localhost(:\d+)?)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]

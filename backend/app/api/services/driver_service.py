@@ -247,7 +247,10 @@ class DriverService(ServiceContext):
                     tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == booking_obj.tenant_id).first()
                     slug = tenant_profile_obj.slug if tenant_profile_obj else None
                     if slug:
-                        riders.RiderEmailServices(to_email=rider_obj.email, from_email=self.tenant_email).booking_status_update_email(
+                        op = tenant_profile_obj.company_name if tenant_profile_obj else slug
+                        riders.RiderEmailServices(
+                            to_email=rider_obj.email, from_email=self.tenant_email, operator_name=op
+                        ).booking_status_update_email(
                             booking_obj=booking_obj,
                             rider_obj=rider_obj,
                             slug=slug,
@@ -255,7 +258,9 @@ class DriverService(ServiceContext):
                         )
                         # Send cancellation email if status is cancelled
                         if action == 'cancelled':
-                            riders.RiderEmailServices(to_email=rider_obj.email, from_email=self.tenant_email).booking_cancellation_email(
+                            riders.RiderEmailServices(
+                                to_email=rider_obj.email, from_email=self.tenant_email, operator_name=op
+                            ).booking_cancellation_email(
                                 booking_obj=booking_obj,
                                 rider_obj=rider_obj,
                                 slug=slug

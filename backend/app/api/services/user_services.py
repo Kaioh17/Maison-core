@@ -52,7 +52,12 @@ class UserService(ServiceContext):
             tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
             slug = tenant_profile_obj.slug if tenant_profile_obj else None
             if slug:
-                riders.RiderEmailServices(to_email=new_user.email, from_email=self.tenant_email if hasattr(self, 'tenant_email') else 'noreply@example.com').welcome_email(
+                op = tenant_profile_obj.company_name if tenant_profile_obj else slug
+                riders.RiderEmailServices(
+                    to_email=new_user.email,
+                    from_email=self.tenant_email if hasattr(self, 'tenant_email') else 'noreply@example.com',
+                    operator_name=op,
+                ).welcome_email(
                     obj=new_user,
                     slug=slug
                 )

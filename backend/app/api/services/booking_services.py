@@ -150,38 +150,53 @@ class BookingService(ServiceContext):
                 
                 
                 #send email
-                
+                tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.current_user.tenant_id).first()
+                op_name = (
+                    tenant_obj.profile.company_name
+                    if tenant_obj and hasattr(tenant_obj, "profile") and tenant_obj.profile
+                    else self.slug
+                )
+
+                driver_full_name = None
                 if response.driver_id:
-                    driver_ = await self._get_driver_fullname(driver_id = response.driver_id)
+                    driver_ = await self._get_driver_fullname(driver_id=response.driver_id)
                     driver_full_name = driver_.full_name
                     driver_email = driver_.email
-                    ##email
-                    # tenants.TenantEmailServices(to_email=self.tenant_email, from_email=self.tenant_email).new_ride(booking)
-                    # drivers.DriverEmailServices(to_email=driver_email, from_email='notifications', display_name=self.slug).new_ride(booking_obj=new_ride, assigned=False, slug=self.slug)
-                    drivers.DriverEmailServices(to_email=driver_email, from_email='notifications', display_name=self.slug).new_ride(booking_obj=response, assigned=False, slug=self.slug)
-                else:
-                    driver_full_name = "No driver assigned"
-                
+                    drivers.DriverEmailServices(
+                        to_email=driver_email, from_email="notifications", display_name=self.slug
+                    ).new_ride(
+                        booking_obj=response,
+                        assigned=False,
+                        slug=self.slug,
+                        rider_name=self.full_name,
+                    )
+
                 # Email: Send booking confirmation to rider
                 rider_obj = self.db.query(user_table).filter(user_table.id == self.current_user.id).first()
                 vehicle_info = f"{response.vehicle.vehicle_name}"
                 logger.debug(f"{vehicle_info}")
-                await riders.RiderEmailServices(to_email=self.current_user.email, from_email=self.tenant_email).booking_confirmation_email(
+                await riders.RiderEmailServices(
+                    to_email=self.current_user.email,
+                    from_email=self.tenant_email,
+                    operator_name=op_name,
+                ).booking_confirmation_email(
                     booking_obj=response,
                     rider_obj=rider_obj,
                     slug=self.slug,
                     vehicle_info=vehicle_info,
-                    driver_name=driver_full_name if response.vehicle.driver_id else None
+                    driver_name=driver_full_name if response.driver_id else None,
                 )
                 await asyncio.sleep(3)
                 # Email: Send new booking notification to tenant
-                tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.current_user.tenant_id).first()
-                await tenants.TenantEmailServices(to_email=self.tenant_email, from_email='notifications', display_name=self.slug).booking_notification_email(
+                await tenants.TenantEmailServices(
+                    to_email=self.tenant_email, from_email="notifications", display_name=self.slug
+                ).booking_notification_email(
                     booking_obj=response,
                     tenant_obj=tenant_obj,
                     slug=self.slug,
                     rider_name=self.full_name,
-                    vehicle_info=vehicle_info
+                    vehicle_info=vehicle_info,
+                    driver_name=driver_full_name,
                 )
                 
                 logger.info(f"A new ride has been set for {self.current_user.full_name}")

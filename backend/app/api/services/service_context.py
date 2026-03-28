@@ -13,6 +13,8 @@ class ServiceContext:
         :param db: Description
         :param current_user: Description
         """
+        self.RESERVED_SLUGS = {'api', 'www'}
+        
         self.db = db
         self.current_user=current_user
         if self.current_user:
@@ -38,6 +40,8 @@ class ServiceContext:
                 self.sub_plan = self.profile_response.subscription_plan
                 self.slug = self.current_user.profile.slug
                 # self.sub_status = self.profile_response.subscripton_status
+                
+            
         self.time_now = datetime.now(timezone.utc)
                         
                                 

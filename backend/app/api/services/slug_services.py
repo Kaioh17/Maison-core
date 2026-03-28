@@ -29,13 +29,16 @@ class SlugService(ServiceContext):
                     .join(tenant_profile,tenant_profile.tenant_id == tenant_setting_table.tenant_id)
                     .join(tenant_branding, tenant_branding.tenant_id == tenant_setting_table.tenant_id)
                     .filter(tenant_profile.slug == slug).first())
+     
         logger.debug(f"{resp}")
         if not resp:
             logger.debug("Slug not in db")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Slug is not in db")
         settings, profile, branding = resp
-        Validations(self.db)._tenant_verification_(profile.tenant_id)
-        logger.debug(f"tennat id {profile.tenant_id}")
+        if not Validations(self.db)._tenant_verification_(profile.tenant_id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail= f"Tenant {profile.company_name} is not currently active")
+        logger.debug(f"tennat slug {profile.slug}")
         
         response_dict = {"settings":settings.__dict__, "profile":profile.__dict__, "branding":branding.__dict__}
         return success_resp(msg = "Slug exists", data=response_dict)
