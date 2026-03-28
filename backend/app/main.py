@@ -139,9 +139,10 @@ app = FastAPI(
     version="1.0.0",
     contact={
         "name": "Maison Development Team",
-        "email": "dev@usemaison.io"
+        "email": f"dev@{settings.domain}"
     },
     # docs_url="/docs" if environment == 'development' else None,
+    docs_url="/docs",
     redoc_url="/redoc" if environment == 'development' else None,
     openapi_url="/openapi.json" if environment == 'development' else None,
     redirect_slashes=False,
@@ -190,7 +191,7 @@ app.include_router(users.router)
 app.include_router(bookings.router)
 app.include_router(vehicles.router)
 app.include_router(tenant_settings.router)
-app.include_router(admin.router)
+app.include_router(admin.router, dependencies=[Depends(dependencies.verify_api_key)])
 app.include_router(subscriptions.router)
 app.include_router(logs.router)
 app.include_router(slug.router)

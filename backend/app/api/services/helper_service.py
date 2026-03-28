@@ -67,11 +67,12 @@ class Validations:
         
         return tenants
     def _tenant_verification_(self, tenant_id):
+        logger.info("Checking tenant verification")
         tenants: tenant_table = self._tenants_exist(tenant_id)
-        if tenants.is_verified is False:
-            logger.info(f"Tenant is not verfied right now")
+        if tenants.is_verified is False and tenant.is_active:
+            logger.error(f"Tenant is not verfied/active right now")
             return None
-        logger.debug(f"tenant approved")
+        logger.debug(f"Tenant approved")
         
         return tenants
     # @staticmethod

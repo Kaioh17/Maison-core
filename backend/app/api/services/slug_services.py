@@ -35,7 +35,8 @@ class SlugService(ServiceContext):
             logger.debug("Slug not in db")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Slug is not in db")
         settings, profile, branding = resp
-        if not Validations(self.db)._tenant_verification_(profile.tenant_id):
+        verified = Validations(self.db)._tenant_verification_(profile.tenant_id)
+        if not verified:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail= f"Tenant {profile.company_name} is not currently active")
         logger.debug(f"tennat slug {profile.slug}")
