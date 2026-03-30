@@ -1,233 +1,160 @@
 # Maison-core
 
-Maison-core is a scalable backend for luxury car service companies, built with FastAPI and SQLAlchemy. It supports multi-tenant architecture, booking automation, and dedicated portals for tenants, drivers, and riders.
+**Maison** is a multi-tenant backend for luxury ground transportation: one platform powers many independent operators (tenants), each with their own branding, fleet, drivers, and riders. It handles bookings end to end—routing and pricing (Mapbox), payments and payouts (Stripe, including Connect), white-label configuration, and role-specific portals for company admins, drivers, and customers.
 
-## Features
-
-### Core Functionality
-
-- **Multi-tenant Architecture:** Support for multiple transportation companies.
-- **Role-based Authentication:** Separate authentication for tenants, drivers, and users/riders.
-- **Booking Management:** Comprehensive ride booking system with multiple service types.
-- **Driver Management:** Onboarding, registration, and management of drivers.
-- **Vehicle Management:** Fleet management with vehicle configurations.
-- **Airport Integration:** Built-in airport data for airport transfer services.
-
-### Service Types
-
-- **Airport Transfers:** Automated airport pickup/dropoff with city-based airport mapping.
-- **Hourly Services:** Time-based transportation services.
-- **Drop-off Services:** Point-to-point transportation.
-
-### User Roles
-
-- **Tenants:** Transportation company administrators.
-- **Drivers:** Service providers (in-house or outsourced).
-- **Users/Riders:** End customers booking rides.
-
-
-## Architecture
-
-### Backend Structure
-    ```cmd
-    backend/
-    ├── app/
-    │   ├── api/
-    │   │   ├── routers/          # API route definitions
-    │   │   ├── services/         # Business logic layer
-    │   │   └── core/             # Core functionality (OAuth2, etc.)
-    │   ├── models/               # SQLAlchemy database models
-    │   ├── schemas/              # Pydantic data validation schemas
-    │   ├── db/                   # Database configuration
-    │   ├── utils/                # Utility functions
-    │   └── data/                 # Static data (airports, vehicles)
-    ├── alembic/                  # Database migrations
-    └── docker/                   # Docker configuration
+If you are **evaluating the product or team**, that is the story: B2B2C SaaS for premium ride services, strong isolation between tenants, and integrations you would expect in production (payments, maps, email). If you are **building on the API**, everything routes under `/api/v1`, with JWT auth per role (`tenant`, `driver`, `rider`) and tenant-scoped data.
 
 ---
 
-## API Endpoints
+## Live API documentation
 
-### Authentication
+Interactive OpenAPI (Swagger UI):
 
-- `POST /login/tenants` - Tenant login
-- `POST /login/driver` - Driver login
-- `POST /login/user` - User/rider login
+**[https://api.usemaison.io/docs](https://api.usemaison.io/docs)**
 
-### Tenant Management
+The OpenAPI JSON is available at `/openapi.json` on the same host when exposed.
 
-- `GET /tenant/` - Get tenant information
-- `POST /tenant/add` - Create new tenant
-- `GET /tenant/drivers` - Get tenant's drivers
-- `POST /tenant/onboard` - Onboard new driver
-
-### Driver Management
-
-- `PATCH /driver/register` - Driver registration/update
-
-### User Management
-
-- `POST /users/add` - Create new user
-- `GET /users/` - Get user information
-
-### Booking Management
-
-- `POST /bookings/set` - Create new booking
-- `GET /bookings/` - Get user's bookings
-
-### Vehicle Management
-
-- `GET /vehicles/` - Get vehicles
-- `POST /vehicles/add` - Add new vehicle
+> **Note:** If that URL does not load, the `/docs` path may be blocked by a firewall, corporate network, or edge policy. Try another network or VPN, or run the API locally and open `http://localhost:8000/docs` after starting the server.
 
 ---
 
-## Database Models
+## What it does (feature snapshot)
 
-- **Tenants:** Transportation companies
-- **Drivers:** Service providers with different types (in-house/outsourced)
-- **Users:** End customers
-- **Vehicles:** Fleet management with configurations
-- **Bookings:** Ride requests and management
-- **Vehicle Configurations:** Pricing and capacity settings
-
-> **Database Diagram:** See [docs/DBM Diagram.pdf](docs/DBM%20Diagram.pdf) for a visual representation of the database schema and relationships.
+- **Multi-tenancy** — Separate operators on shared infrastructure; data scoped by `tenant_id` (including via JWT context).
+- **Roles** — Tenants (company admins), drivers, riders; OAuth2 / JWT with refresh patterns.
+- **Bookings** — Airport, hourly, and point-to-point flows; status lifecycle and analytics-oriented aggregates.
+- **Fleet & pricing** — Vehicles, categories, and tenant-level configuration (including deposits and white-label settings).
+- **Billing** — Stripe for rider charges and platform/Connect flows; subscription endpoints for Maison SaaS billing where applicable.
+- **Integrations** — Mapbox (routes/pricing inputs), Resend (transactional email), rate limiting backed by **Redis**.
 
 ---
 
-##  Technology Stack
+## Infrastructure (how we run it)
 
-- **Framework:** FastAPI
-- **Database:** SQLAlchemy ORM
-- **Authentication:** OAuth2 with JWT tokens
-- **Validation:** Pydantic schemas
-- **Database Migrations:** Alembic
-- **Containerization:** Docker
-- **Password Hashing:** Secure password utilities
+| Layer | Choice |
+|--------|--------|
+| **API** | **FastAPI** on **Uvicorn** (Python 3.11 in Docker) |
+| **Database** | **PostgreSQL 15** |
+| **Cache / rate limits** | **Redis 7** |
+| **Migrations** | **Alembic** |
+| **Containers** | **Docker Compose** (`docker/docker-compose.yml`): `web` (API), `db`, `redis` |
+
+Typical layout:
+
+- **Development:** Compose brings up API + Postgres + Redis; the API container mounts the `backend/` tree for hot reload.
+
+
+Environment variables are loaded from app settings (see **`backend/app/config.py`**). For Docker, Compose reads **`docker/.env`** (see `env_file` in `docker/docker-compose.yml`). Set database fields (`db_user`, `db_password`, `db_host`, `db_port`, `db_name`—use **`db`** as `db_host` when talking to the Compose Postgres service), plus `redis_url`, Stripe keys, Mapbox token, JWT secrets, `cors_origins`, and the rest of the required keys from `Settings`.
 
 ---
 
-## Setup and Installation
+## Tech stack
 
-### Prerequisites
+- **Framework:** FastAPI  
+- **ORM / DB:** SQLAlchemy, PostgreSQL  
+- **Validation:** Pydantic v2  
+- **Auth:** OAuth2 / JWT (role-based)  
+- **Migrations:** Alembic  
+- **Rate limiting:** SlowAPI + Redis  
 
-- Python 3.8+
-- Docker and Docker Compose
-- PostgreSQL (if not using Docker)
+---
 
-> **Note:** Linux or macOS provides the best performance for development and production environments.
+## Prerequisites
 
-<details>
-<summary><strong>Windows Development Setup</strong></summary>
+- **Python 3.11+** (matches `docker/Dockerfile`)
+- **Docker** and **Docker Compose** (recommended)
+- **PostgreSQL** and **Redis** if you run the API without Compose
 
-#### Option 1: Native Windows Setup
+Linux, macOS, or **WSL2** on Windows are the smoothest paths; native Windows works with a virtualenv, but WSL2 avoids most path and tooling friction.
 
-    ```cmd
-    # Clone the repository
-    git clone <repository-url>
-    cd <project-directory>
+---
 
-    # Create virtual environment
-    python -m venv venv
+## Quick start (Docker Compose)
 
-    # Activate virtual environment
-    venv\Scripts\activate
+From the repository root:
 
-    # Install dependencies
-    pip install -r backend\requirements.txt
+```bash
+cd docker
+# Create docker/.env with variables required by backend/app/config.py (match Compose service names, e.g. db_host=db)
+docker compose up --build
+```
 
-    # Set up environment variables (Windows)
-    copy backend\docker.env .env
-    # Edit .env file with your database credentials using notepad or VS Code
+The API listens on **port 8000** by default (`http://localhost:8000`). Swagger UI: **`http://localhost:8000/docs`**.
 
-    # Navigate to backend directory
-    cd backend
+Apply migrations inside the stack (example: exec into the `web` container, or run Alembic from a shell with the same env as the app):
 
-    # Run database migrations
-    alembic upgrade head
+```bash
+cd backend && alembic upgrade head
+```
 
-    # Start the development server
-    uvicorn app.main:app --reload
+On Linux/macOS you can also use **`./start_project.sh`** or **`./start_tmux.sh`** for a tmux-based workflow (Postgres container, Compose, Alembic shell, Stripe webhook forwarding—adjust paths to match your machine).
 
-#### Option2: Using Powershell
-    ```cmd
-    # Clone the repository
-    git clone <repository-url>
-    Set-Location <project-directory>
+---
 
-    # Create and activate virtual environment
-    python -m venv venv
-    .\venv\Scripts\Activate.ps1
+## Local development (without Docker)
 
-    # Install dependencies
-    pip install -r backend\requirements.txt
+```bash
+python3.11 -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r backend/requirements.txt
+```
 
-    # Copy environment file
-    Copy-Item backend\docker.env .env
+Configure **`backend/app/.env`** (or the path your `Settings` class uses) with the same variables as production-oriented deploys: database URL, Redis, JWT, Stripe, Mapbox, Resend, `cors_origins`, etc.
 
-    # Navigate and run migrations
-    Set-Location backend
-    alembic upgrade head
+```bash
+cd backend
+alembic upgrade head
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-    # Start server
-    uvicorn app.main:app --reload
+---
 
-Windows-Specific Notes
-Virtual Environment: Always use a virtual environment to avoid dependency conflicts.
-Path Separators: Use backslashes (\) for Windows paths in commands.
-PowerShell Execution Policy: You may need to run Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser to enable script execution.
-Environment Variables: Edit .env file manually using any text editor.
-Database: Install PostgreSQL locally or use Docker Desktop for Windows.
-</details> 
+## API surface (overview)
 
+All HTTP routes are versioned under **`/api/v1/`**, for example:
 
-<details>
-<summary><strong>Linux/macOS Development </strong></summary>
-    ```cmd
-    # Clone the repository
-    git clone <repository-url>
-    cd <project-directory>
+- **`/api/v1/auth/...`** — Login and token flows by role  
+- **`/api/v1/tenant/...`** — Tenant admin operations  
+- **`/api/v1/driver/...`** — Driver portal  
+- **`/api/v1/users/...`** — Riders  
+- **`/api/v1/bookings/...`** — Bookings  
+- **`/api/v1/vehicles/...`** — Fleet  
+- **`/api/v1/tenant/config/...`** — White-label and configuration  
+- **`/api/v1/subscription/...`** — Maison subscription (Stripe)  
+- **`/api/v1/webhooks/...`** — Stripe webhooks  
 
-    # Create virtual environment
-    python3 -m venv venv
-    source venv/bin/activate
+For exact paths and request bodies, use **[the live docs](https://api.usemaison.io/docs)** or local `/docs`.
 
-    # Install dependencies
-    pip install -r backend/requirements.txt
+---
 
-    # Set up environment variables
-    cp backend/docker.env .env
-    # Edit .env with your database credentials
+## Repository layout
 
-    # Run database migrations
-    cd backend
-    alembic upgrade head
+```text
+backend/
+├── app/
+│   ├── api/
+│   │   ├── routers/       # Route modules (/api/v1/...)
+│   │   ├── services/      # Business logic
+│   │   └── core/          # Auth, security, dependencies
+│   ├── models/            # SQLAlchemy models
+│   ├── schemas/         # Pydantic schemas
+│   ├── db/                # Database setup
+│   └── utils/
+├── alembic/               # Migrations
+docker/
+├── docker-compose.yml
+├── Dockerfile
+└── nginx.conf             # Example reverse proxy for /api/
+```
 
-    # Start the development server
-    uvicorn app.main:app --reload
+---
 
-#### Doocker setup (cross-platform)
-    ```cmd
-    # Windows (Command Prompt)
-    docker-compose -f docker\docker-compose.yml up -d
+## Database
 
-    # Windows (PowerShell) / Linux / macOS
-    docker-compose -f docker/docker-compose.yml up -d
+Schema evolves via **Alembic**. A SQL reference dump lives in **`docs/database_schema.sql`**; diagram PDFs are under **`docs/`** if you need a visual ER overview.
 
-    # Or use the provided scripts (Linux/macOS only)
-    ./start_project.sh
-    ./start_tmux.sh
-#### Windows with WSL2(Reccommended for windows users)
-    ```cmd
-    # Install WSL2 and Ubuntu
-    wsl --install
+---
 
-    # Inside WSL2, follow the Linux setup instructions
-    git clone <repository-url>
-    cd <project-directory>
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r backend/requirements.txt
-    # ... continue with Linux instructions
+## More detail
 
-</details>
+For a longer walkthrough of multi-tenancy, **ServiceContext**, booking and payment flows, and third-party integrations, see **`docs/PROJECT_OVERVIEW.md`**.
