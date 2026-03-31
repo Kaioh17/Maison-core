@@ -3,7 +3,7 @@ docker/.env
 venv
 __pycache__
 backend/_alembic_setup.sh
-
+logs
 .env
 
 frontend/app/node_modules
@@ -12,4 +12,7 @@ frontend/mobile/node_modules
 # backend/alembic
 *.log
 backend/alembic/versions
+
 *.txt
+backend/logs
+
