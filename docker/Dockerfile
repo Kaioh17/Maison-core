@@ -13,14 +13,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file and install dependencies backend/requirements.txt
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
 RUN pip install alembic
 
 # Copy application code
-COPY ../backend .
-COPY backend/ .
+# COPY ../backend .
+COPY backend/ ./backend
 
 
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/backend/
+ENV PYTHONPATH=/app/backend

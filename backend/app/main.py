@@ -165,6 +165,7 @@ app = FastAPI(
 _cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()] 
 app.add_middleware(
     CORSMiddleware,
+
     allow_origins=_cors_origins,
     # Single pattern: Starlette passes this to re.compile(); must be str, not a tuple.
     # allow_origin_regex=r"^https?://[\w-]+(\.usemaison\.io|\.localhost(:\d+)?)$",

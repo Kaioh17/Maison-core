@@ -157,4 +157,6 @@ Schema evolves via **Alembic**. A SQL reference dump lives in **`docs/database_s
 
 ## More detail
 
+
 For a longer walkthrough of multi-tenancy, **ServiceContext**, booking and payment flows, and third-party integrations, see **`docs/PROJECT_OVERVIEW.md`**.
+
