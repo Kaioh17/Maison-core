@@ -11,8 +11,6 @@ if [ $? != 0 ]; then
     tmux new-session -d -s $SESSION -n "postgres_container"
     tmux send-keys -t $SESSION:postgres "sleep 20 && docker exec -it postgres_db psql -U postgres -d maison" C-m
 
-   
-
     tmux set-option -g mouse on
     tmux new-window -t $SESSION -n 'docker'
     tmux send-keys -t $SESSION:docker "cd $PROJECT_DIR/docker" C-m
@@ -36,10 +34,20 @@ if [ $? != 0 ]; then
     tmux new-window -t $SESSION -n 'stripe_webhook'
     tmux send-keys -t $SESSION:stripe_webhook "cd $PROJECT_DIR" C-m
     tmux send-keys -t $SESSION:stripe_webhook "source $VENV_PATH" C-m
-    tmux send-keys -t $SESSION:stripe_webhook "stripe listen --forward-to localhost:8000/api/v1/subscription/webhooks" c-m 
+    tmux send-keys -t $SESSION:stripe_webhook "stripe listen --forward-to localhost:8000/api/v1/webhooks" c-m 
 
     
-    
+    tmux set-option -g mouse on
+    tmux new-window -t $SESSION -n 'stripe_webhook'
+    tmux send-keys -t $SESSION:stripe_webhook "cd $PROJECT_DIR" C-m
+    tmux send-keys -t $SESSION:stripe_webhook "source $VENV_PATH" C-m
+    tmux send-keys -t $SESSION:stripe_webhook "stripe listen --forward-to localhost:8000/api/v1/webhooks/connect/tenant" c-m 
+
+    tmux set-option -g mouse on
+    tmux new-window -t $SESSION -n 'usemaison servers'
+    # tmux send-keys -t $SESSION:stripe_webhook "cd $PROJECT_DIR" C-m
+    # tmux send-keys -t $SESSION:stripe_webhook "source $VENV_PATH" C-m
+    tmux send-keys -t $SESSION:stripe_webhook "ssh ssh.usemaison.io" c-m 
     # tmux set-option -g mouse on
     # tmux new-window -t $SESSION -n 'docker'
     # tmux send-keys -t $SESSION:docker "cd $PROJECT_DIR" C-m

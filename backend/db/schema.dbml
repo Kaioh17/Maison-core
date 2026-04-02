@@ -1,0 +1,274 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table tenants {
+  id integer [primary key]
+  email varchar(200) [unique, not null]
+  first_name varchar(200) [not null]
+  last_name varchar(200) [not null]
+  password varchar [not null]
+  phone_no varchar(200) [not null]
+  role varchar [not null, default: 'tenant']
+  is_verified boolean [default: false]
+  is_active boolean [default: true]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table tenants_profile {
+  tenant_id integer [primary key, ref: > tenants.id]
+  company_name varchar(200) [unique, not null]
+  logo_url varchar
+  slug varchar [unique, not null]
+  address varchar
+  city varchar [not null]
+  stripe_customer_id varchar [unique]
+  stripe_account_id varchar [unique]
+  charges_enabled boolean [default: false]
+  subscription_status varchar [default: 'inactive']
+  subscription_plan varchar [default: 'free']
+  cur_subscription_id varchar [unique]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table tenants_stats {
+  tenant_id integer [primary key, ref: > tenants.id]
+  drivers_count integer [not null]
+  daily_ride_count integer [default: 0]
+  last_ride_count_reset timestamp
+  total_ride_count integer [not null, default: 0]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table users {
+  id integer [primary key]
+  email varchar(200) [not null]
+  phone_no varchar(200)
+  first_name varchar(200) [not null]
+  last_name varchar(200) [not null]
+  password varchar [not null]
+  address varchar
+  city varchar
+  state varchar
+  country varchar
+  postal_code varchar
+  stripe_customer_id varchar
+  role varchar [not null, default: 'rider']
+  tenant_id integer [not null, ref: > tenants.id]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+  tier varchar [not null, default: 'free']
+  
+  indexes {
+    (email, tenant_id) [unique, name: 'unique_user']
+  }
+}
+
+Table drivers {
+  id integer [primary key]
+  tenant_id integer [not null, ref: > tenants.id]
+  email varchar(200) [not null]
+  phone_no varchar(200)
+  first_name varchar(200) [not null]
+  last_name varchar(200) [not null]
+  password varchar
+  state varchar
+  postal_code varchar
+  role varchar [default: 'driver']
+  driver_type varchar [not null]
+  completed_rides integer [not null, default: 0]
+  license_number varchar(100)
+  driver_token varchar [not null]
+  is_registered varchar [not null, default: 'pending']
+  is_active boolean [default: false]
+  is_token boolean [default: false]
+  status varchar(50) [default: 'available']
+  stripe_account_id varchar(255)
+  background_check_status varchar(50) [default: 'pending']
+  stripe_onboaring_complete boolean [default: false]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+  
+  indexes {
+    (email, tenant_id, license_number) [unique, name: 'unique_driver']
+  }
+}
+
+Table vehicles {
+  id integer [primary key]
+  tenant_id integer [not null, ref: > tenants.id]
+  driver_id integer [ref: > drivers.id, unique]
+  make varchar(200) [not null]
+  model varchar(200) [not null]
+  year integer
+  seating_capacity integer
+  vehicle_images jsonb
+  vehicle_category_id integer [ref: > vehicle_category_rate.id]
+  license_plate varchar(50) [unique]
+  color varchar(50)
+  status varchar(50) [default: 'available']
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table vehicle_config {
+  id integer [primary key]
+  tenant_id integer [not null, ref: > tenants.id]
+  vehicle_category varchar
+  seating_capacity integer
+  vehicle_flat_rate float [not null, default: 0.0]
+  allowed_image_types varchar[] [not null]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table vehicle_category_rate {
+  id integer [primary key]
+  tenant_id integer [not null, ref: > tenants.id]
+  vehicle_category varchar
+  vehicle_flat_rate float [not null, default: 0.0]
+  allowed_image_types varchar[]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table vehicle_vehicle_config_association {
+  vehicle_id integer [primary key, ref: > vehicles.id]
+  vehicle_config_id integer [primary key, ref: > vehicle_config.id]
+}
+
+Table bookings {
+  id integer [primary key]
+  driver_id integer [ref: > drivers.id]
+  tenant_id integer [not null, ref: > tenants.id]
+  vehicle_id integer [not null, ref: > vehicles.id]
+  service_type varchar [not null]
+  airport_service varchar
+  rider_id integer [not null, ref: > users.id]
+  pickup_location varchar [not null]
+  pickup_time timestamp [not null]
+  hours float
+  dropoff_location varchar
+  dropoff_time timestamp
+  country varchar
+  booking_status varchar [not null, default: 'pending']
+  estimated_price float
+  payment_method varchar
+  notes varchar
+  is_approved boolean [default: false]
+  payment_status varchar [default: 'pending']
+  deposit_intent_id varchar
+  balance_intent_id varchar
+  payment_id varchar
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+  
+  indexes {
+    (driver_id, pickup_time, dropoff_time) [unique, name: 'uq_driver_booking']
+    (vehicle_id, pickup_time, dropoff_time) [unique, name: 'uq_vehicle_booking']
+  }
+}
+
+Table tenants_settings {
+  tenant_id integer [primary key, ref: > tenants.id]
+  rider_tiers_enabled boolean [default: false]
+  config jsonb
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table tenant_branding {
+  tenant_id integer [primary key, ref: > tenants.id]
+  theme varchar [not null, default: 'dark']
+  primary_color varchar
+  secondary_color varchar
+  accent_color varchar
+  favicon_url varchar
+  slug varchar [unique]
+  email_from_name varchar
+  email_from_address varchar
+  logo_url varchar
+  enable_branding boolean [not null, default: false]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table tenant_pricing {
+  tenant_id integer [primary key, ref: > tenants.id]
+  base_fare float [not null, default: 0.0]
+  per_mile_rate float [not null, default: 0.0]
+  per_minute_rate float [default: 0.0]
+  per_hour_rate float [not null, default: 0.0]
+  cancellation_fee float [not null, default: 0.0]
+  discounts boolean [not null, default: false]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table tenant_booking_price {
+  id integer [primary key]
+  tenant_id integer [not null, ref: > tenants.id]
+  service_type varchar [not null]
+  deposit_type varchar [not null]
+  deposit_fee float [default: 0.0]
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+  
+  indexes {
+    (service_type, tenant_id) [unique, name: 'uq_tenant_booking']
+  }
+}
+
+Table transactions {
+  id integer [primary key]
+  booking_id integer [not null, ref: > bookings.id]
+  tenant_id integer [not null, ref: > tenants.id]
+  stripe_payment_intent_id varchar(255)
+  amount float [not null, default: 0.0]
+  platform_fee_amount float
+  currency varchar(3) [not null, default: 'usd']
+  status varchar(50) [not null, default: 'pending']
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+Table payouts {
+  id integer [primary key]
+  driving_id integer [not null]
+  booking_id integer [not null, ref: > bookings.id]
+  tenant_id integer [not null, ref: > tenants.id]
+  stripe_transfer_id varchar(255)
+  amount float [not null, default: 0.0]
+  currency varchar(3) [not null, default: 'usd']
+  status varchar(50) [not null, default: 'pending']
+  created_on timestamp [not null, default: 'now()']
+  updated_on timestamp
+}
+
+// Relationships
+Ref: tenants_profile.tenant_id > tenants.id [delete: cascade]
+Ref: tenants_stats.tenant_id > tenants.id [delete: cascade]
+Ref: users.tenant_id > tenants.id [delete: cascade]
+Ref: drivers.tenant_id > tenants.id [delete: cascade]
+Ref: vehicles.tenant_id > tenants.id [delete: cascade]
+Ref: vehicles.driver_id > drivers.id [delete: cascade]
+Ref: vehicles.vehicle_category_id > vehicle_category_rate.id
+Ref: vehicle_config.tenant_id > tenants.id [delete: cascade]
+Ref: vehicle_category_rate.tenant_id > tenants.id [delete: cascade]
+Ref: vehicle_vehicle_config_association.vehicle_id > vehicles.id [delete: cascade]
+Ref: vehicle_vehicle_config_association.vehicle_config_id > vehicle_config.id [delete: cascade]
+Ref: bookings.driver_id > drivers.id
+Ref: bookings.tenant_id > tenants.id [delete: cascade]
+Ref: bookings.vehicle_id > vehicles.id [delete: set null]
+Ref: bookings.rider_id > users.id [delete: cascade]
+Ref: tenants_settings.tenant_id > tenants.id [delete: cascade]
+Ref: tenant_branding.tenant_id > tenants.id [delete: cascade]
+Ref: tenant_pricing.tenant_id > tenants.id [delete: cascade]
+Ref: tenant_booking_price.tenant_id > tenants.id [delete: cascade]
+Ref: transactions.booking_id > bookings.id
+Ref: transactions.tenant_id > tenants.id
+Ref: payouts.booking_id > bookings.id
+Ref: payouts.tenant_id > tenants.id
+
