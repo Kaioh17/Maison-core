@@ -1,9 +1,17 @@
+from pathlib import Path
+
 from pydantic import AliasChoices, Field
-from pydantic_settings import BaseSettings	
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-	db_url: str 
+	model_config = SettingsConfigDict(
+		env_file=str(Path(__file__).resolve().parent / ".env.test"),
+		env_file_encoding="utf-8",
+		extra="ignore",
+	)
+
+	db_url: str
 	db_name: str = "test"
 	db_user: str = "test"
 	db_password: str = "test"
@@ -17,6 +25,3 @@ class Settings(BaseSettings):
 	access_token_expire_minutes: int = 30
 	stripe_public_key: str = Field(default="test_pk", validation_alias=AliasChoices("stripe_public_key", "pk_test"))
 	stripe_secret_key: str = Field(default="test_sk", validation_alias=AliasChoices("stripe_secret_key", "sk_test"))
-
-	class Config:
-		env_file = ".env.test"

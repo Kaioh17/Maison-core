@@ -5,7 +5,7 @@ services:
     build: 
       context: ..
       dockerfile: docker/Dockerfile
-    user: "1000:1000" #match your linux/wsl with uid:gid   #check with id -u
+    user: "1000:1000" #match linux/wsl with uid:gid   #check with id -u
     container_name: maison
     ports:
       - "8000:8000"

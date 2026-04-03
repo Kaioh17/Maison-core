@@ -145,6 +145,7 @@ class TenantService(ServiceContext):
             self.db.refresh(new_tenant_profile)
             self.db.refresh(new_tenant_stats)
            
+            stripe_service.StripeService(self.current_user, self.db).create_express_account(tenant_obj=new_tenant_info)
             # logger.info(f"new tenant_id {new_tenant.id}")
             response_dict  = {"tenants": new_tenant_info, "profile": new_tenant_profile, "stats": new_tenant_stats}
             """add tenants settings"""
@@ -169,8 +170,8 @@ class TenantService(ServiceContext):
         return success_resp(data=response_dict, msg="Tenant created successfully")
     def stripe_account_setup(self):
         try:
-            obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
-            stripe_express = stripe_service.StripeService(self.current_user, self.db).create_express_account(tenant_obj=obj)
+            # obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
+            stripe_express = stripe_service.StripeService(self.current_user, self.db).complete_account_setup()
             
             return success_resp(data={'onboarding_link':stripe_express['onboarding_link']})
         except Exception as e:

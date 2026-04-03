@@ -37,10 +37,14 @@ import sys
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+
+# backend/ — load .env before Settings() so os.environ matches file for any non-Settings readers
+backend_dir = Path(__file__).resolve().parent.parent
+load_dotenv(backend_dir / "app" / ".env")
+
 from app.config import Settings
+
 settings = Settings()
-# Load environment variables
-load_dotenv()
 
 # Determine environment (defaults to development)
 environment = settings.environment
@@ -49,7 +53,6 @@ environment = environment.lower()
 
 # Create logs directory in the backend folder (relative to this file)
 # This ensures logs are created in backend/logs/ regardless of where the app runs from
-backend_dir = Path(__file__).parent.parent
 logs_dir = backend_dir / "logs"
 logs_dir.mkdir(exist_ok=True)
 
