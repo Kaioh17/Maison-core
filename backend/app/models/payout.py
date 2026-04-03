@@ -12,7 +12,7 @@ class Payout(Base):
     __tablename__ ="payouts"
 
     id = Column(Integer,Sequence('id_seq'),primary_key=True )
-    driving_id = Column(Integer, ForeignKey("driving.id"), nullable=False)
+    driving_id = Column(Integer, ForeignKey("drivers.id"), nullable=False)
     booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     stripe_transfer_id = Column(String(255), nullable=True)

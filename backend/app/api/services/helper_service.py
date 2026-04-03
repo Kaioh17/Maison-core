@@ -24,6 +24,7 @@ tenant_branding = tenant_setting.TenantBranding
 tenant_pricing = tenant_setting.TenantPricing
 tenant_booking_price = tenant_setting.TenantBookingPricing
 driver_table = driver.Drivers
+admin_table = admin.Admin
 booking_table = booking.Bookings
 tenant_setting_table = tenant_setting.TenantSettings  
 vehicle_config_table = vehicle_config.VehicleConfig

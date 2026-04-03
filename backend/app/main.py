@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Depends, Security, HTTPException, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import APIKeyHeader
-from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admin,subscriptions, logs, slug, webhooks, dependencies
+from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admins,subscriptions, logs, slug, webhooks, dependencies
 from app.db.database import engine
 from app.models import *
 # from utils import logging
@@ -192,7 +192,7 @@ app.include_router(users.router)
 app.include_router(bookings.router)
 app.include_router(vehicles.router)
 app.include_router(tenant_settings.router)
-app.include_router(admin.router, dependencies=[Depends(dependencies.verify_api_key)])
+app.include_router(admins.router, dependencies=[Depends(dependencies.verify_api_key)])
 app.include_router(subscriptions.router)
 app.include_router(logs.router)
 app.include_router(slug.router)

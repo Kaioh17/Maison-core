@@ -20,7 +20,7 @@ from fastapi import HTTPException, status, Depends
 from app.db.database import get_db, get_base_db
 from ...core import deps
 from ...services.helper_service import *
-
+from .stripe_service import StripeService
 
 class WebhookServices(ServiceContext):
     """
@@ -82,8 +82,12 @@ class WebhookServices(ServiceContext):
             metadata = subscription.get('metadata', {})
             tenant_id = metadata.get('tenant_id')
             plan = metadata.get('product_type')
+            
+            
             logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] paln [{plan}] sub_id [{subscription_id}]")
             tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
+            tenant_obj:tenant_table = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+            # StripeService(self.current_user, self.db).create_express_account(tenant_obj=tenant_obj)
             tenant_obj.subscription_status = 'active'
             tenant_obj.subscription_plan = plan
             tenant_obj.cur_subscription_id = subscription_id
@@ -168,7 +172,8 @@ class WebhookServices(ServiceContext):
                 else:
                     # Onboarding not finished — still save charges_enabled flag
                     response.charges_enabled = account.get('charges_enabled')
-                    self.db.commit()    
+                    self.db.commit()   
+             
                 
             elif event['type'] == 'checkout.session.completed' :
                 session = event['data']['object']

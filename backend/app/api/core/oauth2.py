@@ -11,7 +11,8 @@ from app.utils.logging import logger
 role_table_map = {
     "rider": user.Users,
     "tenant": tenant.Tenants,
-    "driver": driver.Drivers
+    "driver": driver.Drivers,
+    "admin": Admin,
 }
 
 """JWT generation"""

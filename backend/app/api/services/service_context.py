@@ -19,7 +19,7 @@ class ServiceContext:
         self.current_user=current_user
         if self.current_user:
             self.role = self.current_user.role
-            if self.role != 'tenant': #not tenant
+            if self.role != 'tenant' and self.role != 'admin': #not tenant
                 self.tenant_id = self.current_user.tenant_id
                 # print(self.tenant_id)
                 # self.current_user.tenants
@@ -31,7 +31,8 @@ class ServiceContext:
                 else:
                     self.rider_id = self.current_user.id
                     self.slug = self.current_user.tenants.slug
-                    
+            elif self.role == 'admin':
+                print("Admiiiiiin")
             else: # is tenant
                 self.tenant_id = self.current_user.id
                 self.tenant_email = self.current_user.email

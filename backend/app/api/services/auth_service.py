@@ -23,7 +23,8 @@ from app.utils.db_error_handler import DBErrorHandler
 from .helper_service import (
     user_table,
     tenant_table,
-    driver_table)
+    driver_table,
+    admin_table)
 
 class AuthService:
     def __init__(self, db):
@@ -34,7 +35,7 @@ class AuthService:
     
     def login(self, request, user_credentials, role:str):
         try:
-            allowed_roles = ['tenant', 'rider', 'driver']
+            allowed_roles = ['tenant', 'rider', 'driver', 'admin']
             if role not in allowed_roles:
                 logger.error(f"Invalid request. Role `{role}`is not valid")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid request. Role is not valid")
@@ -42,6 +43,7 @@ class AuthService:
                 "tenant":tenant_table,
                 "rider":user_table,
                 "driver":driver_table,
+                "admin":admin_table
                 
                         }
             role = role.strip().lower()
@@ -81,6 +83,10 @@ class AuthService:
             if role == 'tenant':
                 tenant_id = user.id
                 auto_refresh = False
+            elif role == 'admin':
+                tenant_id = "not tennat"
+                auto_refresh = False
+                
             else:
                 tenant_id = user.tenant_id
                 auto_refresh = True
@@ -126,25 +132,27 @@ class AuthService:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                         detail="No refresh token")
             
-            logger.info("Attempting to refresh tenant token...")
+            logger.info("Attempting to refresh access token (cookie)...")
             credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
             payload = verify_refresh_token(refresh_token, credentials_exception)
             if not payload.auto_refresh:
                 logger.debug("Token is flagged with no auto refresh")
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is flagged with no auto refresh")
             #create new access token
-            logger.info(f"Token refreshed successfully for tenant {payload.id}")
+            logger.info(f"Token refreshed successfully for user {payload.id}")
             
             token_data = {"id": str(payload.id), "role": payload.role, "tenant_id": str(payload.tenant_id), "auto_refresh":True}
             logger.info(f"Creating new access token with data: {token_data}")
             new_access_token = create_access_token(data=token_data)
             logger.info(f"New access token created: {new_access_token[:20]}...")
             return {"access_token": new_access_token}
-        except Exception as e:
-            logger.error(f"Error refreshing tenant token: {str(e)}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during token refresh")
+        except HTTPException:
+            raise
         except DBErrorHandler.COMMON_DB_ERRORS as e:
             DBErrorHandler.handle(e, self.db)
+        except Exception as e:
+            logger.error(f"Error refreshing token: {str(e)}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during token refresh")
     async def manual_refresh_token(self, request):
         try:
             refresh_token = request.cookies.get("refresh_token")
@@ -153,22 +161,24 @@ class AuthService:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                         detail="No refresh token")
             
-            logger.info("Attempting to refresh tenant token...")
+            logger.info("Attempting manual refresh (cookie)...")
             credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
             payload = verify_refresh_token(refresh_token, credentials_exception)
 
             #create new access token
-            logger.info(f"Token refreshed successfully for tenant {payload.id}")
+            logger.info(f"Token refreshed successfully for user {payload.id}")
         
             token_data = {"id": str(payload.id), "role": payload.role, "tenant_id": str(payload.tenant_id),  "auto_refresh":True}
             logger.info(f"Creating new access token with data: {token_data}")
             new_access_token = create_access_token(data=token_data)
             logger.info(f"New access token created: {new_access_token[:20]}...")
             return {"access_token": new_access_token}
-        except Exception as e:
-            logger.error(f"Error refreshing tenant token: {str(e)}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during token refresh")
+        except HTTPException:
+            raise
         except DBErrorHandler.COMMON_DB_ERRORS as e:
             DBErrorHandler.handle(e, self.db)
+        except Exception as e:
+            logger.error(f"Error refreshing token: {str(e)}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during token refresh")
 def get_auth_service(db=Depends(get_base_db)):
     return AuthService(db)

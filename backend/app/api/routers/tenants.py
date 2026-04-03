@@ -252,6 +252,20 @@ async def setup_stripe_express_account(
     setup_account = tenant_service.stripe_account_setup()
     return setup_account
 
+# @router.post(
+#     "/onboarding/link",
+#     status_code=status.HTTP_201_CREATED,
+#     response_model=general.StandardResponse[dict],
+#     summary="Create Stripe Connect Express account",
+#     description="Starts Express onboarding for the tenant to receive payouts. Requires **tenant** JWT.",
+#     response_description="Stripe account ids / onboarding payload.",
+# )
+# async def setup_stripe_express_account(
+#     tenant_service: TenantService = Depends(get_tenant_service),
+# ):
+#     setup_account = tenant_service.complete()
+#     return setup_account
+
 
 from ..services.stripe_services.stripe_service import StripeService, get_stripe_service
 

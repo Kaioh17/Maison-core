@@ -7,6 +7,7 @@ from app.models import *
 from . import oauth2
 from app.db.database import get_base_db
 
+
 def get_current_user(token: str = Depends(oauth2.oauth2_scheme), db: Session = Depends(get_base_db)):
     # if db is None:
     #   from app.db.database import get_db
@@ -29,7 +30,12 @@ def get_current_user(token: str = Depends(oauth2.oauth2_scheme), db: Session = D
         if not table:
             raise credentials_exception
 
-        user = db.query(table).filter(table.id == token_data.id).first()
+        # JWT stores id as string; PK columns are integer for these models
+        try:
+            pk = int(token_data.id) if token_data.id is not None else None
+        except (TypeError, ValueError):
+            raise credentials_exception
+        user = db.query(table).filter(table.id == pk).first()
         if not user:
             raise credentials_exception
 

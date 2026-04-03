@@ -16,3 +16,4 @@ backend/alembic/versions
 *.txt
 backend/logs
 
+.vscode/settings.json
