@@ -10,6 +10,7 @@ class EmailServices:
     DOMAIN=settings.domain
     ENV=settings.environment
 
+
     def _format_from(self, local_part: str, display_name: str) -> str:
         """Build Resend From header: dev uses Resend sandbox; prod uses display name + local@DOMAIN."""
         if self.ENV == "development":

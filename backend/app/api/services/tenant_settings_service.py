@@ -211,13 +211,15 @@ with Session(engine) as session: # Or use an existing session
         except  db_exceptions.COMMON_DB_ERRORS as d:
             db_exceptions.handle(d, self.db)
     def _is_airport(self, payload: TenantBookingUpdate, service_type):
-        if service_type.lower() != 'airport' and payload.stc_rate or payload.gratuity_rate or payload.meet_and_greet_fee or payload.airport_gate_fee:
+        if service_type.lower() != 'airport' and (payload.stc_rate or payload.gratuity_rate or payload.meet_and_greet_fee or payload.airport_gate_fee):
+            logger.error(f'This [stc_rate, gratuity_rate, meet_and_greet_fee, airport_gate_fee] types only reserved to airport... got {service_type} instead')
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                 detail=f"This [stc_rate, gratuity_rate, meet_and_greet_fee, airport_gate_fee] types only reserved to airport...")
           
         return
     async def update_tenant_booking(self,service_type, payload: TenantBookingUpdate):
         try:
+            logger.debug('updating')
             self._is_airport(payload=payload, service_type=service_type)
             response = self.db.query(tenant_booking_price).filter(tenant_booking_price.tenant_id == self.tenant_id,
                                                                   tenant_booking_price.service_type == service_type).first()

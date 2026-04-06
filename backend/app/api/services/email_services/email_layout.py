@@ -15,11 +15,11 @@ def _year() -> int:
     return datetime.now().year
 
 
-def wordmark_row() -> str:
+def wordmark_row(operator: str = 'Maison') -> str:
     return f"""
     <tr>
         <td style="padding: 28px 40px 18px 40px; border-bottom: 1px solid #e5e7eb;">
-            <span style="font-family: {FONT}; font-size: 17px; font-weight: 600; color: {TEXT}; letter-spacing: -0.03em;">Maison</span>
+            <span style="font-family: {FONT}; font-size: 17px; font-weight: 600; color: {TEXT}; letter-spacing: -0.03em;">{operator}</span>
         </td>
     </tr>
     """
@@ -79,7 +79,7 @@ def build_email(body_html: str, *, footer_brand: str = "Maison", unsubscribe_hre
         <tr>
             <td align="center" style="padding: 40px 16px;">
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);">
-                    {wordmark_row()}
+                    {wordmark_row(footer_brand)}
                     <tr>
                         <td style="padding: 32px 40px 40px 40px;">
                             {body_html}

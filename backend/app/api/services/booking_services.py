@@ -502,9 +502,10 @@ class BookingService(ServiceContext):
                 per_minute_rate = pricing.per_minute_rate 
                 min_duration = (distance/speed) * 360 #duration in minutes 
                 total_quote = base_fare + (per_mile_rate * distance) + (per_minute_rate * min_duration) + vehicle_rate 
+                logger.debug(f"Total quote for ride: {total_quote}")
                 if payload.service_type.lower() == 'airport':
                 
-                    logger.debug(f"{booking_price.__dict__}")
+                    # logger.debug(f"{booking_price.__dict__}")
                     
                     stc_rate = booking_price.stc_rate #For airports only  [STC(Surface Transport Charge)]
                     gratuity_rate = booking_price.gratuity_rate  #For airports only  [Percentage]
