@@ -17,5 +17,4 @@ backend/alembic/versions
 backend/logs
 
 .vscode/settings.json
-env.py
-backend/alembic/env.py
+
