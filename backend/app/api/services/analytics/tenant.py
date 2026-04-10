@@ -64,13 +64,14 @@ class TenantAnalyticService(ServiceContext):
                                 FROM drivers
                                 WHERE tenant_id = :tenant_id
                                 AND is_active = true
-                            ) AS available_drivers, (select sum(estimated_price)  from bookings where tenant_id = :tenant_id and payment_id IS NOT NULL) as total_revenue,
+                            ) AS available_drivers, (select sum(estimated_price)  from bookings where tenant_id = :tenant_id) as total_revenue,
                             (select count(id) from drivers where tenant_id = :tenant_id) as total_drivers
                             ,(select count(id) from vehicles where tenant_id = :tenant_id) as total_vehicles,
                             (select count(id) from bookings where tenant_id = :tenant_id) as total_bookings,
-                            (select sum(estimated_price)  from bookings where tenant_id = :tenant_id and payment_id IS NOT NULL and created_on >= (SELECT (NOW() - INTERVAL '5 day') AT TIME ZONE 'UTC')) as todays_revenue
+                            (SELECT (  SELECT COALESCE(SUM(estimated_price), 0)  FROM bookings WHERE tenant_id = :tenant_id AND created_on >= DATE_TRUNC('day', NOW()) ) AS todays_revenue)
                             """
-           
+                            # (select sum(estimated_price)  from bookings where tenant_id = :tenant_id and created_on >=  DATE_TRUNC('day', NOW())  as todays_revenue
+        #    (select sum(estimated_price)  from bookings where tenant_id = :tenant_id and payment_id IS NOT NULL and created_on >= (SELECT (NOW() - INTERVAL '5 day') AT TIME ZONE 'UTC')) as todays_revenue
             count_obj = self.db.execute(text(count_sql), {"tenant_id":self.tenant_id}).mappings().one()
             
             
