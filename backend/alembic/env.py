@@ -12,10 +12,11 @@ import app.models  # noqa: F401 — register all models on Base.metadata
 # access to the values within the .ini file in use.
 
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../docker/.env'))
+# load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../docker/.env'))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../app/.env'))
 
 db_url = os.getenv("DB_URL")
-
+print(f'DB url {db_url}')
 config = context.config
 
 if not db_url:
