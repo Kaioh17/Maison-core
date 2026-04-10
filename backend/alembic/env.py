@@ -12,11 +12,11 @@ import app.models  # noqa: F401 — register all models on Base.metadata
 # access to the values within the .ini file in use.
 
 
-try: 
-    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../docker/.env'))
-except:
-    print(f'using server setup')
-    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../../../usemaison/.env'))
+# try: 
+#     load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../docker/.env'))
+# except:
+print(f'using server setup')
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../../../usemaison/.env'))
     
 # if load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../app/.env'))
 
