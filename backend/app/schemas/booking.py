@@ -114,8 +114,12 @@ class BookingResponse(BoookingBase):
     booking_status: str
     customer_name: Optional[str] = None
     vehicle: str
+    zelle_number: Optional[str] = None
+    zelle_email: Optional[EmailStr] = None
     driver_name: Optional[str] = None
     created_on: Optional[datetime]
+    
+    # rider_feedback_form: Optional[str] = None
     updated_on: Optional[datetime]
 
     @field_validator("driver_name", mode='after')

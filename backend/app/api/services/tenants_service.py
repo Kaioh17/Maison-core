@@ -364,6 +364,11 @@ class TenantService(ServiceContext):
                                 "booking": {
                                     "allow_guest_bookings": True,
                                     "show_vehicle_images": False,
+                                    "allowed_payment_method": {
+                                        "cash": {"is_allowed": True},
+                                        "zelle": {"is_allowed": True},
+                                        "stripe": {"is_allowed": True},
+                                    }, 
                                     "types": {
                                         "airport": {"is_deposit_required": False},
                                         "dropoff": {"is_deposit_required": False},

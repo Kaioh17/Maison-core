@@ -1,3 +1,5 @@
+import html
+
 from .email_services import EmailServices
 from app.models.driver import Drivers
 from . import email_layout as L
@@ -44,8 +46,8 @@ class DriverEmailServices(EmailServices):
             + L.muted_p(f'Or open: <a href="{verify_url}" style="color:{L.MUTED};">{verify_url}</a>')
             + L.p("If you didn’t expect this, ignore this email.", margin_bottom="0")
         )
-        html = L.build_email(body, footer_brand=self._company_label_from_slug(slug))
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand=self._company_label_from_slug(slug))
+        self._email(subject, html_body)
 
     def _company_label_from_slug(self, slug: str) -> str:
         return slug.replace("-", " ").title() if slug else "Maison"
@@ -64,8 +66,8 @@ class DriverEmailServices(EmailServices):
             )
             + L.primary_cta(sign_in, "Sign in →")
         )
-        html = L.build_email(body, footer_brand=company)
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand=company)
+        self._email(subject, html_body)
 
     def new_ride(self, booking_obj: object, assigned: bool = False, slug: str = None, rider_name: str = None):
         """New ride — pickup, passenger, time; optional assignment flag."""
@@ -84,13 +86,13 @@ class DriverEmailServices(EmailServices):
         cta_url = f"{self.BASE_URL}/{slug or 'default'}{suffix}"
 
         body = (
-            L.p(f"Pickup: {pickup}")
-            + L.p(f"Passenger: {passenger}")
-            + L.p(f"Time: {pickup_time}")
+            L.p(L.detail_kv("Pickup", L.highlight(pickup)))
+            + L.p(L.detail_kv("Passenger", html.escape(str(passenger), quote=False)))
+            + L.p(L.detail_kv("Time", html.escape(pickup_time, quote=False)))
             + L.primary_cta(cta_url, "Open in app →")
         )
-        html = L.build_email(body, footer_brand=self._company_label_from_slug(slug or ""))
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand=self._company_label_from_slug(slug or ""))
+        self._email(subject, html_body)
 
     def status_change_email(self, obj: Drivers, is_active: bool):
         status_text = "active" if is_active else "inactive"
@@ -108,8 +110,8 @@ class DriverEmailServices(EmailServices):
             + L.p(msg)
             + L.primary_cta(f"{self.BASE_URL}/{obj.slug}/driver/login", "Sign in →")
         )
-        html = L.build_email(body, footer_brand=self._company_label(obj))
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand=self._company_label(obj))
+        self._email(subject, html_body)
 
     def vehicle_assignment_email(self, obj: Drivers, vehicle_obj):
         subject = "Vehicle assigned to you"
@@ -122,8 +124,8 @@ class DriverEmailServices(EmailServices):
             + (L.p(f"Plate: {plate}") if plate else "")
             + L.primary_cta(f"https://{self._tenant_host(obj.slug)}/driver/login", "View in app →")
         )
-        html = L.build_email(body, footer_brand=self._company_label(obj))
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand=self._company_label(obj))
+        self._email(subject, html_body)
 
     def vehicle_unassignment_email(self, obj: Drivers, vehicle_obj):
         subject = "Vehicle unassigned"
@@ -139,8 +141,8 @@ class DriverEmailServices(EmailServices):
             + (L.p(f"Plate was: {plate}") if plate else "")
             + L.p("Questions? Reply to this email.")
         )
-        html = L.build_email(body, footer_brand=self._company_label(obj))
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand=self._company_label(obj))
+        self._email(subject, html_body)
 
     def _email(self, subject, html):
         self.send_email(to_email=self.to_email, from_email=self.from_email,

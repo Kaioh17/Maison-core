@@ -7,6 +7,7 @@ from app.db.database import get_db
 from ..core import deps
 from app.models import *
 from app.utils import db_error_handler
+from app.utils.error_handling import exceptions
 from app.utils.logging import logger
 from datetime import timedelta, datetime, timezone
 from sqlalchemy.exc import *
@@ -142,6 +143,15 @@ class BookingService(ServiceContext):
                     raise HTTPException(status_code=404,detail="Booking_id cannot be found.")
                 response.is_approved = is_approved
                 response.payment_method = payload.payment_method
+                payment_method = payload.payment_method
+                logger.debug(f"Payment method {payment_method} {type(payment_method)}")
+                if payment_method.lower() == 'zelle':
+                    setting: tenant_setting_table = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.current_user.tenant_id).first()
+                    if not setting:
+                        raise exceptions(404)
+                    zelle_number  = setting.zelle_number
+                    zelle_email =  setting.zelle_email
+                    response.zelle_number=zelle_number; response.zelle_email=zelle_email
                 self.db.commit()
                 if payload.payment_method == 'card':
                     
@@ -260,6 +270,7 @@ class BookingService(ServiceContext):
             new_ride = booking.Bookings(rider_id = self.current_user.id,tenant_id = self.current_user.tenant_id,
                                         estimated_price = price_estimate['total'],driver_id = vehicle.driver_id,**book_ride_info)
 
+
             
             if not self.db.query(tenant.Tenants).filter(tenant.Tenants.id == self.current_user.tenant_id).first(): 
                 raise HTTPException(status_code=404, detail="tenant not found")
@@ -269,6 +280,7 @@ class BookingService(ServiceContext):
                 logger.warning(f"Country was not entered for rider {self.current_user.id}")
                 raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                     detail= "Country was not entered..")
+            ## Add zelle number to respond
 
             #check for overlaps
             self._bookings_overlap( payload)            

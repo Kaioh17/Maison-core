@@ -135,13 +135,12 @@ with Session(engine) as session: # Or use an existing session
                         self.db.add(new_type_add)
             
             if value == None:          
-                logger.debug(f"I am in None: but i shouldnt be{value}")      
+                logger.debug(f"I am in None: but i shouldnt be  [{value}]")      
                 value = data_mapped[field] 
             # if payload.config:
             #     setting_obj.config =  payload.config
             
            
-            
             # if field == 'config':
             #     logger.debug(f"Value {value['booking']['types']}")
             # logger.debug(f"{field}")

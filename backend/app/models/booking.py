@@ -27,6 +27,8 @@ class Bookings(Base):
     booking_status = Column(String,CheckConstraint("booking_status IN ('pending', 'completed', 'cancelled', 'delayed', 'confirmed')",name="booking_status_check_constraint") ,nullable=False, default = 'pending', server_default=text("'pending'"))
     estimated_price =  Column(Float, nullable=True)
     payment_method = Column(String, nullable=True)
+    zelle_number = Column(String(200), nullable=True)
+    zelle_email = Column(String(200), nullable=True)
     notes = Column(String, nullable=True)
     is_approved=Column(Boolean, nullable=True, default=False) ## column to check if ride was approved by rider 
     #Stripe payment configuratioin

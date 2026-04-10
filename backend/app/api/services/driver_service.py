@@ -245,16 +245,38 @@ class DriverService(ServiceContext):
                 rider_obj = self.db.query(user_table).filter(user_table.id == booking_obj.rider_id).first()
                 if rider_obj:
                     tenant_profile_obj = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == booking_obj.tenant_id).first()
+                    tenant_settings:tenant_setting_table = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == booking_obj.tenant_id).first()
+                    feedback_url = tenant_settings.rider_feedback_form
                     slug = tenant_profile_obj.slug if tenant_profile_obj else None
                     if slug:
                         op = tenant_profile_obj.company_name if tenant_profile_obj else slug
+                        driver_name = None
+                        if booking_obj.driver_id:
+                            drv = (
+                                self.db.query(driver_table)
+                                .filter(driver_table.id == booking_obj.driver_id)
+                                .first()
+                            )
+                            if drv:
+                                driver_name = f"{drv.first_name} {drv.last_name}".strip()
+                        tenant_row = (
+                            self.db.query(tenant_table)
+                            .filter(tenant_table.id == booking_obj.tenant_id)
+                            .first()
+                        )
+                        tenant_contact_email = tenant_row.email if tenant_row else None
+                        tenant_contact_phone = tenant_row.phone_no if tenant_row else None
                         riders.RiderEmailServices(
                             to_email=rider_obj.email, from_email=self.tenant_email, operator_name=op
                         ).booking_status_update_email(
                             booking_obj=booking_obj,
                             rider_obj=rider_obj,
                             slug=slug,
-                            old_status=old_status
+                            old_status=old_status,
+                            feedback_url=feedback_url,
+                            driver_name=driver_name,
+                            tenant_contact_email=tenant_contact_email,
+                            tenant_contact_phone=tenant_contact_phone,
                         )
                         # Send cancellation email if status is cancelled
                         if action == 'cancelled':

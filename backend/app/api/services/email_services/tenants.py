@@ -1,3 +1,5 @@
+import html
+
 import resend
 from .email_services import EmailServices
 from app.models.tenant import Tenants
@@ -63,8 +65,8 @@ class TenantEmailServices(EmailServices):
             + L.muted_p("If you run into anything, reply to this email.")
             + L.signoff_maison_team()
         )
-        html = L.build_email(body, footer_brand="Maison")
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
 
     async def booking_notification_email(
         self,
@@ -75,30 +77,58 @@ class TenantEmailServices(EmailServices):
         vehicle_info: str = None,
         driver_name: str = None,
     ):
-        """Notify tenant of a new booking — factual, route + time + assignment."""
-        rider_label = rider_name or "A rider"
-        subject = f"New booking from {rider_label}"
+        """Notify tenant when a trip is confirmed — dashboard-oriented summary."""
+        passenger = (rider_name or "").strip() or "Passenger"
 
-        pickup_time = booking_obj.pickup_time.strftime("%B %d, %Y at %I:%M %p") if hasattr(booking_obj.pickup_time, 'strftime') else str(booking_obj.pickup_time)
-        dropoff = getattr(booking_obj, 'dropoff_location', None) or ""
-        pickup = booking_obj.pickup_location
-        route_line = f"{pickup} → {dropoff}" if dropoff else pickup
-
-        if driver_name:
-            assign_line = f"Driver assigned: {driver_name}."
+        pt = booking_obj.pickup_time
+        if hasattr(pt, "strftime"):
+            month_day = pt.strftime("%B ") + str(pt.day)
+            pickup_time_full = pt.strftime("%B %d, %Y at %I:%M %p")
         else:
-            assign_line = "Needs driver assignment."
+            month_day = str(pt)
+            pickup_time_full = str(pt)
 
-        vehicle_line = f"<br/>Vehicle: {vehicle_info}" if vehicle_info else ""
+        subject = f"New trip confirmed — {passenger} ({month_day})"
+
+        dropoff = getattr(booking_obj, "dropoff_location", None) or ""
+        pickup = booking_obj.pickup_location
+        route_display = (
+            f"{L.highlight(pickup)} → {L.highlight(dropoff)}" if dropoff else L.highlight(pickup)
+        )
+
+        vehicle_line = vehicle_info if (vehicle_info and str(vehicle_info).strip()) else "TBD"
+        driver_line = (
+            driver_name.strip()
+            if (driver_name and str(driver_name).strip())
+            else "To be assigned"
+        )
+
+        details = (
+            L.detail_kv("Passenger", html.escape(passenger, quote=False))
+            + "<br/>"
+            + L.detail_kv("Route", route_display)
+            + "<br/>"
+            + L.detail_kv("Pickup time", html.escape(pickup_time_full, quote=False))
+            + "<br/>"
+            + L.detail_kv("Vehicle", html.escape(str(vehicle_line), quote=False))
+            + "<br/>"
+            + L.detail_kv("Driver", html.escape(str(driver_line), quote=False))
+        )
 
         body = (
             L.p(f"Hi {L.first_name(tenant_obj.full_name)},")
-            + L.p(f"<strong>{rider_label}</strong><br/>{route_line}<br/>{pickup_time}{vehicle_line}")
-            + L.p(assign_line)
-            + L.primary_cta(self._maison_web("/tenant/bookings"), "Open bookings →")
+            + L.p("A new trip has been confirmed and added to your dashboard.")
+            + L.p(details)
+            + L.p(
+                "Every confirmed booking is a moment of trust — both from your passenger "
+                "and the chauffeur behind the wheel. Maison helps ensure that connection "
+                "runs smoothly."
+            )
+            + L.p("Thanks for continuing to build your service on Maison.")
+            + L.p("— Maison Operations", margin_bottom="0")
         )
-        html = L.build_email(body, footer_brand="Maison")
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
 
     def settings_change_email(self, tenant_obj: Tenants, slug: str, changed_settings: dict = None):
         """Critical settings changed — direct, no filler."""
@@ -118,8 +148,8 @@ class TenantEmailServices(EmailServices):
             + (settings_block if settings_block else "")
             + L.p("If you didn't make this change, reply to this email.")
         )
-        html = L.build_email(body, footer_brand="Maison")
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
 
     def logo_update_confirmation_email(self, tenant_obj: Tenants, slug: str, logo_url: str = None):
         """Logo updated — one fact + optional preview."""
@@ -134,8 +164,8 @@ class TenantEmailServices(EmailServices):
             + L.p("Your logo is updated. It will show on your dashboard and customer-facing pages.")
             + logo_block
         )
-        html = L.build_email(body, footer_brand="Maison")
-        self._email(subject, html)
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
 
     def _email(self, subject, html):
         self.send_email(to_email=self.to_email, from_email=self.from_email,

@@ -35,7 +35,8 @@ class BookingTypeConfig(BaseModel):
 #         description="Configuration for hourly / charter bookings."
 #     )
 
-
+class AllowedPayment(BaseModel):
+    is_allowed: Optional[bool] = Field(None, description="Decide to display a specific payment method or not")
 class BookingConfig(BaseModel):
     allow_guest_bookings: Optional[bool] = Field(
         None,
@@ -45,6 +46,7 @@ class BookingConfig(BaseModel):
         None,
         description="Show vehicle images in the booking flow."
     )
+    allowed_payment_method: Optional[Dict[str, AllowedPayment]]
     types: Optional[Dict[str,  BookingTypeConfig]] = Field(
         None,
         description="Per-service-type booking behavior configuration."
@@ -87,6 +89,12 @@ class TenantConfig(BaseModel):
         description="Feature toggles controlling optional product capabilities."
     )
 class UpdateTenantSetting(BaseModel):
+    zelle_number: Optional[str] =Field(None)
+    zelle_email: Optional[EmailStr] =Field(None)
+    rider_feedback_form: Optional[str] =Field(None)
+    driver_feedback_form: Optional[str] =Field(None)
+
+    
     rider_tiers_enabled: Optional[bool] = None
     config:Optional[TenantConfig]=None
     

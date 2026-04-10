@@ -17,6 +17,10 @@ class TenantSettings(Base):
     # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete = "CASCADE"),primary_key=True, nullable=False, unique = True)
     rider_tiers_enabled = Column(Boolean, nullable=True, default=False, server_default='False')
+    zelle_number = Column(String(200), nullable=True)
+    zelle_email = Column(String(200), nullable=True)
+    rider_feedback_form = Column(String(200), nullable=True)
+    driver_feedback_form = Column(String(200), nullable=True)
     config = Column(JSONB, nullable=True)
     
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
