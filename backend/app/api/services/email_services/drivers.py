@@ -17,6 +17,7 @@ class DriverEmailServices(EmailServices):
         self.from_email = self._format_from(from_email, display_name)
 
     def _tenant_host(self, slug: str) -> str:
+            
         domain = (self.DOMAIN or "").replace("https://", "").replace("http://", "").strip("/").split("/")[0]
         return f"{slug}.{domain}" if domain else slug
 
@@ -61,8 +62,8 @@ class DriverEmailServices(EmailServices):
         body = (
             L.p(f"Hi {L.first_name(obj.full_name)},")
             + L.p(
-                f"You've been added to <strong>{company}</strong> on Maison. "
-                f"Download the app or sign in at <a href=\"{sign_in}\" style=\"color: #111827;\">{host}</a>."
+                f"You've been added to <strong>{company}</strong>"
+                f"Sign in at <a href=\"{sign_in}\" style=\"color: #111827;\">{host}</a>."
             )
             + L.primary_cta(sign_in, "Sign in →")
         )

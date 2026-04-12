@@ -21,3 +21,10 @@ class CheckoutSessionResponse(BaseModel):
     customer_id: str
     product_type: str
     sub_total: int
+    
+class SubscriptionUpgradeResponse(BaseModel):
+    subscription_id: str
+    tenant_id: int
+    customer_id: str
+    product_type: str
+    status: str

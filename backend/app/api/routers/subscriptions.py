@@ -42,7 +42,7 @@ async def create_checkout_session(
 @router.patch(
     "/",
     status_code=status.HTTP_201_CREATED,
-    response_model=general.StandardResponse[subscription.CheckoutSessionResponse],
+    response_model=general.StandardResponse[subscription.SubscriptionUpgradeResponse],
     summary="Upgrade or change subscription",
     description="Stripe portal / upgrade flow for existing tenant subscription. Requires **tenant** JWT.",
     response_description="Checkout or portal payload.",

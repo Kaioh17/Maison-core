@@ -72,6 +72,8 @@ class StripeService(ServiceContext):
             logger.info(f" creating checkout session {customer_id} ")
             subscription = stripe.Subscription.retrieve(current_sub_id)
             sub_item_id = subscription['items']['data'][0].id
+            
+
             checkout_session =  stripe.Subscription.modify(
                                 current_sub_id,
                                 # proration_behavior="create_prorations",
@@ -85,38 +87,16 @@ class StripeService(ServiceContext):
                                     'product_type': product_type.lower()
                                 },
                                 )
-            # eckoutch_session = stripe.checkout.Session.create(
-            #                         line_items=[{
-            #                             'price': price_id,
-            #                             'quantity':1
-            #                         }],
-            #                         mode='subscription',
-                                    
-            #                         success_url= f"{self.BASE_URL}/upgrade/success",
-            #                         cancel_url= f"{self.BASE_URL}/cancel",
-            #                         metadata= {
-            #                             'tenant_id': self.current_user.id,
-            #                             'product_type': product_type.lower()
-            #                         },
-            #                         ##This is for upgrade
-            #                         # setup_intent_data={
-            #                         #      'proration_behavior':'always_invoice',
-            #                         #     'metadata': {'subscription_id': current_sub_id},
-            #                         # },
-            #                         subscription_data={
-                                        
-            #                             'metadata': {
-            #                                 'upgrading_from': current_sub_id # Old sub ID
-            #                             }
-            #                         },
-            #                         customer=customer_id,
-            #                         # Use to handle smoothly
-            #                         # payment_behavior='allow_incomplete',
-                                   
-            #                         payment_method_collection='always'
-            #                     )
-            # logger.debug("done")
-            # return checkout_session.url
+            return success_resp(
+                msg="Upgraded checkout session",
+                data={
+                    'subscription_id': checkout_session.id,
+                    'tenant_id': self.current_user.id,
+                    'customer_id': checkout_session.customer,
+                    'product_type': product_type,
+                    'status': checkout_session.status,  # e.g. "active"
+                },
+            )
             return success_resp(msg = "Upgraded checkout session", 
                                 data = {'Checkout_session_url':checkout_session.url,
                                         'tenant_id': self.current_user.id,

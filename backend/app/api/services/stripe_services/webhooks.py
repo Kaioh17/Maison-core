@@ -86,7 +86,7 @@ class WebhookServices(ServiceContext):
             
             logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] paln [{plan}] sub_id [{subscription_id}]")
             tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
-            tenant_obj:tenant_table = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+            # :tetenant_objnant_table = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
             # StripeService(self.current_user, self.db).create_express_account(tenant_obj=tenant_obj)
             tenant_obj.subscription_status = 'active'
             tenant_obj.subscription_plan = plan
