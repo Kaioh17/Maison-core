@@ -182,12 +182,13 @@ class BookingService(ServiceContext):
                     )
 
                 # Email: Send booking confirmation to rider
+                from_email = self._format_from(self.tenant_email, self.slug, "boookings")
                 rider_obj = self.db.query(user_table).filter(user_table.id == self.current_user.id).first()
                 vehicle_info = f"{response.vehicle.vehicle_name}"
                 logger.debug(f"{vehicle_info}")
                 await riders.RiderEmailServices(
                     to_email=self.current_user.email,
-                    from_email=self.tenant_email,
+                    from_email=from_email,
                     operator_name=op_name,
                 ).booking_confirmation_email(
                     booking_obj=response,

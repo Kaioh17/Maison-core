@@ -11,10 +11,12 @@ class EmailServices:
     ENV=settings.environment
 
 
-    def _format_from(self, local_part: str, display_name: str) -> str:
+    def _format_from(self, local_part: str, display_name: str, service: str = "boookings") -> str:
         """Build Resend From header: dev uses Resend sandbox; prod uses display name + local@DOMAIN."""
         if self.ENV == "development":
             return "Acme <onboarding@resend.dev>"
+        if self.ENV == "production" and "@" in local_part:
+            return f"{display_name} <{display_name.lower()}.{service}@{self.DOMAIN}>"
         return f"{display_name} <{local_part}@{self.DOMAIN}>"
 
     def send_email(self,from_email,to_email, subject, html):
