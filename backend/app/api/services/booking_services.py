@@ -16,6 +16,7 @@ from .helper_service import success_resp, success_list_resp
 from .service_context import ServiceContext
 from .stripe_services.checkout import BookingCheckout
 from .email_services import drivers, tenants, riders
+from .email_services.email_services import EmailServices
 from .helper_service import  *
 
 from app.models import tenant_setting
@@ -182,7 +183,7 @@ class BookingService(ServiceContext):
                     )
 
                 # Email: Send booking confirmation to rider
-                from_email = self._format_from(self.tenant_email, self.slug, "boookings")
+                from_email = EmailServices()._format_from(self.tenant_email, self.slug, "boookings")
                 rider_obj = self.db.query(user_table).filter(user_table.id == self.current_user.id).first()
                 vehicle_info = f"{response.vehicle.vehicle_name}"
                 logger.debug(f"{vehicle_info}")
