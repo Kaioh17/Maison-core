@@ -123,6 +123,7 @@ class WebhookServices(ServiceContext):
         """
         #To set things in play upon success or failed request: if tenant permits fare destrubtion
         try:
+            logger.info(f"[tenant connect webhooks]")
             payload = await request.body()
             webhook_secret = self.CONNECT_WEBHOOK_SECRET
             sig_header = request.headers.get("stripe-signature")
@@ -136,7 +137,7 @@ class WebhookServices(ServiceContext):
             raise HTTPException(400)
         tenant_stripe_id = event.get('account')
         
-        logger.debug(f"webhook event:[{event['type']}] for {tenant_stripe_id}")
+        logger.info(f"webhook event:[{event['type']}] for {tenant_stripe_id}")
         try:
             
             if event['type'] in ('account.updated' ,'account.created', 'v1.account.updated'):

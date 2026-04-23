@@ -1,6 +1,6 @@
 
 SESSION="maison-core"
-PROJECT_DIR=~/Maison-core
+PROJECT_DIR=~/maison/backend
 VENV_PATH="$PROJECT_DIR/venv/bin/activate"
 
 #check if session exists

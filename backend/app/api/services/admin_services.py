@@ -65,6 +65,7 @@ class AdminService(ServiceContext):
 
     async def get_all_tenants(self):
         logger.debug("Getting all tenant info....")
+        # TODO: Add more information getting all tenants
         tenants= self.db.query(tenant_table).all()
 
         if not tenants:
@@ -74,7 +75,9 @@ class AdminService(ServiceContext):
         
         # logger.info("There is a toatal of ")
         return tenants
-
+    async def override_verfied_pertenant(self):
+        """TODO We use this feature to force verified for tenant that actially paid"""
+        pass
 def get_admin_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
     return AdminService(db = db, current_user=current_user)
 def unauthenticated_admin_service(db=Depends(get_base_db)):

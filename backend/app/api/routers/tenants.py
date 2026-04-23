@@ -58,7 +58,7 @@ def get_client_info(request: Request):
 async def get_tenant_company_info(
     tenant_service: TenantService = Depends(get_tenant_service),
 ):
-    logger.info("Tenant's info")
+    # logger.info("Tenant's info")
     company = await tenant_service.get_company_info()
     return company
 

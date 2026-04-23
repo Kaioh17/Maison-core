@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Request, Depends, Security, HTTPException, status
+from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import APIKeyHeader
 from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admins,subscriptions, logs, slug, webhooks, dependencies
-from app.db.database import engine
+from app.db.database import engine, get_base_db
 from app.models import *
 # from utils import logging
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
 from slowapi import Limiter,_rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -198,6 +200,97 @@ app.include_router(logs.router)
 app.include_router(slug.router)
 app.include_router(webhooks.router)
 
+
+DEFAULT_MANIFEST_NAME = "Maison"
+DEFAULT_ICON_192 = "/icons/icon-192.png"
+DEFAULT_ICON_512 = "/icons/icon-512.png"
+_RESERVED_SUBDOMAIN_LABELS = {"www", "api", "admin"}
+
+
+def _request_host(request: Request) -> str:
+    forwarded_host = request.headers.get("x-forwarded-host")
+    host = (forwarded_host or request.headers.get("host") or "").split(",")[0].strip().lower()
+    return host.split(":")[0]
+
+
+def _extract_slug_from_host(host: str) -> str | None:
+    if not host:
+        return None
+
+    domain = (settings.domain or "").strip().lower()
+    if host == domain:
+        return None
+
+    if domain and host.endswith(f".{domain}"):
+        label = host[: -(len(domain) + 1)]
+        slug = label.split(".")[0].strip()
+        if slug and slug not in _RESERVED_SUBDOMAIN_LABELS:
+            return slug
+        return None
+
+    if host.endswith(".localhost"):
+        slug = host.split(".")[0].strip()
+        if slug and slug not in _RESERVED_SUBDOMAIN_LABELS:
+            return slug
+
+    return None
+
+
+def _to_absolute_asset_url(request: Request, src: str) -> str:
+    if src.startswith("http://") or src.startswith("https://"):
+        return src
+    return str(request.url.replace(path=src, query="", fragment=""))
+
+
+@app.get("/manifest.json", include_in_schema=False)
+@app.get("/api/v1/manifest.json", include_in_schema=False)
+def dynamic_manifest(request: Request, db: Session = Depends(get_base_db)):
+    host = _request_host(request)
+    slug_value = _extract_slug_from_host(host)
+
+    name = DEFAULT_MANIFEST_NAME
+    short_name = DEFAULT_MANIFEST_NAME
+    icon_src = None
+
+    if slug_value:
+        tenant = (
+            db.query(TenantProfile, TenantBranding)
+            .outerjoin(TenantBranding, TenantBranding.tenant_id == TenantProfile.tenant_id)
+            .filter(TenantProfile.slug == slug_value)
+            .first()
+        )
+        if tenant:
+            profile, branding = tenant
+            company_name = (profile.company_name or "").strip()
+            if company_name:
+                name = company_name
+                short_name = company_name[:20]
+
+            branding_logo = ((branding.logo_url or "").strip() if branding else "")
+            profile_logo = (profile.logo_url or "").strip()
+            icon_src = branding_logo or profile_logo or None
+
+    icon_192 = _to_absolute_asset_url(request, icon_src or DEFAULT_ICON_192)
+    icon_512 = _to_absolute_asset_url(request, icon_src or DEFAULT_ICON_512)
+
+    manifest = {
+        "name": name,
+        "short_name": short_name,
+        "description": f"{name} mobile app",
+        "start_url": "/login",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait-primary",
+        "theme_color": "#0f0d1a",
+        "background_color": "#0f0d1a",
+        "icons": [
+            {"src": icon_192, "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": icon_192, "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+            {"src": icon_512, "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": icon_512, "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ],
+    }
+    return JSONResponse(content=manifest, media_type="application/json")
 
 
 
