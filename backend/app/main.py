@@ -247,10 +247,12 @@ def _to_absolute_asset_url(request: Request, src: str) -> str:
 def dynamic_manifest(request: Request, db: Session = Depends(get_base_db)):
     host = _request_host(request)
     slug_value = _extract_slug_from_host(host)
+    is_admin_host = host.startswith("admin.")
 
     name = DEFAULT_MANIFEST_NAME
     short_name = DEFAULT_MANIFEST_NAME
     icon_src = None
+    start_url = "/"
 
     if slug_value:
         tenant = (
@@ -269,15 +271,20 @@ def dynamic_manifest(request: Request, db: Session = Depends(get_base_db)):
             branding_logo = ((branding.logo_url or "").strip() if branding else "")
             profile_logo = (profile.logo_url or "").strip()
             icon_src = branding_logo or profile_logo or None
+        # Tenant PWA should open the tenant shell directly.
+        start_url = "/"
+    elif is_admin_host:
+        start_url = "/login"
 
     icon_192 = _to_absolute_asset_url(request, icon_src or DEFAULT_ICON_192)
     icon_512 = _to_absolute_asset_url(request, icon_src or DEFAULT_ICON_512)
 
     manifest = {
+        "id": "/",
         "name": name,
         "short_name": short_name,
         "description": f"{name} mobile app",
-        "start_url": "/login",
+        "start_url": start_url,
         "scope": "/",
         "display": "standalone",
         "orientation": "portrait-primary",
