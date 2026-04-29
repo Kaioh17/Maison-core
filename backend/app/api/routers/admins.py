@@ -21,6 +21,7 @@ router = APIRouter(
         "Protect with network policy / auth in production (currently open if router is mounted)."
     ),
     response_description="No content on success.",
+    include_in_schema=False,
 )
 async def delete_tenant(
     tenant_id: int = Path(..., description="Tenant id to delete."),
@@ -38,6 +39,7 @@ async def delete_tenant(
     summary="List all tenants",
     description="Returns every tenant record for admin dashboards. **Unauthenticated** in code — lock down in production.",
     response_description="Standard response with tenant list and meta counts.",
+    include_in_schema=False,
 )
 async def get_all_tenants(
     admin_service: AdminService = Depends(get_admin_service)
@@ -55,6 +57,7 @@ async def get_all_tenants(
     summary="Create admin",
     description="Returns every tenant record for admin dashboards. ",
     response_description="Standard response with tenant list and meta counts.",
+    include_in_schema=False,
 )
 async def create_admin(payload: admin.CreateAdmin,
                         admin_service: AdminService = Depends(unauthenticated_admin_service)
@@ -71,6 +74,7 @@ async def create_admin(payload: admin.CreateAdmin,
     summary="Platform analytics (not implemented)",
     description="Placeholder for cross-tenant KPIs (riders, drivers, uptime). Currently returns nothing.",
     response_description="Not implemented.",
+    include_in_schema=False,
 )
 async def tenants_summary():
     ##return the number of riders

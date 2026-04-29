@@ -117,7 +117,7 @@ def custom_openapi():
             },
             {
                 "name": "admin",
-                "description": "Internal/admin operations (tenant list, destructive actions) — protect in production.",
+                "description": "Internal/admin operations (tenant list, destructive actions) — protected. Endpoints can only be viewed by authorized users.",
             },
         ]
     )
