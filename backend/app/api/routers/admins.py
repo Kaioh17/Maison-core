@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, FastAPI, Response, status, Path
+from fastapi import APIRouter, HTTPException, FastAPI, Response, status, Path, Query
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
@@ -68,8 +68,27 @@ async def create_admin(payload: admin.CreateAdmin,
         data=admin
     )
 
-
+@router.patch(
+    "/force/verify",
+    status_code=202,
+    response_model=general.StandardResponse,
+    summary="Force Verify tenants",
+    description="Forces verify for a tenant",
+    response_description="Standard response with tenant list and meta counts.",
+    include_in_schema=True,
+)
+async def force_verify_tenant(
+    tenant_id: int = Query(..., ge=1, description="Tenant id to force-verify."),
+    permission: bool = Query(
+        ...,
+        description="Must be true to acknowledge and execute this irreversible override.",
+    ),
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    admin = await admin_service.override_verified_tenant(tenant_id=tenant_id, permission=permission)
+    return admin
 @router.get(
+    
     "/tenants/analytics",
     summary="Platform analytics (not implemented)",
     description="Placeholder for cross-tenant KPIs (riders, drivers, uptime). Currently returns nothing.",

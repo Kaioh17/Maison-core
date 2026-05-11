@@ -387,16 +387,25 @@ class TenantService(ServiceContext):
                         ),
                         TenantBranding(
                             tenant_id=new_tenant_id,
-                            logo_url=logo_url,
                             slug=slug,
                             theme="dark",
                             enable_branding=False,
-                            primary_color=None,
-                            secondary_color=None,
-                            accent_color=None,
+                            # colors — same palette used by the new rider auth pages
+                            # (matches the example in TenantBrandingUpdate.Config.json_schema_extra)
+                            primary_color="#7c3aed",        # brand purple (CTA bg, links)
+                            secondary_color="#a78bfa",      # lighter purple (subtle accents)
+                            accent_color="#6d28d9",         # darker purple (hover/pressed)
+                            background_color="#0a0a12",     # page bg
+                            surface_color="#13131f",        # cards / input fill (elevated)
+                            text_color="#ffffff",           # primary text
+                            text_muted_color="#6b7280",     # muted / secondary text
+                            button_text_color="#ffffff",    # text on filled brand buttons
+                            # assets
+                            logo_url=logo_url,
                             favicon_url=None,
                             email_from_name=None,
-                            email_from_address=None
+                            email_from_address=None,
+                            phone=None
                         ),
                         TenantPricing(
                             tenant_id=new_tenant_id,

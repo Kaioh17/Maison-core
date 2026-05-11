@@ -58,13 +58,24 @@ class TenantBranding(Base):
     # id = Column(UUID(as_uuid =True), primary_key=True, default=uuid.uuid4, unique=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id",ondelete = "CASCADE"), primary_key=True,nullable=False, unique = True)
     theme = Column(String, nullable=False, default="dark", server_default=text("'dark'"))
-    primary_color = Column(String, nullable=True)
-    secondary_color = Column(String, nullable=True)
-    accent_color = Column(String, nullable=True)
+
+
+    primary_color      = Column(String, nullable=True)
+    secondary_color    = Column(String, nullable=True)
+    accent_color       = Column(String, nullable=True)
+    background_color   = Column(String, nullable=True)
+    surface_color      = Column(String, nullable=True)
+    text_color         = Column(String, nullable=True)
+    text_muted_color   = Column(String, nullable=True)
+    button_text_color  = Column(String, nullable=True)
+
+
     favicon_url = Column(String, nullable=True)
     slug = Column(String, unique=True, nullable = True, index=True)
     email_from_name = Column(String, nullable=True) #company to email
     email_from_address = Column(String, nullable=True) #company email from address
+    phone = Column(String, nullable=True) #company email from address
+    
     logo_url = Column(String, nullable= True)
     enable_branding = Column(Boolean, nullable=False, default=False, server_default=text('False'))
     

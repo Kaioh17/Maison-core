@@ -99,6 +99,7 @@ class TenantProfile(Base):
     subscription_plan = Column(String, nullable=True, default="free")
     
     cur_subscription_id = Column(String,nullable=True, unique=True)
+
     # is_driver = Column(Boolean, nullable=True, index=False, default=False)
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))

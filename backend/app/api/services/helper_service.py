@@ -221,6 +221,17 @@ class DateTime:
         tz = dt_utc.astimezone(ZoneInfo(user_tz))
         return tz
     
+def format_phone(phone):
+    digits = ''.join(c for c in phone if c.isdigit())
+    
+    if len(digits) == 11 and digits[0] == '1':
+        digits = digits[1:]
+    
+    if len(digits) != 10:
+        return phone
+    
+    return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+
 """
 validate ids
 check if user exist 

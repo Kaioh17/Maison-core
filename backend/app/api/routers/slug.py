@@ -28,13 +28,25 @@ async def verify_slug_public(
     slug_ = slug_service.verify_slug(slug)
     return slug_
 
+@router.get(
+    "/storefront/{slug}",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[slug.StorefrontSchema],
+    summary="Authenticated: tenant storefront configuration",
+    description="Returns tenant storefront configuration for the authenticated tenant context. Requires auth via slug service dependency.",
+    response_description="Tenant setup payload.",
+)
+
+async def get_tenant_store_front(slug, slug_service: SlugService = Depends(get_slug_service)):
+    storefront = slug_service.get_storefront_config(tenant_slug=slug)
+    return storefront
 
 @router.get(
     "/",
     status_code=status.HTTP_200_OK,
     response_model=general.StandardResponse[slug.TenantSetupResponse],
     summary="Authenticated: tenant setup metadata",
-    description="Returns extended setup info for the current tenant context. Requires auth (slug service dependency).",
+    description="Returns authenticated tenant setup metadata for the current tenant context. Requires auth via slug service dependency.",
     response_description="Tenant setup payload.",
 )
 async def get_tenant_setup_authenticated(

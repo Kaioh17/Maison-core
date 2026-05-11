@@ -116,22 +116,52 @@ class TenantBookingUpdate(BaseModel):
     
 class TenantBrandingUpdate(BaseModel):
     theme: Optional[str] = None
+
+    # colors
     primary_color: Optional[str] = None
     secondary_color: Optional[str] = None
     accent_color: Optional[str] = None
+    background_color: Optional[str] = None
+    surface_color: Optional[str] = None
+    text_color: Optional[str] = None
+    text_muted_color: Optional[str] = None
+    button_text_color: Optional[str] = None
+
+    # assets
     favicon_url: Optional[str] = None
+    logo_url: Optional[str] = None
+
     slug: Optional[str] = None
     email_from_name: Optional[str] = None
     email_from_address: Optional[str] = None
-    logo_url: Optional[str] = None
     enable_branding: Optional[bool] = None
-
+    phone: Optional[str] = None
     @field_validator('slug', mode='before')
     def validate_slug(cls, value:str) -> any:
         if value != None:
             return value.lower().strip().replace(' ', '-').replace('_','-')
         else: return value
-        
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "theme": "dark",
+                "primary_color": "#7c3aed",
+                "secondary_color": "#a78bfa",
+                "accent_color": "#6d28d9",
+                "background_color": "#0a0a12",
+                "surface_color": "#13131f",
+                "text_color": "#ffffff",
+                "text_muted_color": "#6b7280",
+                "button_text_color": "#ffffff",
+                "logo_url": "https://bls.usemaison.io/logo.png",
+                "favicon_url": "https://bls.usemaison.io/favicon.ico",
+                "slug": "bls",
+                "email_from_name": "BLS Transportation",
+                "email_from_address": "rides@bls.usemaison.io",
+                "enable_branding": True,
+                "phone": "+12345678"
+            }
+        }
 class TenantPricingUpdate(BaseModel):
     base_fare: Optional[float] = None
     per_mile_rate: Optional[float] = None
@@ -141,19 +171,19 @@ class TenantPricingUpdate(BaseModel):
     discounts: Optional[bool] = None
 
 
-class TenantBrandingResponse(BaseModel):
+class TenantBrandingResponse(TenantBrandingUpdate):
     # id: int
     tenant_id: int
-    theme: str
-    primary_color: Optional[str]
-    secondary_color: Optional[str]
-    accent_color: Optional[str]
-    favicon_url: Optional[str]
-    slug: Optional[str]
-    email_from_name: Optional[str]
-    email_from_address: Optional[str]
-    logo_url: Optional[str]
-    enable_branding: bool
+    # theme: str
+    # primary_color: Optional[str]
+    # secondary_color: Optional[str]
+    # accent_color: Optional[str]
+    # favicon_url: Optional[str]
+    # slug: Optional[str]
+    # email_from_name: Optional[str]
+    # email_from_address: Optional[str]
+    # logo_url: Optional[str]
+    # enable_branding: bool
     created_on: datetime
     updated_on: Optional[datetime]
 

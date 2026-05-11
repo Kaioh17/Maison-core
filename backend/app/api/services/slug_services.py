@@ -11,6 +11,7 @@ from app.db.database import get_db, get_base_db
 from ..core import deps
 from .helper_service import *
 from .service_context import ServiceContext
+from app.data.storefronts import get_tenant_storefront
 class SlugService(ServiceContext):
     def __init__(self, db, current_user):
         super().__init__(db=db, current_user=current_user)
@@ -59,6 +60,21 @@ class SlugService(ServiceContext):
         # logger.debug(response_dict)
         return success_resp(msg="Tenant Setup Retrieved successfully", 
                             data=response_dict)
+    """STORE FRONT"""
+    def get_storefront_config(self, tenant_slug: str):
+        """"This is setup for cuso"""
+        
+        tenant_id = Validations(self.db)._verify_slug(slug=tenant_slug)
+        if not tenant_id:   
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="no data")
+        company_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
+        tenant = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+        logger.debug(f'SlUg used {tenant_slug}')
+        return success_resp(data = get_tenant_storefront(slug=tenant_slug,
+                                                         company_profile=company_profile,
+                                                         tenant=tenant, db=self.db))
+
+
 def get_slug_service(db=Depends(get_base_db)):
     return SlugService(db=db, current_user=None)
 

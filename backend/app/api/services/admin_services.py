@@ -13,6 +13,7 @@ from .email_services import admin
 from app.config import Settings
 from .service_context import ServiceContext
 from .helper_service import *
+from .email_services.tenants import TenantEmailServices
 from ..core import deps
 
 settings = Settings()
@@ -75,9 +76,52 @@ class AdminService(ServiceContext):
         
         # logger.info("There is a toatal of ")
         return tenants
-    async def override_verfied_pertenant(self):
-        """TODO We use this feature to force verified for tenant that actially paid"""
-        pass
+    async def override_verified_tenant(self, tenant_id: int, permission: bool):
+        """Force-verify a tenant when webhook-driven verification fails."""
+        validator = Validations(self.db)
+        tenant_obj: tenant_table = validator._tenants_exist(tenant_id=tenant_id)
+
+        if tenant_obj.is_verified and tenant_obj.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Tenant already verified and active",
+            )
+
+        if not permission:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Explicit permission is required for forced verification",
+            )
+
+        tenant_obj.is_verified = True
+        tenant_obj.is_active = True
+        self.db.commit()
+        self.db.refresh(tenant_obj)
+        logger.info(f"Tenant {tenant_id} was force-verified by admin.")
+
+        try:
+            TenantEmailServices(
+                to_email=tenant_obj.email,
+                from_email='noreply',
+                display_name='Maison',
+            ).onboarding_email()
+        except Exception as exc:
+            logger.warning(f"Force verification email failed for tenant {tenant_id}: {exc}")
+
+        return success_resp(
+            msg="Successfully force-verified tenant",
+            data={
+                "tenant_id": tenant_obj.id,
+                "is_verified": tenant_obj.is_verified,
+                "is_active": tenant_obj.is_active,
+            },
+        )
+
+    async def override_verfied_tenant(self, tenant_id: int, permission: bool):
+        """Backward-compatible typo alias; prefer override_verified_tenant."""
+        return await self.override_verified_tenant(tenant_id=tenant_id, permission=permission)
+       
+        
 def get_admin_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
     return AdminService(db = db, current_user=current_user)
 def unauthenticated_admin_service(db=Depends(get_base_db)):
