@@ -49,7 +49,7 @@ _ICON_CACHE_HEADERS = {
 def _resolve_host(request: Request) -> Optional[str]:
     """Prefer `X-Forwarded-Host` (nginx) so per-host resolution survives proxying."""
 
-    return 'bls.usemaison.io'
+    
     forwarded = request.headers.get("x-forwarded-host")
     if forwarded:
         # nginx may concatenate multiple values; use the first.
