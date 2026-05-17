@@ -275,9 +275,35 @@ class PwaService:
     def _tenant_icon_entries(self, _snapshot: TenantBrandingSnapshot) -> list[dict]:
         # Manifest entries point at backend routes so each size + maskable flag
         # is handled consistently (`pwa._icon_response`).
-
-
+        # TODO switch from default maison entry to a 
         logger.debug(f'_snapshpot =  {_snapshot.logo_url}')
+        icon_src = _snapshot.logo_url or f"/icons/icon.png"
+    
+        entries = [
+            {
+                "src": icon_src,
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": icon_src,
+                "sizes": "512x512", 
+                "type": "image/png",
+                "purpose": "any",
+            },
+        ]
+        
+        # Only add maskable if we have a real logo, otherwise use generated
+        maskable_src = icon_src or f"/icons/icon.png"
+        entries.append({
+            "src": maskable_src,
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable",
+        })
+        
+        return entries
         return [
             {
                 "src": _snapshot.logo_url,

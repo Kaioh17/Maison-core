@@ -38,18 +38,18 @@ router = APIRouter(tags=["PWA"])
 # visible without overwhelming the backend.
 _MANIFEST_CACHE_HEADERS = {
     "Cache-Control": "public, max-age=300, must-revalidate",
-    "Vary": "Host, Accept-Encoding",
+    "Vary": "Host, X-Forwarded-Host, Accept-Encoding",
 }
 _ICON_CACHE_HEADERS = {
     "Cache-Control": "public, max-age=300, must-revalidate",
-    "Vary": "Host, Accept-Encoding",
+    "Vary": "Host, X-Forwarded-Host, Accept-Encoding",
 }
 
 
 def _resolve_host(request: Request) -> Optional[str]:
     """Prefer `X-Forwarded-Host` (nginx) so per-host resolution survives proxying."""
-
-    
+    logger.info(f"All headers: {dict(request.headers)}")
+    # return 'bls.usemaison.io'
     forwarded = request.headers.get("x-forwarded-host")
     if forwarded:
         # nginx may concatenate multiple values; use the first.
