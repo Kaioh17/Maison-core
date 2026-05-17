@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Depends, Security, HTTPException, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import APIKeyHeader
-from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admins,subscriptions, logs, slug, webhooks, dependencies, temp_qr
+from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admins,subscriptions, logs, slug, webhooks, dependencies, temp_qr, pwa
 from app.db.database import engine
 from app.models import *
 # from utils import logging
@@ -119,6 +119,12 @@ def custom_openapi():
                 "name": "admin",
                 "description": "Internal/admin operations (tenant list, destructive actions) — protected. Endpoints can only be viewed by authorized users.",
             },
+            {
+                "name": "PWA",
+                "description": (
+                    "Per-host Progressive Web App install metadata: dynamic web manifest and apple-touch-icon resolved from the request `Host` header so each tenant subdomain installs with its own white-label branding."
+                ),
+            },
         ]
     )
     
@@ -198,6 +204,7 @@ app.include_router(logs.router)
 app.include_router(slug.router)
 app.include_router(webhooks.router)
 app.include_router(temp_qr.router)
+app.include_router(pwa.router)
 
 
 

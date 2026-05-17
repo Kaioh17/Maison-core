@@ -12,7 +12,7 @@ def get_tenant_storefront(slug,  company_profile = None, tenant: tenant_table =N
         dict: A storefront configuration dictionary with template, branding, CTAs, and footer details.
     """
     logger.info(f'{slug}') 
-    ALLOWED_PREMIUM=['bho']
+    ALLOWED_PREMIUM=['bho', 'bls']
 
     if slug.lower() in ALLOWED_PREMIUM:
         branding:tenant_branding = db.query(tenant_branding).filter(tenant_branding.tenant_id == tenant.id).first()

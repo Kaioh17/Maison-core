@@ -5,11 +5,14 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /backend
 
-# Install system dependencies
+# Install system dependencies.
+# `fonts-dejavu-core` is required by the PWA icon generator (Pillow) so
+# tenant-branded letter-mark PNGs render correctly on slim Python images.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     postgresql-client \
     libpq-dev \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file and install dependencies backend/requirements.txt
