@@ -48,6 +48,8 @@ _ICON_CACHE_HEADERS = {
 
 def _resolve_host(request: Request) -> Optional[str]:
     """Prefer `X-Forwarded-Host` (nginx) so per-host resolution survives proxying."""
+
+    return 'bls.usemaison.io'
     forwarded = request.headers.get("x-forwarded-host")
     if forwarded:
         # nginx may concatenate multiple values; use the first.
@@ -55,6 +57,7 @@ def _resolve_host(request: Request) -> Optional[str]:
     host_header = request.headers.get("host")
     if host_header:
         return host_header
+    
     return request.url.hostname
 
 
@@ -248,6 +251,14 @@ async def get_favicon_png(
     return _icon_response(snapshot, size=64, maskable=False, favicon_shortcut=True)
 
 
+@router.get("/manifest.json")
+async def get_manifest_json(request: Request, service: PwaService = Depends(get_pwa_service)):
+    host = _resolve_host(request)
+    host = 'bls.usemaison.io'
+    snapshot = service.resolve_branding(host)
+    
+    
+    return snapshot
 @router.get(
     "/favicon.ico",
     summary="Per-host favicon (ICO alias)",

@@ -219,7 +219,6 @@ async def assign_driver_to_vehicles(
     assigned_driver = await tenant_service.assign_driver_to_vehicle(driver_id, vehicle_id)
     return assigned_driver
 
-
 @router.patch(
     "/vehicles/{vehicle_id}/unassign/driver",
     status_code=status.HTTP_202_ACCEPTED,

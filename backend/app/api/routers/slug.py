@@ -32,8 +32,8 @@ async def verify_slug_public(
     "/storefront/{slug}",
     status_code=status.HTTP_200_OK,
     response_model=general.StandardResponse[slug.StorefrontSchema],
-    summary="Authenticated: tenant storefront configuration",
-    description="Returns tenant storefront configuration for the authenticated tenant context. Requires auth via slug service dependency.",
+    summary="Public: tenant storefront configuration",
+    description="Returns tenant storefront configuration for the tenant context.",
     response_description="Tenant setup payload.",
 )
 

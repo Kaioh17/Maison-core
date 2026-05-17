@@ -20,7 +20,7 @@ from app.config import Settings
 from app.db.database import get_base_db
 from app.utils.logging import logger
 
-from .helper_service import tenant_branding, tenant_profile, tenant_table
+from .helper_service import tenant_branding, tenant_profile, tenant_table, Validations, HTTPException
 
 # Subdomains that are infrastructure / marketing, not tenant slugs.
 RESERVED_SUBDOMAIN_LABELS = {"www", "api", "admin"}
@@ -135,7 +135,8 @@ def extract_slug_from_host(host: Optional[str], main_domain: str) -> Optional[st
 
     return None
 
-
+from .slug_services import SlugService
+from app.schemas.slug import TenantSlugResponse
 class PwaService:
     """Resolves tenant branding for PWA endpoints from a request host."""
 
@@ -156,10 +157,28 @@ class PwaService:
         Return tenant branding for the host, or None when the host has no slug
         or the tenant is not active.
         """
+        logger.debug(host)
         slug = extract_slug_from_host(host, self.main_domain)
+
         if not slug:
             return None
+        # verified_tenant_id = Validations(self.db)._verify_slug(slug)
+        tenant_manifest = SlugService(self.db, current_user=None).verify_slug(slug=slug)
+        tenant_manifest = tenant_manifest.data
+        if not tenant_manifest:
+            raise HTTPException(404, "Slug does not exists")
+        logger.debug(tenant_manifest['profile']['company_name'])
 
+        return TenantBrandingSnapshot(
+            slug=slug,
+            company_name=(tenant_manifest['profile']['company_name'] or "").strip(),
+            favicon_url=(tenant_manifest['branding']['favicon_url'] or "").strip() or None,
+            logo_url=(tenant_manifest['branding']['logo_url'] or "").strip() or None,
+            theme_color=_normalize_color(tenant_manifest['branding']['background_color'], DEFAULT_THEME_COLOR),
+            background_color=_normalize_color(tenant_manifest['branding']['background_color'], DEFAULT_BACKGROUND_COLOR),
+            accent_color=_normalize_color(tenant_manifest['branding']['primary_color'], DEFAULT_ACCENT_COLOR),
+        )
+        
         try:
             row = (
                 self.db.query(tenant_profile, tenant_branding, tenant_table)
@@ -256,21 +275,24 @@ class PwaService:
     def _tenant_icon_entries(self, _snapshot: TenantBrandingSnapshot) -> list[dict]:
         # Manifest entries point at backend routes so each size + maskable flag
         # is handled consistently (`pwa._icon_response`).
+
+
+        logger.debug(f'_snapshpot =  {_snapshot.logo_url}')
         return [
             {
-                "src": "/icons/icon-192.png",
+                "src": _snapshot.logo_url,
                 "sizes": "192x192",
                 "type": "image/png",
                 "purpose": "any",
             },
             {
-                "src": "/icons/icon-512.png",
+                "src": _snapshot.logo_url,
                 "sizes": "512x512",
                 "type": "image/png",
                 "purpose": "any",
             },
             {
-                "src": "/icons/icon-maskable-512.png",
+                "src": _snapshot.logo_url,
                 "sizes": "512x512",
                 "type": "image/png",
                 "purpose": "maskable",
