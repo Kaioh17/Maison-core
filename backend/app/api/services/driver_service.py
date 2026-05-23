@@ -251,6 +251,7 @@ class DriverService(ServiceContext):
                     if slug:
                         op = tenant_profile_obj.company_name if tenant_profile_obj else slug
                         driver_name = None
+                        driver_phone = None
                         if booking_obj.driver_id:
                             drv = (
                                 self.db.query(driver_table)
@@ -259,6 +260,7 @@ class DriverService(ServiceContext):
                             )
                             if drv:
                                 driver_name = f"{drv.first_name} {drv.last_name}".strip()
+                                driver_phone = drv.phone_no
                         tenant_row = (
                             self.db.query(tenant_table)
                             .filter(tenant_table.id == booking_obj.tenant_id)
@@ -275,6 +277,7 @@ class DriverService(ServiceContext):
                             old_status=old_status,
                             feedback_url=feedback_url,
                             driver_name=driver_name,
+                            driver_phone=driver_phone,
                             tenant_contact_email=tenant_contact_email,
                             tenant_contact_phone=tenant_contact_phone,
                         )
@@ -285,7 +288,9 @@ class DriverService(ServiceContext):
                             ).booking_cancellation_email(
                                 booking_obj=booking_obj,
                                 rider_obj=rider_obj,
-                                slug=slug
+                                slug=slug,
+                                driver_name=driver_name,
+                                driver_phone=driver_phone,
                             )
                 logger.debug({"booking_id":booking_id,"ride_status": action})
                 

@@ -70,7 +70,14 @@ class DriverEmailServices(EmailServices):
         html_body = L.build_email(body, footer_brand=company)
         self._email(subject, html_body)
 
-    def new_ride(self, booking_obj: object, assigned: bool = False, slug: str = None, rider_name: str = None):
+    def new_ride(
+        self,
+        booking_obj: object,
+        assigned: bool = False,
+        slug: str = None,
+        rider_name: str = None,
+        rider_phone: str = None,
+    ):
         """New ride — pickup, passenger, time; optional assignment flag."""
         passenger = rider_name
         if passenger is None and getattr(booking_obj, "rider", None) is not None:
@@ -89,8 +96,53 @@ class DriverEmailServices(EmailServices):
         body = (
             L.p(L.detail_kv("Pickup", L.highlight(pickup)))
             + L.p(L.detail_kv("Passenger", html.escape(str(passenger), quote=False)))
+            + (
+                L.p(L.detail_kv("Passenger phone", html.escape(str(rider_phone), quote=False)))
+                if rider_phone and str(rider_phone).strip()
+                else ""
+            )
             + L.p(L.detail_kv("Time", html.escape(pickup_time, quote=False)))
             + L.primary_cta(cta_url, "Open in app →")
+        )
+        html_body = L.build_email(body, footer_brand=self._company_label_from_slug(slug or ""))
+        self._email(subject, html_body)
+
+    def cancelled_ride(
+        self,
+        booking_obj: object,
+        slug: str = None,
+        rider_name: str = None,
+        rider_phone: str = None,
+    ):
+        """Ride cancelled — concise operational update for drivers."""
+        passenger = (rider_name or "").strip() or "Passenger"
+        pickup = getattr(booking_obj, "pickup_location", None) or "TBD"
+        dropoff = getattr(booking_obj, "dropoff_location", None) or ""
+        pickup_time = (
+            booking_obj.pickup_time.strftime("%B %d, %Y at %I:%M %p")
+            if hasattr(booking_obj, "pickup_time") and hasattr(booking_obj.pickup_time, "strftime")
+            else str(getattr(booking_obj, "pickup_time", "TBD"))
+        )
+
+        subject = "Ride cancelled"
+        cta_url = f"{self.BASE_URL}/{slug or 'default'}/driver/bookings"
+
+        route = (
+            f"{L.highlight(pickup)} → {L.highlight(dropoff)}"
+            if dropoff
+            else L.highlight(pickup)
+        )
+        body = (
+            L.p("A scheduled ride has been cancelled.")
+            + L.p(L.detail_kv("Passenger", html.escape(passenger, quote=False)))
+            + (
+                L.p(L.detail_kv("Passenger phone", html.escape(str(rider_phone), quote=False)))
+                if rider_phone and str(rider_phone).strip()
+                else ""
+            )
+            + L.p(L.detail_kv("Route", route))
+            + L.p(L.detail_kv("Pickup time", html.escape(pickup_time, quote=False)))
+            + L.primary_cta(cta_url, "View remaining trips →")
         )
         html_body = L.build_email(body, footer_brand=self._company_label_from_slug(slug or ""))
         self._email(subject, html_body)

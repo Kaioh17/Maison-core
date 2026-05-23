@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status
 from fastapi.params import Depends
 from ..services.user_services import UserService, get_user_service, get_unauthorized_service
-from app.schemas import user
+from app.schemas import user, ratings
 from app.schemas.general import StandardResponse
 from app.utils.logging import logger
 from ..services.analytics.riders import get_rider_analytics, RiderAnalyticService
@@ -61,3 +61,20 @@ async def get_rider_booking_analytics(
     user_info = await user_service.booking_analytics()
     logger.debug(f"user_info {user_info}")
     return user_info
+
+
+@router.post(
+    "/booking/ratings",
+    status_code=status.HTTP_200_OK,
+    response_model=StandardResponse[ratings.BookingRatingResponse],
+    summary="Rider booking analytics",
+    description="Aggregated booking stats for the authenticated rider (history, status breakdown). Requires rider JWT.",
+    response_description="Analytics payload.",
+)
+async def get_rider_booking_analytics(
+    payload: ratings.BookingRatingCreate,
+    user_service: UserService = Depends(get_user_service),
+):
+    booking_rating = await user_service.rate_it(payload)
+    # logger.debug(f"user_info {booking_rating}")
+    return booking_rating

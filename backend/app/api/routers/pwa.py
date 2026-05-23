@@ -96,7 +96,7 @@ def _icon_response(
 
     For the main Maison host (no tenant slug), 302-redirect to static assets in
     the frontend `public/` bundle: app icon → ``/icons/icon.png``; shortcut
-    favicon endpoints → ``/favicon1.png``.
+    favicon endpoints → ``/favicon-48x48.png``.
 
     For non-maskable icons on tenant hosts, prefers a 302 redirect to the
     tenant-uploaded favicon so the browser caches the asset directly from its
@@ -239,7 +239,7 @@ async def get_pwa_icon(
 
 
 @router.get(
-    "/favicon.png",
+    "/favicon-48x48.png",
     summary="Per-host favicon (PNG)",
 )
 async def get_favicon_png(

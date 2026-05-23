@@ -78,6 +78,74 @@ class UserService(ServiceContext):
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
     
+    async def rate_it(self, payload):
+        try:
+            rating = payload.model_dump()
+            booking_obj: booking_table = (
+                self.db.query(booking_table)
+                .filter(
+                    booking_table.id == payload.booking_id,
+                    booking_table.rider_id == self.rider_id,
+                    booking_table.tenant_id == self.tenant_id,
+                )
+                .first()
+            )
+            if not booking_obj:
+                logger.error('Booking not found')
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+            if booking_obj.booking_status != "completed":
+                raise HTTPException(
+                    status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                    detail="You can only rate completed bookings",
+                )
+            booking_ratings_obj: booking_ratings_table = (
+                self.db.query(booking_ratings_table)
+                .filter(
+                    booking_ratings_table.booking_id == payload.booking_id,
+                    
+                )
+                .first()
+            )
+
+            logger.debug(f'Ratinng {payload.review_comment}')            
+            if not booking_ratings_obj:
+                
+                new_rating = booking_ratings_table(rider_id=self.rider_id, tenant_id=self.tenant_id, **rating)
+                self.db.add(new_rating)
+                self.db.commit()
+                self.db.refresh(new_rating)
+                data = new_rating
+            else:
+                allowed_fields = {"rating_value", "review_comment"}
+                for field, value in rating.items():
+                    if field in allowed_fields:
+                        setattr(booking_ratings_obj, field, value)
+                self.db.commit()
+                data = booking_ratings_obj
+
+
+            tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
+            logger.debug('Ratinng hghererere')
+            op_name = (
+                tenant_obj.profile.company_name
+                if tenant_obj and hasattr(tenant_obj, "profile") and tenant_obj.profile
+                else self.slug
+            )
+            riders.RiderEmailServices(
+                to_email=self.current_user.email,
+                from_email=self.tenant_email,
+                operator_name=op_name,
+            ).booking_status_update_email(
+                booking_obj=booking_obj,
+                rider_obj=self.current_user,
+                slug=self.slug,
+                review_comment=data.review_comment,
+            )
+
+            return success_resp(msg='Successfully saved rating',data=data)
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, self.db)
     
 def get_user_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
     return UserService(db=db, current_user=current_user)

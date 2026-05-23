@@ -133,6 +133,115 @@ class BookingService(ServiceContext):
             return data
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
+
+    async def cancel_bookings(self, booking_id = None, payload=None):
+        try:
+            booking_response: booking_table = self.db.query(booking_table).filter(booking_table.tenant_id == self.tenant_id, 
+                                               booking_table.id == booking_id, 
+                                                booking_table.rider_id == self.rider_id).first()
+            
+            if not booking_response:
+                logger.debug("Booking_id cannot be found.")
+                raise HTTPException(status_code=404,detail="Booking_id cannot be found.")
+
+            if booking_response.booking_status in ["cancelled", "completed"]:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Ride cannot be cancelled when status is '{booking_response.booking_status}'.",
+                )
+
+            warning_message = None
+            now_utc = datetime.now(timezone.utc)
+            pickup_time = booking_response.pickup_time
+            if pickup_time and pickup_time.tzinfo is None:
+                pickup_time = pickup_time.replace(tzinfo=timezone.utc)
+            if pickup_time and pickup_time - now_utc <= timedelta(hours=2):
+                warning_message = (
+                    "Warning: This ride is close to pickup time (within 2 hours). "
+                    "Cancellation may affect operations. Resubmit with acknowledge_warning=true to proceed."
+                )
+                acknowledged = bool(getattr(payload, "acknowledge_warning", False))
+                if not acknowledged:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=warning_message,
+                    )
+            
+            booking_response.booking_status = 'cancelled'
+
+            self.db.commit()
+
+
+            ### Send email notification to tenant, driver and rider
+            #send email
+            tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == self.current_user.tenant_id).first()
+            op_name = (tenant_obj.profile.company_name
+                if tenant_obj and hasattr(tenant_obj, "profile") and tenant_obj.profile
+                else self.slug
+            )
+
+            driver_full_name = None
+            driver_phone = None
+            if booking_response.driver_id:
+                driver_ = await self._get_driver_fullname(driver_id=booking_response.driver_id)
+                driver_full_name = driver_.full_name
+                driver_phone = getattr(driver_, "phone_no", None)
+                driver_email = driver_.email
+                drivers.DriverEmailServices(
+                    to_email=driver_email, from_email="notifications", display_name=self.slug
+                ).cancelled_ride(
+                    booking_obj=booking_response,
+                    slug=self.slug,
+                    rider_name=self.full_name,
+                    rider_phone=getattr(self.current_user, "phone_no", None),
+                )
+            
+            # Email: Send booking confirmation to rider
+            from_email = EmailServices()._format_from(self.tenant_email, self.slug, "boookings")
+            rider_obj = self.db.query(user_table).filter(user_table.id == self.current_user.id).first()
+            vehicle_info = f"{booking_response.vehicle.vehicle_name}"
+            logger.debug(f"{vehicle_info}")
+            riders.RiderEmailServices(
+                to_email=self.current_user.email,
+                from_email=from_email,
+                operator_name=op_name,
+            ).booking_cancellation_email(
+                booking_obj=booking_response,
+                rider_obj=rider_obj,
+                slug=self.slug,
+                cancellation_reason=getattr(payload, "cancellation_reason", None),
+                driver_name=driver_full_name,
+                driver_phone=driver_phone,
+            )
+
+
+            await asyncio.sleep(3)
+            # Email: Send new booking notification to tenant
+            tenants.TenantEmailServices(
+                to_email=self.tenant_email, from_email="notifications", display_name=self.slug
+            ).booking_cancellation_email(
+                booking_obj=booking_response,
+                tenant_obj=tenant_obj,
+                slug=self.slug,
+                rider_name=self.full_name,
+                rider_phone=getattr(self.current_user, "phone_no", None),
+                vehicle_info=vehicle_info,
+                driver_name=driver_full_name,
+                driver_phone=driver_phone,
+            )
+            return success_resp(
+                msg="Ride cancelled successfully",
+                data={
+                    "booking_id": booking_response.id,
+                    "booking_status": booking_response.booking_status,
+                    "warning": warning_message,
+                },
+            )
+             
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(e, self.db)
+
+
     async def confirm_ride(self, booking_id: int, payload):
         try:
             is_approved = payload.is_approved
@@ -169,9 +278,11 @@ class BookingService(ServiceContext):
                 )
 
                 driver_full_name = None
+                driver_phone = None
                 if response.driver_id:
                     driver_ = await self._get_driver_fullname(driver_id=response.driver_id)
                     driver_full_name = driver_.full_name
+                    driver_phone = getattr(driver_, "phone_no", None)
                     driver_email = driver_.email
                     drivers.DriverEmailServices(
                         to_email=driver_email, from_email="notifications", display_name=self.slug
@@ -180,6 +291,7 @@ class BookingService(ServiceContext):
                         assigned=False,
                         slug=self.slug,
                         rider_name=self.full_name,
+                        rider_phone=getattr(self.current_user, "phone_no", None),
                     )
 
                 # Email: Send booking confirmation to rider
@@ -197,6 +309,7 @@ class BookingService(ServiceContext):
                     slug=self.slug,
                     vehicle_info=vehicle_info,
                     driver_name=driver_full_name if response.driver_id else None,
+                    driver_phone=driver_phone,
                 )
                 await asyncio.sleep(3)
                 # Email: Send new booking notification to tenant
@@ -207,8 +320,10 @@ class BookingService(ServiceContext):
                     tenant_obj=tenant_obj,
                     slug=self.slug,
                     rider_name=self.full_name,
+                    rider_phone=getattr(self.current_user, "phone_no", None),
                     vehicle_info=vehicle_info,
                     driver_name=driver_full_name,
+                    driver_phone=driver_phone,
                 )
                 
                 logger.info(f"A new ride has been set for {self.current_user.full_name}")
@@ -334,6 +449,8 @@ class BookingService(ServiceContext):
 
     #     except db_exceptions.COMMON_DB_ERRORS as e:
     #         db_exceptions.handle(e, self.db)   
+
+            
     async def get_bookings_by(self,booking_id = None ,booking_status: str = None,
                               service_type: str =None,vehicle_id: int =None, 
                               limit: int = None ):
@@ -354,7 +471,7 @@ class BookingService(ServiceContext):
             if self.role.lower() == 'tenant':
                 logger.debug(f"service_type{service_type}")
                       
-                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, u.phone_no as customer_phone, CONCAT(d.first_name,' ',d.last_name) as driver_name, d.phone_no as driver_phone
                     from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
                     where b.tenant_id = :tenant_id and ((:booking_status is null or b.booking_status = :booking_status) 
                     and (:service_type is null or b.service_type = :service_type) 
@@ -368,7 +485,7 @@ class BookingService(ServiceContext):
                     
             elif self.role.lower() == 'driver':
                 execute_params['driver_id'] = self.driver_id
-                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, u.phone_no as customer_phone, CONCAT(d.first_name,' ',d.last_name) as driver_name, d.phone_no as driver_phone
                     from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
                     where b.tenant_id = :tenant_id and b.driver_id = :driver_id and ((:booking_status is null or b.booking_status = :booking_status) 
                     and (:service_type is null or b.service_type = :service_type) 
@@ -382,7 +499,7 @@ class BookingService(ServiceContext):
             elif self.role.lower() == 'rider':
                 execute_params['rider_id'] = self.rider_id
                 
-                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, CONCAT(d.first_name,' ',d.last_name) as driver_name
+                stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, u.phone_no as customer_phone, CONCAT(d.first_name,' ',d.last_name) as driver_name, d.phone_no as driver_phone
                     from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
                     where b.tenant_id = :tenant_id and b.rider_id = :rider_id and ((:booking_status is null or b.booking_status = :booking_status) 
                     and (:service_type is null or b.service_type = :service_type) 
@@ -546,7 +663,21 @@ class BookingService(ServiceContext):
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
 
+    async def get_ratings(self, booking_id):
+        booking_ratings_obj: booking_ratings_table = (
+            self.db.query(booking_ratings_table)
+            .filter(
+                booking_ratings_table.booking_id == booking_id,
+                booking_ratings_table.tenant_id == self.tenant_id
+            )
+            .first()
+        )
 
+        if not booking_ratings_obj:
+            logger.error('Booked rating not found')
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+        return success_resp(data =  booking_ratings_obj)
 def get_booking_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
     return BookingService(db = db, current_user=current_user)
 def get_unauthorized_booking_service(db = Depends(get_db)):

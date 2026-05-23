@@ -25,6 +25,7 @@ class Bookings(Base):
     dropoff_time = Column(TIMESTAMP(timezone=True), nullable=True)
     country = Column(String, nullable=True)
     booking_status = Column(String,CheckConstraint("booking_status IN ('pending', 'completed', 'cancelled', 'delayed', 'confirmed')",name="booking_status_check_constraint") ,nullable=False, default = 'pending', server_default=text("'pending'"))
+    cancellation_reason = Column(String, nullable=True) ## unique to cancellations
     estimated_price =  Column(Float, nullable=True)
     payment_method = Column(String, nullable=True)
     zelle_number = Column(String(200), nullable=True)

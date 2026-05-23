@@ -7,7 +7,7 @@ from ..services.booking_services import (
     get_booking_service,
     BookingService,
 )
-from app.schemas import booking
+from app.schemas import booking, ratings
 from app.schemas.general import StandardResponse
 from ..core import deps
 from .dependencies import is_rider
@@ -77,6 +77,27 @@ async def approve_ride(
     )
     return ride_approved
 
+@router.patch(
+    "/rider/{booking_id}/cancel",
+    status_code=status.HTTP_200_OK,
+    response_model=StandardResponse[dict],
+    summary="Cancel ride (rider)",
+    description=(
+        "Cancels a rider-owned booking. "
+        "If cancellation is close to pickup, the API returns a warning and requires `acknowledge_warning=true`."
+    ),
+    response_description="Cancellation result with optional warning text.",
+)
+async def cancel_ride(
+    booking_id: int = Path(..., description="Booking id."),
+    payload: booking.CancelRideRequest = ...,
+    booking_service: BookingService = Depends(get_booking_service),
+    is_rider=Depends(is_rider),
+):
+    ride_cancelled = await booking_service.cancel_bookings(
+        booking_id=booking_id, payload=payload
+    )
+    return ride_cancelled
 
 @router.get(
     "/",
@@ -125,3 +146,22 @@ async def booking_checkout_session(
 ):
     ride_booked = await checkout_service.checkout_session(booking_id=booking_id)
     return ride_booked
+
+
+@router.get(
+    "/{booking_id}/ratings",
+    status_code=status.HTTP_200_OK,
+    response_model=StandardResponse[ratings.BookingRatingResponse],
+    summary="Get rating for a booking",
+    description=(
+        "Returns the rating attached to a specific booking id. "
+        "Requires rider JWT."
+    ),
+    response_description="Booking rating payload.",
+)
+async def get_booking_ratings(
+    booking_id: int = Path(..., description="Booking id."),
+    booking_service: BookingService = Depends(get_booking_service),
+):
+    rating_response = await booking_service.get_ratings(booking_id=booking_id)
+    return rating_response

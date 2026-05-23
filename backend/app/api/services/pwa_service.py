@@ -39,7 +39,7 @@ DEFAULT_ACCENT_COLOR = "#6c63e8"
 # when `resolve_branding` returns None so home-screen icons match brand
 # artwork instead of server-generated letter marks.
 MAISON_STATIC_APP_ICON = "/icons/icon.png"
-MAISON_STATIC_FAVICON_PNG = "/favicon1.png"
+MAISON_STATIC_FAVICON_PNG = "/favicon-48x48.png"
 
 
 @dataclass(frozen=True)

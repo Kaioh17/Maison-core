@@ -68,14 +68,76 @@ class TenantEmailServices(EmailServices):
         html_body = L.build_email(body, footer_brand="Maison")
         self._email(subject, html_body)
 
+    def booking_cancellation_email(
+        self,
+        booking_obj,
+        tenant_obj: Tenants,
+        slug: str,
+        rider_name: str = None,
+        rider_phone: str = None,
+        vehicle_info: str = None,
+        driver_name: str = None,
+        driver_phone: str = None,
+    ):
+        """Notify tenant when a trip is cancelled."""
+        passenger = (rider_name or "").strip() or "Passenger"
+        pickup = getattr(booking_obj, "pickup_location", None) or "TBD"
+        dropoff = getattr(booking_obj, "dropoff_location", None) or ""
+        pickup_time = (
+            booking_obj.pickup_time.strftime("%B %d, %Y at %I:%M %p")
+            if hasattr(booking_obj, "pickup_time") and hasattr(booking_obj.pickup_time, "strftime")
+            else str(getattr(booking_obj, "pickup_time", "TBD"))
+        )
+        vehicle_line = vehicle_info if (vehicle_info and str(vehicle_info).strip()) else "TBD"
+        driver_line = driver_name if (driver_name and str(driver_name).strip()) else "Unassigned"
+
+        subject = f"Trip cancelled — {passenger}"
+        route = (
+            f"{L.highlight(pickup)} → {L.highlight(dropoff)}"
+            if dropoff
+            else L.highlight(pickup)
+        )
+        details = (
+            L.detail_kv("Passenger", html.escape(passenger, quote=False))
+            + "<br/>"
+            + (
+                L.detail_kv("Passenger phone", html.escape(str(rider_phone), quote=False)) + "<br/>"
+                if rider_phone and str(rider_phone).strip()
+                else ""
+            )
+            + L.detail_kv("Route", route)
+            + "<br/>"
+            + L.detail_kv("Pickup time", html.escape(pickup_time, quote=False))
+            + "<br/>"
+            + L.detail_kv("Vehicle", html.escape(str(vehicle_line), quote=False))
+            + "<br/>"
+            + L.detail_kv("Driver", html.escape(str(driver_line), quote=False))
+            + (
+                "<br/>" + L.detail_kv("Driver phone", html.escape(str(driver_phone), quote=False))
+                if driver_phone and str(driver_phone).strip()
+                else ""
+            )
+        )
+        body = (
+            L.p(f"Hi {L.first_name(tenant_obj.full_name)},")
+            + L.p("A booked trip has been cancelled.")
+            + L.p(details)
+            + L.p(
+                f"Review your schedule in the dashboard to reassign availability if needed for {slug}."
+            )
+        )
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
     async def booking_notification_email(
         self,
         booking_obj,
         tenant_obj: Tenants,
         slug: str,
         rider_name: str = None,
+        rider_phone: str = None,
         vehicle_info: str = None,
         driver_name: str = None,
+        driver_phone: str = None,
     ):
         """Notify tenant when a trip is confirmed — dashboard-oriented summary."""
         passenger = (rider_name or "").strip() or "Passenger"
@@ -106,6 +168,11 @@ class TenantEmailServices(EmailServices):
         details = (
             L.detail_kv("Passenger", html.escape(passenger, quote=False))
             + "<br/>"
+            + (
+                L.detail_kv("Passenger phone", html.escape(str(rider_phone), quote=False)) + "<br/>"
+                if rider_phone and str(rider_phone).strip()
+                else ""
+            )
             + L.detail_kv("Route", route_display)
             + "<br/>"
             + L.detail_kv("Pickup time", html.escape(pickup_time_full, quote=False))
@@ -113,6 +180,11 @@ class TenantEmailServices(EmailServices):
             + L.detail_kv("Vehicle", html.escape(str(vehicle_line), quote=False))
             + "<br/>"
             + L.detail_kv("Driver", html.escape(str(driver_line), quote=False))
+            + (
+                "<br/>" + L.detail_kv("Driver phone", html.escape(str(driver_phone), quote=False))
+                if driver_phone and str(driver_phone).strip()
+                else ""
+            )
         )
 
         body = (

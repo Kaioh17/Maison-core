@@ -39,6 +39,18 @@ class PaymentType(str, Enum):
 class Payment(BaseModel):
     is_approved: bool 
     payment_method: Optional[PaymentType] = Field(None)
+
+
+class CancelRideRequest(BaseModel):
+    cancellation_reason: Optional[str] = Field(
+        default=None,
+        description="Optional rider-provided reason for cancellation.",
+        max_length=250,
+    )
+    acknowledge_warning: bool = Field(
+        default=False,
+        description="Set true to confirm cancellation after warning prompts.",
+    )
 class BoookingBase(BaseModel):
     # driver_id: Optional[int]
     vehicle_id: int = None
@@ -113,10 +125,12 @@ class BookingResponse(BoookingBase):
     estimated_price: Optional[float]
     booking_status: str
     customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
     vehicle: str
     zelle_number: Optional[str] = None
     zelle_email: Optional[EmailStr] = None
     driver_name: Optional[str] = None
+    driver_phone: Optional[str] = None
     created_on: Optional[datetime]
     
     # rider_feedback_form: Optional[str] = None

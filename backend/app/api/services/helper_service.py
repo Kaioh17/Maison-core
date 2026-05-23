@@ -30,6 +30,7 @@ tenant_setting_table = tenant_setting.TenantSettings
 vehicle_config_table = vehicle_config.VehicleConfig
 vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 vehicle_table = vehicle.Vehicles
+booking_ratings_table = ratings.BookingRatings
 
 from app.schemas import general
 
@@ -45,7 +46,7 @@ def failed_resp(msg: str = "Successful", data: any = None, meta: dict = None):
 def success_list_resp(msg: str = "Successful", data: any = None):
     general.ListResponse(success=True, message=msg, data=data)
 from app.utils.db_error_handler import DBErrorHandler, DatabaseError
-class Validations:
+class   Validations:
     def __init__(self, db = None):
         self.db = db
     def _verify_slug(self, slug):

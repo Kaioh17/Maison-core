@@ -703,8 +703,9 @@ class TenantService(ServiceContext):
             """Email Notificaition"""
             rider_row = self.db.query(user_table).filter(user_table.id == ride.rider_id).first()
             rider_nm = rider_row.full_name if rider_row else None
+            rider_phone = rider_row.phone_no if rider_row else None
             drivers.DriverEmailServices(to_email=driver_info.email, from_email='notifications', display_name=self.slug).new_ride(
-                booking_obj=ride, assigned=True, slug=self.slug, rider_name=rider_nm
+                booking_obj=ride, assigned=True, slug=self.slug, rider_name=rider_nm, rider_phone=rider_phone
             )
             return success_resp(data={"driver_id": payload.driver_id, "booking_id": booking_id}, msg=f"Driver {payload.driver_id} has been assigned to {booking_id}")
        except self.db_exceptions.COMMON_DB_ERRORS as e:
