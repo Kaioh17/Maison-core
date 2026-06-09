@@ -630,6 +630,26 @@ class TenantService(ServiceContext):
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
+    async def list_rider_emails(self):
+        try:
+            riders = (
+                self.db.query(user_table.id, user_table.email)
+                .filter(
+                    user_table.tenant_id == self.tenant_id,
+                    user_table.role == "rider",
+                )
+                .order_by(user_table.email.asc())
+                .all()
+            )
+            data = [{"id": row.id, "email": row.email} for row in riders]
+            return success_resp(
+                msg="Rider emails retrieved.",
+                data=data,
+                meta={"count": len(data)},
+            )
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(e, self.db)
+
     async def assign_driver_to_vehicle(self, driver_id, vehicle_id):
         """A tenant can only assign a vehicle to one driver at a time"""
         try:

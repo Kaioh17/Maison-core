@@ -68,6 +68,38 @@ class TenantEmailServices(EmailServices):
         html_body = L.build_email(body, footer_brand="Maison")
         self._email(subject, html_body)
 
+    def stripe_completion_reminder_email(self, obj: Tenants, onboarding_link: str):
+        """Remind a tenant to finish their Stripe payout/account setup — sent by admin."""
+        subject = "Action needed: complete your identity verification and Stripe setup"
+
+        company_name = obj.profile.company_name if hasattr(obj, 'profile') and obj.profile else "Your company"
+        fn = L.first_name(obj.full_name)
+
+        body = (
+            L.p(f"Hi {fn},")
+            + L.p(
+                f"<strong>{company_name}</strong> has a required step outstanding: your identity "
+                "verification and Stripe account setup are not yet complete."
+            )
+            + L.p(
+                "This verification step serves two purposes — it confirms your identity as a legitimate "
+                "operator, and it enables your account to accept payments and receive payouts through Stripe."
+            )
+            + L.p(
+                "Until both are complete, you won't have access to your white-label features — your "
+                "branded subdomain, custom branding, and the rest of your operator dashboard stay locked."
+            )
+            + L.p(
+                "It only takes a couple of minutes — tap below to pick up where you left off and complete "
+                "your identity verification and Stripe details to unlock full access."
+            )
+            + L.primary_cta(onboarding_link, "Complete verification →")
+            + L.muted_p("This secure link is provided by Stripe and may expire — request a new one if it stops working.")
+            + L.signoff_maison_team()
+        )
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
+
     def booking_cancellation_email(
         self,
         booking_obj,

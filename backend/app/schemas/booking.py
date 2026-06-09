@@ -114,7 +114,24 @@ class Coordinates(BaseModel):
     
 class CreateBooking(BoookingBase):
     coordinates: Coordinates
-       
+    
+class TenantCreateBooking(BoookingBase):
+    coordinates: Coordinates
+    rider_id: Optional[int] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone_no: Optional[str] = None
+
+    @model_validator(mode="after")
+    def ensure_rider_or_details(self):
+        if not self.rider_id:
+            if not all([self.first_name, self.last_name, self.email, self.phone_no]):
+                raise HTTPException(
+                    status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                    detail="Either rider_id or complete rider details (first_name, last_name, email, phone_no) must be provided"
+                )
+        return self
 
 class UpdateBookingTenants(BoookingBase):
     pass 

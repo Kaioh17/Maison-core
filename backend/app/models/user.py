@@ -43,6 +43,7 @@ class Users(Base):
     tenants = relationship("Tenants", back_populates="users")
     bookings = relationship("Bookings", back_populates='rider')
 
+    # booking_pricing = relationship("TenantBookingPricing", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
 
 
     @property

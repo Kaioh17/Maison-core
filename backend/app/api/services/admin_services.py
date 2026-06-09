@@ -76,6 +76,77 @@ class AdminService(ServiceContext):
         
         # logger.info("There is a toatal of ")
         return tenants
+    async def get_tenant_detail(self, tenant_id: int):
+        """Aggregate a single tenant with every related model expanded.
+
+        Powers the admin tenant-detail page. Relationships defined on the
+        Tenants model (profile, stats, settings, branding, pricing,
+        booking_pricing, drivers, users, vehicle, bookings) are read via the
+        ORM; payouts and transactions are not relationships on Tenants, so
+        they are queried directly by tenant_id.
+        """
+        from app.schemas import admin as admin_schema
+        from app.models import payout as payout_model, transactions as transaction_model
+
+        tenant_obj: tenant_table = (
+            self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+        )
+        if not tenant_obj:
+            logger.error(f"Tenant {tenant_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tenant {tenant_id} not found",
+            )
+
+        drivers = list(tenant_obj.drivers or [])
+        riders = list(tenant_obj.users or [])
+        vehicles = list(tenant_obj.vehicle or [])
+        bookings = list(tenant_obj.bookings or [])
+        booking_pricing = list(tenant_obj.booking_pricing or [])
+
+
+        payouts = (
+            self.db.query(payout_model.Payout)
+            .filter(payout_model.Payout.tenant_id == tenant_id)
+            .all()
+        )
+        transactions = (
+            self.db.query(transaction_model.Transaction)
+            .filter(transaction_model.Transaction.tenant_id == tenant_id)
+            .all()
+        )
+
+        payload = {
+            "account": tenant_obj,
+            "profile": tenant_obj.profile,
+            "stats": tenant_obj.stats,
+            "settings": tenant_obj.settings,
+            "branding": tenant_obj.branding,
+            "pricing": tenant_obj.pricing,
+            "booking_pricing": booking_pricing,
+            "drivers": drivers,
+            "riders": riders,
+            "vehicles": vehicles,
+            "bookings": bookings,
+            "payouts": payouts,
+            "transactions": transactions,
+            "counts": {
+                "drivers": len(drivers),
+                "riders": len(riders),
+                "vehicles": len(vehicles),
+                "bookings": len(bookings),
+                "booking_pricing": len(booking_pricing),
+                "payouts": len(payouts),
+                "transactions": len(transactions),
+            },
+        }
+
+        logger.debug(f"Payload {payload}")
+
+        logger.info(f"Aggregated detail for tenant {tenant_id}")
+        # return payload
+        return admin_schema.AdminTenantDetail.model_validate(payload, from_attributes=True)
+
     async def override_verified_tenant(self, tenant_id: int, permission: bool):
         """Force-verify a tenant when webhook-driven verification fails."""
         validator = Validations(self.db)
@@ -115,6 +186,73 @@ class AdminService(ServiceContext):
                 "is_verified": tenant_obj.is_verified,
                 "is_active": tenant_obj.is_active,
             },
+        )
+
+    async def send_stripe_completion_reminder(self, tenant_id: int):
+        """Email a tenant a fresh Stripe onboarding link to finish account setup.
+
+        Used by admins to nudge tenants whose Stripe Connect account exists but
+        is not yet fully onboarded (charges disabled). Generates a new
+        `AccountLink` (existing ones expire) and emails it to the tenant.
+        """
+        import stripe
+
+        tenant_obj: tenant_table = (
+            self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+        )
+        if not tenant_obj:
+            logger.error(f"Tenant {tenant_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tenant {tenant_id} not found",
+            )
+
+        profile = tenant_obj.profile
+        account_id = profile.stripe_account_id if profile else None
+        if not account_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tenant has no Stripe account yet — nothing to complete.",
+            )
+        if profile.charges_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Tenant's Stripe account is already fully set up.",
+            )
+
+        stripe.api_key = settings.stripe_secret_key
+        try:
+            account_link = stripe.AccountLink.create(
+                account=account_id,
+                refresh_url=f"{settings.base_url}/tenant/reauth",
+                return_url=f"{settings.base_url}/tenant/return",
+                type="account_onboarding",
+                collection_options={"fields": "eventually_due"},
+            )
+        except Exception as exc:
+            logger.error(f"Failed to create Stripe account link for tenant {tenant_id}: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not generate a Stripe onboarding link.",
+            )
+
+        try:
+            TenantEmailServices(
+                to_email=tenant_obj.email,
+                from_email='noreply',
+                display_name='Maison',
+            ).stripe_completion_reminder_email(tenant_obj, account_link.url)
+        except Exception as exc:
+            logger.error(f"Stripe completion reminder email failed for tenant {tenant_id}: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Generated the link but failed to send the reminder email.",
+            )
+
+        logger.info(f"Stripe completion reminder sent to tenant {tenant_id}")
+        return success_resp(
+            msg="Stripe completion reminder sent",
+            data={"tenant_id": tenant_obj.id, "email": tenant_obj.email},
         )
 
     async def override_verfied_tenant(self, tenant_id: int, permission: bool):

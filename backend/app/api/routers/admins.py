@@ -101,3 +101,47 @@ async def tenants_summary():
     #return active time
     #return
     pass
+
+
+@router.get(
+    "/tenants/{tenant_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[admin.AdminTenantDetail],
+    summary="Tenant detail (fully expanded)",
+    description=(
+        "Returns a single tenant aggregated across every related model — "
+        "account, profile, stats, settings, branding, pricing, drivers, "
+        "riders, vehicles, bookings, payouts, and transactions. **Admin only.**"
+    ),
+    response_description="Standard response with the full tenant detail.",
+    include_in_schema=True,
+)
+async def get_tenant_detail(
+    tenant_id: int = Path(..., ge=1, description="Tenant id to expand."),
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    detail = await admin_service.get_tenant_detail(tenant_id)
+    return general.StandardResponse(
+        message="Tenant detail retrieved successfully",
+        data=detail,
+    )
+
+
+@router.post(
+    "/tenants/{tenant_id}/stripe-reminder",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse,
+    summary="Send Stripe account completion reminder",
+    description=(
+        "Generates a fresh Stripe onboarding link and emails it to the tenant so they can "
+        "finish their Connect account setup. **Admin only.** Fails if the tenant has no "
+        "Stripe account or has already completed onboarding."
+    ),
+    response_description="Standard response confirming the reminder was sent.",
+    include_in_schema=True,
+)
+async def send_stripe_completion_reminder(
+    tenant_id: int = Path(..., ge=1, description="Tenant id to remind."),
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    return await admin_service.send_stripe_completion_reminder(tenant_id)

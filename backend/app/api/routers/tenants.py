@@ -13,6 +13,7 @@ from ..core import security, deps
 from app.utils.logging import logger
 
 
+
 # from .dependencies import get_tenant_id_from_token 
 
 router = APIRouter(
@@ -172,6 +173,37 @@ async def get_tenant_bookings(
 
 
 @router.post(
+    "/book/ride",
+    status_code=status.HTTP_201_CREATED,
+    response_model=general.StandardResponse[booking.BookingResponse],
+    summary="Tenant: book a ride for a user",
+    description="Tenant books a ride on behalf of a user. Requires **tenant** JWT.",
+    response_description="Created booking payload.",
+)
+async def tenant_book_ride(
+    payload: booking.TenantCreateBooking,
+    booking_service: BookingService = Depends(get_booking_service),
+    # is_tenant = Depends(is_tenant)
+):
+    result = await booking_service.tenant_book_ride(payload)
+    return result
+
+
+@router.get(
+    "/riders",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[list[tenant.TenantRiderEmailItem]],
+    summary="List tenant rider emails",
+    description="Returns all rider id and email pairs for this tenant. Requires **tenant** JWT.",
+    response_description="List of rider id and email.",
+)
+async def list_tenant_rider_emails(
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    return await tenant_service.list_rider_emails()
+
+
+@router.post(
     "/onboard",
     status_code=status.HTTP_201_CREATED,
     response_model=general.StandardResponse[tenant.OnboardDriverResponse],
@@ -326,3 +358,5 @@ async def get_driver_status_for_tenant(
 ):
     analytics = await tenant_service.is_driver()
     return analytics
+
+

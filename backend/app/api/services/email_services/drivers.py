@@ -125,7 +125,7 @@ class DriverEmailServices(EmailServices):
         )
 
         subject = "Ride cancelled"
-        cta_url = f"{self.BASE_URL}/{slug or 'default'}/driver/bookings"
+        cta_url = f"{slug}.{self.BASE_URL}/driver/bookings"
 
         route = (
             f"{L.highlight(pickup)} → {L.highlight(dropoff)}"

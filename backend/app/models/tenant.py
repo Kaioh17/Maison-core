@@ -45,8 +45,8 @@ class Tenants(Base):
     users = relationship("Users", back_populates="tenants", cascade= "all, delete", passive_deletes=True)
     drivers = relationship("Drivers", back_populates="tenants", cascade= "all, delete", passive_deletes=True)
     vehicle = relationship("Vehicles", back_populates="tenants", cascade= "all, delete" , passive_deletes=True)
-    branding = relationship("TenantBranding", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
-    pricing = relationship("TenantPricing", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
+    branding = relationship("TenantBranding", back_populates="tenant", uselist=False, cascade= "all, delete" , passive_deletes=True)
+    pricing = relationship("TenantPricing", back_populates="tenant", uselist=False, cascade= "all, delete" , passive_deletes=True)
     bookings = relationship("Bookings", back_populates='tenant', cascade="all, delete",passive_deletes=True)
     booking_pricing = relationship("TenantBookingPricing", back_populates="tenant", cascade= "all, delete" , passive_deletes=True)
     

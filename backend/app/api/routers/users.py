@@ -12,6 +12,10 @@ router = APIRouter(
 )
 
 
+#unautheticated use 
+## this should allow riders to bookrides without creating an account
+
+
 @router.post(
     "/add/{slug}",
     status_code=status.HTTP_201_CREATED,

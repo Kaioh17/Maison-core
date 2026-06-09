@@ -191,3 +191,8 @@ class BookingAnalyticsData(BaseModel):
     total_vehicles: Optional[int] = None
     total_bookings: Optional[int] = None
     todays_revenue: Optional[float] = None
+
+
+class TenantRiderEmailItem(BaseModel):
+    id: int
+    email: EmailStr

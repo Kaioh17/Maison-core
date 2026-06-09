@@ -18,6 +18,7 @@ from .stripe_services.checkout import BookingCheckout
 from .email_services import drivers, tenants, riders
 from .email_services.email_services import EmailServices
 from .helper_service import  *
+from ..core.oauth2 import create_booking_confirm_token, verify_booking_confirm_token
 
 from app.models import tenant_setting
 db_exceptions = db_error_handler.DBErrorHandler
@@ -426,7 +427,105 @@ class BookingService(ServiceContext):
         
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
+    
+    async def tenant_book_ride(self, payload):
+
+        """Tenant books a ride"""
+        try:
+            mapbox_response =await self._get_mapbox_json_response(payload)
+            book_ride_info = payload.model_dump(exclude={"coordinates", "first_name", "last_name", "email", "phone_no", "rider_id"})
+            logger.debug(f"{book_ride_info}")
             
+            vehicle = self.db.query(vehicle_table).filter_by(id=payload.vehicle_id).first()
+            if not vehicle:
+                raise HTTPException(status_code=404, detail="vehicle not found")
+            
+            ## 
+            distance_info = self._distance_in_miles(mapbox_response=mapbox_response, service_type=payload.service_type)
+            eta = await self._eta(booking_payload=payload, mapbox_response=mapbox_response)
+            logger.debug(f"New eta = {eta}")
+            logger.debug(f"{distance_info}")
+            price_estimate = await self._price_quote(payload, distance=distance_info['distance_miles'], speed=distance_info['speed_mph'])
+            book_ride_info['dropoff_time'] = eta
+            payload.dropoff_time = eta
+
+            rider_id = payload.rider_id  
+                      
+            if not rider_id:
+                rider = user_table(email=payload.email, 
+                                      phone_no = payload.phone_on,
+                                      first_name= payload.first_name,
+                                      last_name = payload.last_name)
+                self.db.add(rider)
+                self.db.commit()
+                self.db.refresh(rider)
+
+                rider_id = rider.id
+                logger.debug(f"The new rider has been added {rider_id} [without password].")
+            else: 
+                rider = self.db.query(user_table).filter(user_table.id == rider_id).first()
+            logger.debug(f"Eta {eta} pickup {payload.pickup_time} \n price {price_estimate['total']} \n deposit {price_estimate['deposit']} \n data {book_ride_info}")
+            new_ride = booking.Bookings(rider_id = rider_id,tenant_id = self.tenant_id,
+                                        estimated_price = price_estimate['total'],driver_id = vehicle.driver_id,**book_ride_info)
+
+
+            
+            if not self.db.query(tenant.Tenants).filter(tenant.Tenants.id == self.tenant_id).first(): 
+                raise HTTPException(status_code=404, detail="tenant not found")
+        
+            
+            if not payload.country:
+                logger.warning(f"Country was not entered for rider {rider_id}")
+                raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                    detail= "Country was not entered..")
+            ## Add zelle number to respond
+
+            #check for overlaps
+            self._bookings_overlap(payload)            
+            
+            self.db.add(new_ride)
+        
+            self.db.commit()
+            self.db.refresh(new_ride)
+            
+            # new_data = new_ride
+            new_data = self._to_local_time(new_ride.__dict__)
+            logger.debug(f"new_data {new_data['dropoff_time']} old data {new_ride.dropoff_time}")
+            
+
+            if new_ride.driver_id:
+                    driver_ = await self._get_driver_fullname(driver_id = new_ride.driver_id)
+                    driver_full_name = driver_.full_name
+                    # driver_email = driver_.email
+                    ## email is not sent from here. but after confirming
+                    # tenants.TenantEmailServices(to_email=self.tenant_email, from_email=self.tenant_email).new_ride(booking)
+                    # drivers.DriverEmailServices(to_email=driver_email, from_email='notifications', display_name=self.slug).new_ride(booking_obj=new_ride, assigned=False, slug=self.slug)
+            else:
+                driver_full_name = "No driver assigned"
+            
+            ## confirmation email for riders
+            confirm_token = create_booking_confirm_token(
+                booking_id=new_ride.id,
+                tenant_id=self.tenant_id,
+                rider_id=rider_id,
+            )
+            vehicle_info = f"{vehicle.make} {vehicle.model} {vehicle.year}"
+            riders.RiderEmailServices(
+                to_email=rider.email,
+                from_email="notifications",
+                display_name=self.slug,
+            ).new_ride(
+                booking_obj=new_ride,
+                rider_info=rider,
+                slug=self.slug,
+                confirm_token=confirm_token,
+                vehicle_info=vehicle_info,
+            )
+            
+            return success_resp(msg="Booking Successfull", data= {"driver_name":driver_full_name ,"customer_name": rider.full_name,"vehicle": f"{vehicle.make} {vehicle.model} {vehicle.year}","deposit":price_estimate['deposit'],**new_data})
+        
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, self.db)
     async def get_upcoming_rides(self):
         try:
             responsse = await self.get_bookings_by(limit = 2000, booking_status='confirmed')
@@ -592,15 +691,19 @@ class BookingService(ServiceContext):
     async def _price_quote(self, payload, distance: float | None, speed: float | None) -> dict[str:float]:
         """returns: {"total": round(total_quote, 2), "deposit": round(deposit, 2)}"""
         try: 
-            logger.debug(f"tenant id {self.current_user.tenant_id}")
+            logger.debug(f"tenant id {self.tenant_id}")
 
             pricing = self.db.query(tenant_pricing).filter(tenant_pricing.tenant_id == self.tenant_id).first()
-            booking_price = self.current_user.tenants.booking_pricing            
+            if self.role == 'tenant':
+                booking_price = self.current_user.booking_pricing
+            else:
+                booking_price = self.current_user.tenants.booking_pricing
+
             is_deposit = self._is_deposit(payload)
             vehicle:vehicle_table = self.db.query(vehicle_table).filter(vehicle_table.id == payload.vehicle_id).first()
             vehicle_category = vehicle.vehicle_category
             if not vehicle:
-                logger.error(f"Tenant[{self.current_user.tenant_id}] Vehicle was not found at {payload.vehicle_id}")
+                logger.error(f"Tenant[{self.tenant_id}] Vehicle was not found at {payload.vehicle_id}")
 
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail = "Vehicle not found")
@@ -678,6 +781,120 @@ class BookingService(ServiceContext):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
 
         return success_resp(data =  booking_ratings_obj)
+
+    def _booking_confirm_payload(self, booking_obj, deposit: float | None = None) -> dict:
+        rider = booking_obj.rider
+        vehicle = booking_obj.vehicle
+        driver_name = "No driver assigned"
+        driver_phone = None
+        if booking_obj.driver_id:
+            driver = self.db.query(driver_table).filter(driver_table.id == booking_obj.driver_id).first()
+            if driver:
+                driver_name = driver.full_name
+                driver_phone = getattr(driver, "phone_no", None)
+
+        payload = {
+            "id": booking_obj.id,
+            "country": booking_obj.country,
+            "service_type": booking_obj.service_type,
+            "pickup_location": booking_obj.pickup_location,
+            "pickup_time": booking_obj.pickup_time,
+            "airport_service": booking_obj.airport_service,
+            "dropoff_location": booking_obj.dropoff_location,
+            "dropoff_time": booking_obj.dropoff_time,
+            "payment_method": booking_obj.payment_method,
+            "hours": booking_obj.hours,
+            "notes": booking_obj.notes,
+            "estimated_price": booking_obj.estimated_price,
+            "booking_status": booking_obj.booking_status,
+            "customer_name": rider.full_name if rider else None,
+            "customer_phone": getattr(rider, "phone_no", None) if rider else None,
+            "vehicle": (
+                f"{vehicle.make} {vehicle.model} {vehicle.year}"
+                if vehicle
+                else "TBD"
+            ),
+            "driver_name": driver_name,
+            "driver_phone": driver_phone,
+            "deposit": deposit,
+            "is_approved": booking_obj.is_approved,
+            "created_on": booking_obj.created_on,
+            "updated_on": booking_obj.updated_on,
+        }
+        return self._to_local_time(payload)
+
+    async def get_booking_by_confirm_token(self, token: str):
+        claims = verify_booking_confirm_token(token)
+        booking_obj = (
+            self.db.query(booking_table)
+            .filter(
+                booking_table.id == claims["booking_id"],
+                booking_table.tenant_id == claims["tenant_id"],
+                booking_table.rider_id == claims["rider_id"],
+            )
+            .first()
+        )
+        if not booking_obj:
+            raise HTTPException(status_code=404, detail="Booking not found.")
+        if booking_obj.is_approved:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This booking has already been confirmed.",
+            )
+
+        rider = self.db.query(user_table).filter(user_table.id == claims["rider_id"]).first()
+        if not rider:
+            raise HTTPException(status_code=404, detail="Rider not found.")
+
+        rider_service = BookingService(self.db, rider)
+        deposit = None
+        if booking_obj.service_type == "hourly":
+            try:
+                class _QuotePayload:
+                    service_type = booking_obj.service_type
+                    vehicle_id = booking_obj.vehicle_id
+                    hours = booking_obj.hours
+
+                price_estimate = await rider_service._price_quote(
+                    _QuotePayload(), distance=None, speed=None
+                )
+                deposit = price_estimate.get("deposit")
+            except Exception:
+                logger.debug("Could not compute deposit for guest booking confirmation")
+
+        return success_resp(
+            msg="Booking ready for confirmation",
+            data=rider_service._booking_confirm_payload(booking_obj, deposit=deposit),
+        )
+
+    async def confirm_ride_by_token(self, token: str, payload):
+        claims = verify_booking_confirm_token(token)
+        booking_obj = (
+            self.db.query(booking_table)
+            .filter(
+                booking_table.id == claims["booking_id"],
+                booking_table.tenant_id == claims["tenant_id"],
+                booking_table.rider_id == claims["rider_id"],
+            )
+            .first()
+        )
+        if not booking_obj:
+            raise HTTPException(status_code=404, detail="Booking not found.")
+        if booking_obj.is_approved:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This booking has already been confirmed.",
+            )
+
+        rider = self.db.query(user_table).filter(user_table.id == claims["rider_id"]).first()
+        if not rider:
+            raise HTTPException(status_code=404, detail="Rider not found.")
+        if not rider.tenant_id:
+            rider.tenant_id = booking_obj.tenant_id
+
+        rider_service = BookingService(self.db, rider)
+        return await rider_service.confirm_ride(booking_id=booking_obj.id, payload=payload)
+
 def get_booking_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
     return BookingService(db = db, current_user=current_user)
 def get_unauthorized_booking_service(db = Depends(get_db)):

@@ -1,5 +1,6 @@
 import html
 from datetime import timezone
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import resend
@@ -14,15 +15,42 @@ class RiderEmailServices(EmailServices):
     Args:
         operator_name: Shown in footer as the operating company (e.g. tenant brand).
     """
-    def __init__(self, to_email, from_email, operator_name: str = "Maison"):
-        self.to_email = 'mubskill@gmail.com' if self.ENV == 'development' else to_email
-        self.from_email = (
-            'Acme <onboarding@resend.dev>'
-            if self.ENV == 'development'
-            else from_email
+    def __init__(
+        self,
+        to_email,
+        from_email,
+        operator_name: str = "Maison",
+        display_name: str | None = None,
+    ):
+        brand = (
+            display_name.replace("-", " ").title()
+            if display_name
+            else operator_name
         )
-        self.operator_name = operator_name
+        self.to_email = 'mubskill@gmail.com' if self.ENV == 'development' else to_email
+        if self.ENV == 'development':
+            self.from_email = 'Acme <onboarding@resend.dev>'
+        elif display_name and "@" not in str(from_email):
+            self.from_email = self._format_from(from_email, display_name)
+        else:
+            self.from_email = from_email
+        self.operator_name = brand
         self.default_tz = "America/Chicago"
+
+    def _tenant_host(self, slug: str) -> str:
+        domain = (
+            (self.DOMAIN or "")
+            .replace("https://", "")
+            .replace("http://", "")
+            .strip("/")
+            .split("/")[0]
+        )
+        return f"{slug}.{domain}" if domain else slug
+
+    def _confirm_booking_url(self, slug: str, confirm_token: str) -> str:
+        host = self._tenant_host(slug)
+        scheme = "https" if self.ENV == "production" else "http"
+        return f"{scheme}://{host}/riders/confirm-booking?token={quote(confirm_token, safe='')}"
 
     def _format_local_datetime(self, dt, fmt: str = "%B %d, %Y at %I:%M %p") -> str:
         """Render datetimes in local rider timezone for email copy."""
@@ -49,7 +77,7 @@ class RiderEmailServices(EmailServices):
         body = (
             L.p(f"Hi {L.first_name(obj.full_name)},")
             + L.p("You can book rides and manage trips from your account.")
-            + L.primary_cta(f"{self.BASE_URL}/{slug}/rider/login", "Sign in →")
+            + L.primary_cta(f"{slug}.{self.BASE_URL}/riders/login", "Sign in →")
             + L.muted_p(f"Thank you for riding with {self.operator_name}.")
         )
         html_body = L.build_email(body, footer_brand=self.operator_name)
@@ -57,6 +85,56 @@ class RiderEmailServices(EmailServices):
     
     async def booking_cancellation_email(self):
         ...
+
+    def new_ride(
+        self,
+        booking_obj,
+        rider_info: Users,
+        slug: str,
+        confirm_token: str,
+        vehicle_info: str | None = None,
+    ):
+        """Tenant-scheduled ride — prompt rider to confirm via signed link (no login)."""
+        subject = f"{self.operator_name} scheduled a ride for you"
+
+        pickup_time = self._format_local_datetime(booking_obj.pickup_time)
+        dropoff = getattr(booking_obj, "dropoff_location", None) or ""
+        estimated_price = (
+            f"${booking_obj.estimated_price:.2f}"
+            if hasattr(booking_obj, "estimated_price") and booking_obj.estimated_price is not None
+            else "TBD"
+        )
+
+        details = (
+            L.detail_kv("Pickup", L.highlight(booking_obj.pickup_location))
+            + "<br/>"
+            + (L.detail_kv("Drop-off", L.highlight(dropoff)) + "<br/>" if dropoff else "")
+            + L.detail_kv("Time", html.escape(pickup_time, quote=False))
+            + "<br/>"
+        )
+        if vehicle_info:
+            details += L.detail_kv("Vehicle", html.escape(str(vehicle_info), quote=False)) + "<br/>"
+        details += L.detail_kv("Estimate", html.escape(estimated_price, quote=False))
+
+        confirm_url = self._confirm_booking_url(slug, confirm_token)
+        first = L.first_name(getattr(rider_info, "full_name", None))
+
+        body = (
+            L.p(f"Hi {first},")
+            + L.p(
+                f"<strong>{html.escape(self.operator_name, quote=False)}</strong> has set up a ride "
+                "for you. Please review the details below and confirm when you're ready."
+            )
+            + L.p(details)
+            + L.primary_cta(confirm_url, "Review & confirm ride →")
+            + L.muted_p(
+                "This link works without signing in. If you did not expect this ride, "
+                f"you can ignore this email or reply to reach {html.escape(self.operator_name, quote=False)}."
+            )
+        )
+        html_body = L.build_email(body, footer_brand=self.operator_name)
+        self._email(subject, html_body)
+
     async def booking_confirmation_email(
         self,
         booking_obj,
@@ -282,7 +360,7 @@ class RiderEmailServices(EmailServices):
             )
             + reason_block
             + L.p("You can book again anytime from your account.")
-            + L.primary_cta(f"{self.BASE_URL}/{slug}/rider/book", "Book a ride →")
+            + L.primary_cta(f"{slug}.{self.BASE_URL}/riders/login", "Book a ride →")
         )
         html_body = L.build_email(body, footer_brand=self.operator_name)
         self._email(subject, html_body)

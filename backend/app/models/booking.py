@@ -16,7 +16,7 @@ class Bookings(Base):
     tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete= "CASCADE"), nullable=False)
     vehicle_id = Column(Integer,ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=False)
     service_type = Column(String, nullable=False) # airport service, 
-    airport_service = Column(String,CheckConstraint("airport_service IN ('from_airport', 'to_airport')", name='airport_service_check'),nullable=True ) #from_airport or to_airport
+    airport_service =  Column(String,CheckConstraint("airport_service IN ('from_airport', 'to_airport')", name='airport_service_check'),nullable=True ) #from_airport or to_airport
     rider_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable=False)
     pickup_location = Column(String, nullable=False)
     pickup_time = Column(TIMESTAMP(timezone=True), nullable=False)

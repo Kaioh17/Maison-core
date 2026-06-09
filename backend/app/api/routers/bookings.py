@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from ..services.booking_services import (
     get_booking_service,
+    get_unauthorized_booking_service,
     BookingService,
 )
 from app.schemas import booking, ratings
@@ -53,6 +54,43 @@ async def book_ride(
 ):
     ride_booked = await booking_service.book_ride(book_ride)
     return ride_booked
+
+
+@router.get(
+    "/confirm/{token}",
+    status_code=status.HTTP_200_OK,
+    response_model=StandardResponse[booking.BookingPublic],
+    summary="Load booking for guest confirmation",
+    description=(
+        "Returns booking details for a tenant-scheduled ride using a signed confirmation token. "
+        "No authentication required."
+    ),
+    response_description="Booking payload for the confirmation page.",
+)
+async def get_booking_for_guest_confirmation(
+    token: str = Path(..., description="Signed booking confirmation token from email."),
+    booking_service: BookingService = Depends(get_unauthorized_booking_service),
+):
+    return await booking_service.get_booking_by_confirm_token(token=token)
+
+
+@router.patch(
+    "/confirm/{token}",
+    status_code=status.HTTP_200_OK,
+    response_model=StandardResponse[dict],
+    summary="Confirm booking via guest token",
+    description=(
+        "Rider confirms or declines a tenant-scheduled booking using the signed email link. "
+        "No authentication required."
+    ),
+    response_description="Confirmation result, including optional Stripe payment payload.",
+)
+async def confirm_booking_by_guest_token(
+    token: str = Path(..., description="Signed booking confirmation token from email."),
+    payload: booking.Payment = ...,
+    booking_service: BookingService = Depends(get_unauthorized_booking_service),
+):
+    return await booking_service.confirm_ride_by_token(token=token, payload=payload)
 
 
 @router.patch(
