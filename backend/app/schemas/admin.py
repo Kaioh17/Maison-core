@@ -31,6 +31,18 @@ class AdminResponse(AdminBase):
     pass
 
 
+class AdminComposeEmail(BaseModel):
+    """Payload for `POST /api/v1/admin/email/compose`."""
+    to_tenant_id: int = Field(..., ge=1, description="Tenant to send to.")
+    from_alias: str = Field(
+        ...,
+        description="Mailbox local part (e.g. 'noreply', 'support', 'billing', 'hello').",
+        pattern=r'^[a-z0-9._+-]+$',
+    )
+    subject: str = Field(..., min_length=1, max_length=500)
+    body: str = Field(..., min_length=1, description="Plain-text message body.")
+
+
 """Admin tenant-detail schemas.
 
 These power `GET /api/v1/admin/tenants/{tenant_id}` — a single, fully
@@ -137,6 +149,13 @@ class AdminTenantCounts(BaseModel):
     booking_pricing: int = 0
     payouts: int = 0
     transactions: int = 0
+
+
+class LogsResponse(BaseModel):
+    log_file: str
+    lines: list[str]
+    total_lines: int
+    environment: str
 
 
 class AdminTenantDetail(BaseModel):

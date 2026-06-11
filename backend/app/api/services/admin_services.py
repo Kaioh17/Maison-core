@@ -9,7 +9,7 @@ from app.db.database import get_db, get_base_db
 
 from app.models import tenant_setting
 from app.utils import password_utils
-from .email_services import admin
+from .email_services import admin as admin_email
 from app.config import Settings
 from .service_context import ServiceContext
 from .helper_service import *
@@ -56,7 +56,7 @@ class AdminService(ServiceContext):
         logger.info(f"Tenant {tenant_id} has been deleted")
         
         # Email: Notify admin of tenant deletion
-        admin.AdminEmailServices(to_email=f'admin@{settings.domain}', from_email='noreply').tenant_deletion_confirmation_email(
+        admin_email.AdminEmailServices(to_email=f'admin@{settings.domain}', from_email='noreply').tenant_deletion_confirmation_email(
             tenant_id=tenant_id,
             company_name=company_name,
             deleted_by='admin'
@@ -253,6 +253,71 @@ class AdminService(ServiceContext):
         return success_resp(
             msg="Stripe completion reminder sent",
             data={"tenant_id": tenant_obj.id, "email": tenant_obj.email},
+        )
+
+    async def compose_email_to_tenant(self, payload):
+        """Send an admin-authored freeform email to a specific tenant.
+
+        `payload.from_alias` is the mailbox local part (e.g. 'noreply',
+        'support') — `_format_from` on `AdminEmailServices` turns it into a
+        full From header using the platform domain, matching how every other
+        transactional email is built.
+        """
+        from app.schemas.admin import AdminComposeEmail
+
+        tenant_obj: tenant_table = (
+            self.db.query(tenant_table).filter(tenant_table.id == payload.to_tenant_id).first()
+        )
+        if not tenant_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tenant {payload.to_tenant_id} not found",
+            )
+
+        try:
+            admin_email.AdminEmailServices(
+                to_email=tenant_obj.email,
+                from_email=payload.from_alias,
+                display_name='Maison',
+            ).composed_email(subject=payload.subject, plain_body=payload.body)
+        except Exception as exc:
+            logger.error(f"Composed email failed for tenant {payload.to_tenant_id}: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Failed to send email.",
+            )
+
+        logger.info(f"Admin composed email sent to tenant {payload.to_tenant_id} ({tenant_obj.email})")
+        return success_resp(
+            msg="Email sent",
+            data={"tenant_id": tenant_obj.id, "to": tenant_obj.email},
+        )
+
+    async def get_logs(self, tail: int = 200):
+        from pathlib import Path
+        from app.schemas.admin import LogsResponse
+
+        logs_dir = Path(__file__).resolve().parent.parent.parent / "logs"
+        log_filename = (
+            "maison_production.log"
+            if settings.environment.lower() == "production"
+            else "maison_dev.log"
+        )
+        log_path = logs_dir / log_filename
+
+        if not log_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Log file not found: {log_filename}",
+            )
+
+        all_lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+        tailed = all_lines[-tail:] if tail > 0 else all_lines
+        return LogsResponse(
+            log_file=log_filename,
+            lines=tailed,
+            total_lines=len(all_lines),
+            environment=settings.environment,
         )
 
     async def override_verfied_tenant(self, tenant_id: int, permission: bool):

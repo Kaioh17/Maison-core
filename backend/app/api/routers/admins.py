@@ -145,3 +145,47 @@ async def send_stripe_completion_reminder(
     admin_service: AdminService = Depends(get_admin_service),
 ):
     return await admin_service.send_stripe_completion_reminder(tenant_id)
+
+
+@router.get(
+    "/logs",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[admin.LogsResponse],
+    summary="Read server logs",
+    description=(
+        "Returns the last N lines of the active log file — "
+        "`maison_production.log` in production, `maison_dev.log` otherwise. "
+        "**Admin only.**"
+    ),
+    response_description="Standard response with log lines and metadata.",
+    include_in_schema=True,
+)
+async def get_logs(
+    tail: int = Query(200, ge=1, le=5000, description="Number of lines from the end to return."),
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    data = await admin_service.get_logs(tail=tail)
+    return general.StandardResponse(
+        message="Logs retrieved successfully",
+        data=data,
+    )
+
+
+@router.post(
+    "/email/compose",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse,
+    summary="Compose and send a direct email to a tenant",
+    description=(
+        "Sends an admin-authored freeform email to a specific tenant. "
+        "`from_alias` is the mailbox local part (e.g. `noreply`, `support`, `billing`, `hello`). "
+        "**Admin only.**"
+    ),
+    response_description="Standard response confirming the email was sent.",
+    include_in_schema=True,
+)
+async def compose_email_to_tenant(
+    payload: admin.AdminComposeEmail,
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    return await admin_service.compose_email_to_tenant(payload)

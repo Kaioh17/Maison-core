@@ -71,23 +71,31 @@ class WebhookServices(ServiceContext):
             tenant_obj.cur_subscription_id = subscription_id
             
         elif event['type'] in ('customer.subscription.updated', 'customer.subscription.created'):
-            # session  =event['data']['object']
             subscription = event['data']['object']
-    
-            
+
             subscription_id = subscription.get('id')
-            
             stripe_customer_id = subscription.get('customer')
-            
             metadata = subscription.get('metadata', {})
             tenant_id = metadata.get('tenant_id')
             plan = metadata.get('product_type')
-            
-            
-            logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] paln [{plan}] sub_id [{subscription_id}]")
-            tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
-            # :tetenant_objnant_table = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
-            # StripeService(self.current_user, self.db).create_express_account(tenant_obj=tenant_obj)
+            event_id = event.get('id')
+
+            logger.info(
+                f"[webhooks] {event['type']}: looking up tenant_profile "
+                f"tenant_id={tenant_id} customer_id={stripe_customer_id} event_id={event_id}"
+            )
+            tenant_obj: tenant_profile = self.db.query(tenant_profile).filter(
+                tenant_profile.tenant_id == tenant_id
+            ).first()
+
+            if tenant_obj is None:
+                logger.warning(
+                    f"{event['type']} received but no tenant found for "
+                    f"customer_id={stripe_customer_id} tenant_id={tenant_id}. "
+                    f"Event ID: {event_id}. Skipping."
+                )
+                return {"status": "success"}
+
             tenant_obj.subscription_status = 'active'
             tenant_obj.subscription_plan = plan
             tenant_obj.cur_subscription_id = subscription_id

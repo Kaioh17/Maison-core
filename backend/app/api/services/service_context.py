@@ -32,7 +32,7 @@ class ServiceContext:
                     self.rider_id = self.current_user.id
                     self.slug = self.current_user.tenants.slug
             elif self.role == 'admin':
-                print("Admiiiiiin")
+                print("Admin")
             else: # is tenant
                 self.tenant_id = self.current_user.id
                 self.tenant_email = self.current_user.email

@@ -62,6 +62,17 @@ class AdminEmailServices(EmailServices):
         html = L.build_email(body, footer_brand="Maison")
         self._email(subject, html)
 
+    def composed_email(self, subject: str, plain_body: str):
+        """Send an admin-composed free-text email to a tenant."""
+        paragraphs = "".join(L.p(line) for line in plain_body.splitlines() if line.strip())
+        body = (
+            paragraphs
+            + L.muted_p("This message was sent directly by the Maison team.")
+            + L.signoff_maison_team()
+        )
+        html = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html)
+
     def _email(self, subject, html):
         self.send_email(to_email=self.to_email, from_email=self.from_email,
                         subject=subject, html=html)
