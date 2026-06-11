@@ -84,9 +84,15 @@ class WebhookServices(ServiceContext):
                 f"[webhooks] {event['type']}: looking up tenant_profile "
                 f"tenant_id={tenant_id} customer_id={stripe_customer_id} event_id={event_id}"
             )
-            tenant_obj: tenant_profile = self.db.query(tenant_profile).filter(
-                tenant_profile.tenant_id == tenant_id
-            ).first()
+            tenant_obj: tenant_profile = None
+            if tenant_id is not None:
+                tenant_obj = self.db.query(tenant_profile).filter(
+                    tenant_profile.tenant_id == tenant_id
+                ).first()
+            if tenant_obj is None and stripe_customer_id:
+                tenant_obj = self.db.query(tenant_profile).filter(
+                    tenant_profile.stripe_customer_id == stripe_customer_id
+                ).first()
 
             if tenant_obj is None:
                 logger.warning(
