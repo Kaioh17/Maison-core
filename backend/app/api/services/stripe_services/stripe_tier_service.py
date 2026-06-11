@@ -34,6 +34,10 @@ class StripeService(ServiceContext):
             account_id = get_customer.stripe_account_id
             logger.info(f" creating checkout session {customer_id} {account_id}")
             logger.info(f"creating price_id {price_id}")
+            sub_metadata = {
+                'tenant_id': self.current_user.id,
+                'product_type': product_type.lower()
+            }
             checkout_session = stripe.checkout.Session.create(
                 line_items=[{
                     'price': price_id,
@@ -42,12 +46,9 @@ class StripeService(ServiceContext):
                 mode='subscription',
                 success_url= f"{self.BASE_URL}/success",
                 cancel_url= f"{self.BASE_URL}/cancel",
-                metadata= {
-                    'tenant_id': self.current_user.id,
-                    'product_type': product_type.lower()
-                },
-                customer=customer_id 
-                # customer_account=account_id
+                metadata=sub_metadata,
+                subscription_data={'metadata': sub_metadata},
+                customer=customer_id
             )
             logger.debug(f"Check out session completed")
             
