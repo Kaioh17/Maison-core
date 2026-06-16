@@ -25,10 +25,10 @@ router = APIRouter(
 )
 async def delete_tenant(
     tenant_id: int = Path(..., description="Tenant id to delete."),
-    db: Session = Depends(get_base_db),
+    # db: Session = Depends(get_base_db),
     admin_service: AdminService = Depends(get_admin_service)
 ):
-    tenant = await admin_service.delete_tenant(db, tenant_id)
+    tenant = await admin_service.delete_tenant(tenant_id)
     return tenant
 
 

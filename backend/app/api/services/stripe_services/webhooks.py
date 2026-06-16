@@ -21,6 +21,7 @@ from app.db.database import get_db, get_base_db
 from ...core import deps
 from ...services.helper_service import *
 from .stripe_service import StripeService
+from ...services.email_services.tenants import TenantEmailServices
 
 class WebhookServices(ServiceContext):
     """
@@ -69,7 +70,19 @@ class WebhookServices(ServiceContext):
             tenant_obj.subscription_status = 'active'
             tenant_obj.subscription_plan = plan
             tenant_obj.cur_subscription_id = subscription_id
-            
+
+            # Send subscription confirmation email
+            try:
+                tenant_info = self.db.query(tenant_table).filter(tenant_table.id == int(tenant_id)).first()
+                if tenant_info:
+                    TenantEmailServices(
+                        to_email=tenant_info.email,
+                        from_email='noreply',
+                        display_name=tenant_obj.slug or 'Maison',
+                    ).subscription_confirmation_email(tenant_obj=tenant_info, plan=plan)
+            except Exception as email_err:
+                logger.warning(f"Subscription email failed for tenant {tenant_id}: {email_err}")
+
         elif event['type'] in ('customer.subscription.updated', 'customer.subscription.created'):
             subscription = event['data']['object']
 

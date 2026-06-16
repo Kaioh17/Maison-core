@@ -94,6 +94,19 @@ def detail_kv(key: str, value_html: str) -> str:
     )
 
 
+def section_block(content_html: str) -> str:
+    """Neutral bordered card for a required-action step or emphasized content."""
+    return f"""
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 24px 0 8px 0;">
+        <tr>
+            <td style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px 16px;">
+                {content_html}
+            </td>
+        </tr>
+    </table>
+    """
+
+
 def completed_ride_dispute_notice(
     contact_email: Optional[str],
     contact_phone: Optional[str],

@@ -22,8 +22,10 @@ class TenantEmailServices(EmailServices):
 
     def _public_domain(self) -> str:
         """Marketing / app host (e.g. usemaison.io) — not API base_url."""
-        d = (self.DOMAIN or "usemaison.io").replace("https://", "").replace("http://", "").strip("/").split("/")[0]
-        return d or "usemaison.io"
+        d = (self.DOMAIN or "").replace("https://", "").replace("http://", "").strip("/").split("/")[0]
+        if not d or "localhost" in d or "127.0.0.1" in d:
+            return "usemaison.io"
+        return d
 
     def _maison_web(self, path: str) -> str:
         """Absolute URL on the public site, e.g. /tenant/login -> https://usemaison.io/tenant/login"""
@@ -45,23 +47,48 @@ class TenantEmailServices(EmailServices):
 
     def welcome_email(self, obj: Tenants, slug: str):
         """Send welcome email to tenant after account creation — B2B operator tone."""
-        subject = "You're live on Maison"
+        subject = "One step left to go live"
 
-        company_name = obj.profile.company_name if hasattr(obj, 'profile') and obj.profile else "Your company"
-        host = self._tenant_host(slug)
-        live_url = f"https://{host}"
         fn = L.first_name(obj.full_name)
+        host = self._tenant_host(slug)
+
+        verification_content = (
+            L.p(
+                "<strong>Complete identity and payment verification</strong>",
+                margin_bottom="10px",
+            )
+            + L.p(
+                "Maison uses Stripe to verify operator identities and process payments. "
+                "This step activates your booking page and enables you to accept payments from customers. "
+                "It typically takes a few minutes — Stripe may request additional documents in some cases.",
+                margin_bottom="20px",
+            )
+            + L.primary_cta(self._maison_web("/tenant/settings/account"), "Complete verification →")
+        )
 
         body = (
             L.p(f"Hi {fn},")
             + L.p(
-                f"Your account is set up. <strong>{company_name}</strong> is live at:<br/>"
-                f'<a href="{live_url}" style="color: #111827; text-decoration: underline; word-break: break-all;">{host}</a>'
+                "Your Maison account has been created. Before your platform goes live, "
+                "you need to complete one required step: identity and payment verification through Stripe."
+            )
+            + L.section_block(verification_content)
+            + L.p(
+                "Once verification is approved, you'll be able to:",
+                margin_bottom="8px",
             )
             + L.p(
-                "Start by adding your first driver and vehicle — that's all you need before your first booking comes in."
+                "Add your first driver&nbsp;&nbsp;·&nbsp;&nbsp;"
+                "Add a vehicle to your fleet&nbsp;&nbsp;·&nbsp;&nbsp;"
+                "Share your booking page with customers",
+                margin_bottom="24px",
             )
-            + L.primary_cta(self._maison_web("/tenant/login"), "Go to your dashboard →")
+            + L.p(
+                f'Your booking page will be live at '
+                f'<span style="font-family: {L.FONT_MONO}; font-size: 0.92em; color: {L.MUTED}; word-break: break-all;">{host}</span> '
+                f"once verification is complete. It is not active yet.",
+                margin_bottom="0",
+            )
             + L.muted_p("If you run into anything, reply to this email.")
             + L.signoff_maison_team()
         )
@@ -230,6 +257,28 @@ class TenantEmailServices(EmailServices):
             )
             + L.p("Thanks for continuing to build your service on Maison.")
             + L.p("— Maison Operations", margin_bottom="0")
+        )
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
+
+    def subscription_confirmation_email(self, tenant_obj: Tenants, plan: str):
+        """Confirm to the tenant that their subscription is now active."""
+        subject = "Your Maison subscription is active"
+
+        plan_display = (plan or "Free").replace("_", " ").title()
+        fn = L.first_name(tenant_obj.full_name)
+
+        body = (
+            L.p(f"Hi {fn},")
+            + L.p(
+                f"You're now on the <strong>{plan_display}</strong> plan. "
+                "Your subscription is active and your account is ready to use."
+            )
+            + L.p(
+                "You can manage or upgrade your plan at any time from your account settings."
+            )
+            + L.primary_cta(self._maison_web("/tenant/overview"), "Go to your dashboard →")
+            + L.signoff_maison_team()
         )
         html_body = L.build_email(body, footer_brand="Maison")
         self._email(subject, html_body)
