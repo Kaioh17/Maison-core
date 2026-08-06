@@ -3,7 +3,10 @@ from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.schemas import general, subscription
+from app.domain import plans
+from ..services.helper_service import success_resp
 from .dependencies import is_tenants
+from ..services.tenants_service import TenantService, get_tenant_service, founding_operator_slots_remaining
 from ..services.stripe_services import stripe_tier_service
 from ..services.stripe_services.stripe_tier_service import (
     StripeService,
@@ -56,6 +59,52 @@ async def upgrade_subscription(
         price_id=payload.price_id, product_type=payload.product_type
     )
     return upgrade_sub
+
+
+@router.get(
+    "/limits",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[subscription.PlanLimitsResponse],
+    summary="Current plan limits and usage",
+    description=(
+        "Authoritative per-tier limits plus live usage counts for the calling tenant. "
+        "`allowed: null` means unlimited. Requires **tenant** JWT -- deliberately not "
+        "subscription-gated, since an inactive tenant must be able to read their own "
+        "state to see the upgrade prompt."
+    ),
+    response_description="Plan, subscription status, and vehicle/driver usage.",
+)
+async def get_plan_limits(
+    is_tenant=Depends(is_tenants),
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    return await tenant_service.get_plan_limits()
+
+
+# NB: must stay declared ABOVE `GET /{customer_id}`. FastAPI matches routes in
+# declaration order, and that catch-all would otherwise swallow "/plans" and try
+# to read it as a Stripe customer id.
+@router.get(
+    "/plans",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[list[subscription.PlanCatalogEntry]],
+    summary="Public plan catalogue",
+    description=(
+        "Every tier with its limits, take rate, and list price, cheapest first. "
+        "**Unauthenticated on purpose** -- the public marketing page renders from "
+        "this, which is what stops it from disagreeing with the in-app pricing "
+        "table. Contains no tenant data. Authenticated callers who also need "
+        "their own usage and current plan should use `GET /subscription/limits`, "
+        "which returns the same catalogue plus that state."
+    ),
+    response_description="The plan ladder, cheapest first.",
+)
+async def get_public_plans(db: Session = Depends(get_db)):
+    return success_resp(
+        msg="Retrieved plans",
+        data=[p.to_dict() for p in plans.PLAN_LADDER],
+        meta={"founding_operator_slots_remaining": founding_operator_slots_remaining(db)},
+    )
 
 
 @router.get(

@@ -5,7 +5,7 @@ from fastapi import HTTPException, status, Depends
 from app.db.database import get_db, get_base_db
 from ...core import deps
 from ...services.helper_service import *
-from app.domain.plans import PLAN_REGISTRY
+from app.domain.plans import resolve_plan
 
 class BookingCheckout(ServiceContext):
     """This i is a tripe integration for riders checkout after booking"""
@@ -20,17 +20,32 @@ class BookingCheckout(ServiceContext):
         logger.debug(f"{booking_obj.service_type} deposit:{is_deposit}")
         return is_deposit
     async def checkout_session(self, booking_obj:booking_table,is_transfer: bool = None):
-        """_summary_
+        """Create the rider's PaymentIntent for a booking.
+
+        This is a **direct charge on the connected account**: the intent is
+        created with `stripe_account=<tenant_stripe_acct_id>`, so the charge
+        lives on the operator's Stripe account and the funds land there. Maison
+        takes its cut via `application_fee_amount`, which is exactly what that
+        parameter is for on a direct charge.
+
+        `transfer_data` is therefore intentionally unused. It belongs to the
+        *destination charge* model, where the platform creates the charge on its
+        own account and routes funds outward to a connected account. Setting
+        both would be contradictory -- there is nothing to transfer, because the
+        money never sits on Maison's account in the first place.
+
+        The fee rate is read from the tenant's current plan at charge time
+        (`resolve_plan(self.sub_plan).maison_fee`), never cached, so a plan
+        change takes effect on the next charge.
 
         Args:
             booking_obj (booking_table)
             is_transfer (bool, optional): Transfer to drivers connect account. Defaults to None.
 
-        Raises:
-            e: _description_
-
         Returns:
-            _type_: _description_
+            StandardResponse with the intent's client_secret, the payment_type
+            (deposit | balance | full), and the tenant's connected account id --
+            the frontend needs that last one to confirm on the right account.
         """
         try:
            
@@ -73,9 +88,10 @@ class BookingCheckout(ServiceContext):
                 if not customer_id:
                     customer_id = await self._create_stripe_cutstomer()
                 #application fee
-                calc =self._to_dollars(unit_amount) * PLAN_REGISTRY[self.sub_plan].maison_fee
+                fee_rate = resolve_plan(self.sub_plan).maison_fee
+                calc =self._to_dollars(unit_amount) * fee_rate
                 maison_fee = self._to_cent(calc)
-                logger.debug(f"Maison fee {self._to_dollars(unit_amount) } * {PLAN_REGISTRY[self.sub_plan].maison_fee} = {self._to_dollars(maison_fee)}") 
+                logger.debug(f"Maison fee {self._to_dollars(unit_amount) } * {fee_rate} = {self._to_dollars(maison_fee)}")
                 confirm =False
                 payment_id = None
                 if self.role == 'driver':
@@ -92,9 +108,6 @@ class BookingCheckout(ServiceContext):
                                 "enabled": True,
                                 "allow_redirects": "never",
                             },
-                        # transfer_data={
-                        #     "destination":tenant_stripe_acct_id,
-                        # }, 
                         payment_method=payment_id,
                         metadata={
                             "rider_id": rider_id,
@@ -102,13 +115,9 @@ class BookingCheckout(ServiceContext):
                             "payment_type":payment_type,
                             "booking_id":booking_id
                         },
-                         # MISSING: these are critical
                         setup_future_usage="off_session",  # Save card for balance charges
                         confirm=confirm,  # Let frontend confirm (if using client_secret)
-                       
                         description=f"Ride booking {booking_id} - {payment_type}",
-                        
-                        # Optional but usleful
                         receipt_email= booking_obj.rider.email,  # Send receipt
                         stripe_account=tenant_stripe_acct_id
                         

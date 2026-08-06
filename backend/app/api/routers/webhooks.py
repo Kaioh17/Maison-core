@@ -8,7 +8,7 @@ There are two endpoints on purpose — they use different Stripe webhook signing
   sessions for plans, etc. Configure this URL in the Stripe Dashboard under your
   platform account's Webhooks.
 
-- POST /api/v1/webhooks/tenant/connect
+- POST /api/v1/webhooks/connect/tenant
   Stripe Connect webhook (CONNECT_WEBHOOK_SECRET). Events are scoped to Connect accounts
   (event includes `account`). Used for Express account lifecycle, saving stripe_account_id
   after onboarding, and Connect-side payments. Configure as a separate Connect webhook
@@ -51,7 +51,7 @@ async def stripe_platform_webhook(
 
 
 @router.post(
-    "/tenant/connect",
+    "/connect/tenant",
     status_code=201,
     summary="Stripe Connect webhook",
     description=(

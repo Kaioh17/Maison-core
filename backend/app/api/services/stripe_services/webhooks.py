@@ -22,6 +22,8 @@ from ...core import deps
 from ...services.helper_service import *
 from .stripe_service import StripeService
 from ...services.email_services.tenants import TenantEmailServices
+from app.domain.billing import price_to_plan
+from app.domain.plans import PlanName, SubStatus, resolve_plan, resolve_status
 
 class WebhookServices(ServiceContext):
     """
@@ -30,7 +32,62 @@ class WebhookServices(ServiceContext):
     """
     def __init__(self, current_user, db):
         super().__init__(current_user, db)
-        
+
+    def _find_tenant_profile(self, tenant_id, stripe_customer_id):
+        """Locate a tenant profile by metadata tenant_id, falling back to customer id."""
+        tenant_obj = None
+        if tenant_id is not None:
+            tenant_obj = self.db.query(tenant_profile).filter(
+                tenant_profile.tenant_id == tenant_id
+            ).first()
+        if tenant_obj is None and stripe_customer_id:
+            tenant_obj = self.db.query(tenant_profile).filter(
+                tenant_profile.stripe_customer_id == stripe_customer_id
+            ).first()
+        return tenant_obj
+
+    def _retrieve_subscription(self, subscription_id):
+        if not subscription_id:
+            return None
+        try:
+            return stripe.Subscription.retrieve(
+                subscription_id, expand=["items.data.price"]
+            )
+        except Exception as e:
+            logger.warning(f"Could not retrieve subscription {subscription_id}: {e}")
+            return None
+
+    def _derive_plan(self, subscription, metadata):
+        """Resolve the plan from the price actually purchased.
+
+        Metadata is editable from the Stripe dashboard and is set by whatever
+        created the session, so it is not authoritative. We prefer the price id
+        on the subscription and only fall back to metadata if that is
+        unavailable, logging loudly when the two disagree.
+        """
+        claimed = (metadata or {}).get('product_type')
+        derived = None
+        try:
+            items = (subscription or {}).get('items', {}).get('data', [])
+            if items:
+                price_id = items[0].get('price', {}).get('id')
+                derived = price_to_plan(price_id)
+        except Exception as e:
+            logger.warning(f"Could not derive plan from subscription price: {e}")
+
+        if derived is None:
+            logger.warning(
+                f"Falling back to metadata plan '{claimed}' -- could not derive "
+                "plan from the Stripe price."
+            )
+            return resolve_plan(claimed).name
+        if claimed and claimed.strip().lower() != derived:
+            logger.error(
+                f"Plan mismatch: metadata claims '{claimed}' but the purchased "
+                f"price maps to '{derived}'. Using '{derived}'."
+            )
+        return derived
+
     # --- Main platform webhook (WEBHOOK_SECRET): subscriptions & platform checkout ---
     async def webhook(self,request):
         """
@@ -55,31 +112,45 @@ class WebhookServices(ServiceContext):
                 webhook_secret
             )
         except Exception as e:
-            return 
-        
+            logger.error(f"[webhook] signature/payload verification failed: {e}")
+            raise HTTPException(400)
+
         if event['type'] == 'checkout.session.completed' :
             ##Update status in db version
             session  =event['data']['object']
-            
+
             tenant_id = session.get('metadata', {}).get('tenant_id')
             stripe_customer_id = session.get('customer')
-            plan = session.get('metadata',{}).get('product_type')
             subscription_id = session.get('subscription')
-            logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] paln [{plan}] sub_id [{subscription_id}]")
-            tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
-            tenant_obj.subscription_status = 'active'
+            # The session carries no status and its metadata is not trustworthy,
+            # so read both off the subscription itself.
+            sub_obj = self._retrieve_subscription(subscription_id)
+            plan = self._derive_plan(sub_obj, session.get('metadata', {}))
+            sub_status = resolve_status(sub_obj.get('status') if sub_obj else SubStatus.ACTIVE.value)
+            logger.debug(f"Tenant {tenant_id} successfully subscribed. customer_id [{stripe_customer_id}] plan [{plan}] status [{sub_status}] sub_id [{subscription_id}]")
+            tenant_obj = self._find_tenant_profile(tenant_id, stripe_customer_id)
+            if tenant_obj is None:
+                logger.warning(
+                    f"checkout.session.completed for unknown tenant_id={tenant_id} "
+                    f"customer_id={stripe_customer_id}. Skipping."
+                )
+                return {"status": "success"}
+            tenant_obj.subscription_status = sub_status
             tenant_obj.subscription_plan = plan
             tenant_obj.cur_subscription_id = subscription_id
 
-            # Send subscription confirmation email
+            # Send subscription confirmation + the "one step left to go live"
+            # welcome email (Stripe verification is the remaining step).
             try:
                 tenant_info = self.db.query(tenant_table).filter(tenant_table.id == int(tenant_id)).first()
                 if tenant_info:
-                    TenantEmailServices(
+                    email_service = TenantEmailServices(
                         to_email=tenant_info.email,
                         from_email='noreply',
                         display_name=tenant_obj.slug or 'Maison',
-                    ).subscription_confirmation_email(tenant_obj=tenant_info, plan=plan)
+                    )
+                    email_service.subscription_confirmation_email(tenant_obj=tenant_info, plan=plan)
+                    email_service.welcome_email(obj=tenant_info, slug=tenant_obj.slug)
             except Exception as email_err:
                 logger.warning(f"Subscription email failed for tenant {tenant_id}: {email_err}")
 
@@ -90,22 +161,14 @@ class WebhookServices(ServiceContext):
             stripe_customer_id = subscription.get('customer')
             metadata = subscription.get('metadata', {})
             tenant_id = metadata.get('tenant_id')
-            plan = metadata.get('product_type')
+            plan = self._derive_plan(subscription, metadata)
             event_id = event.get('id')
 
             logger.info(
                 f"[webhooks] {event['type']}: looking up tenant_profile "
                 f"tenant_id={tenant_id} customer_id={stripe_customer_id} event_id={event_id}"
             )
-            tenant_obj: tenant_profile = None
-            if tenant_id is not None:
-                tenant_obj = self.db.query(tenant_profile).filter(
-                    tenant_profile.tenant_id == tenant_id
-                ).first()
-            if tenant_obj is None and stripe_customer_id:
-                tenant_obj = self.db.query(tenant_profile).filter(
-                    tenant_profile.stripe_customer_id == stripe_customer_id
-                ).first()
+            tenant_obj = self._find_tenant_profile(tenant_id, stripe_customer_id)
 
             if tenant_obj is None:
                 logger.warning(
@@ -115,7 +178,9 @@ class WebhookServices(ServiceContext):
                 )
                 return {"status": "success"}
 
-            tenant_obj.subscription_status = 'active'
+            # Store Stripe's own status rather than hardcoding 'active', so
+            # trialing / past_due / unpaid / incomplete are represented faithfully.
+            tenant_obj.subscription_status = resolve_status(subscription.get('status'))
             tenant_obj.subscription_plan = plan
             tenant_obj.cur_subscription_id = subscription_id
         elif event['type'] in ('invoice.paid', 'invoice.finalized', 'invoice.payment_succeded'):
@@ -123,16 +188,48 @@ class WebhookServices(ServiceContext):
             invoice = event['data']['object']
             subscription_id = invoice.get('subscription')
             logger.debug(f"Payment successfull for sub: {subscription_id}")
-            
+
             # logger.debug(f"{invoice}")
             ##send email notifying
+        elif event['type'] == 'invoice.payment_failed':
+            # Reflect the failure before Stripe transitions the subscription, so
+            # the state is visible in the limits endpoint. past_due is still
+            # entitled -- this is the grace period, not a cut-off.
+            invoice = event['data']['object']
+            tenant_obj = self._find_tenant_profile(None, invoice.get('customer'))
+            if tenant_obj is not None:
+                logger.info(f"Payment failed for customer {invoice.get('customer')}; marking past_due")
+                tenant_obj.subscription_status = SubStatus.PAST_DUE.value
         elif event['type'] == 'customer.subscription.deleted':
             subscription = event['data']['object']
-            logger.debug(f"Subsripiton {subscription['id']} has ended.")
-            tenant_obj:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
-            tenant_obj.subscription_status = 'inactive'
-            # tenant_obj.subscription_plan = plan
-        self.db.commit()
+            logger.debug(f"Subscription {subscription['id']} has ended.")
+            # tenant_id was never assigned in this branch before, so every
+            # cancellation raised NameError and the tenant stayed entitled.
+            tenant_obj = self._find_tenant_profile(
+                subscription.get('metadata', {}).get('tenant_id'),
+                subscription.get('customer'),
+            )
+            if tenant_obj is None:
+                logger.warning(
+                    f"customer.subscription.deleted for unknown customer "
+                    f"{subscription.get('customer')}. Skipping."
+                )
+                return {"status": "success"}
+            tenant_obj.subscription_status = resolve_status(subscription.get('status')) \
+                if subscription.get('status') else SubStatus.CANCELED.value
+            tenant_obj.subscription_plan = PlanName.FREE.value
+            tenant_obj.cur_subscription_id = None
+        else:
+            # Nothing mutated; skip the commit entirely.
+            logger.info(f"[webhook] unhandled event type {event['type']}, ignoring")
+            return {"status": "success"}
+
+        try:
+            self.db.commit()
+        except Exception as e:
+            logger.error(f"Webhook commit failed for {event['type']}: {e}")
+            self.db.rollback()
+            raise
         return {"status":"success"}
       
     # --- Connect webhook (CONNECT_WEBHOOK_SECRET): Express accounts + Connect payments ---
@@ -300,6 +397,8 @@ class WebhookServices(ServiceContext):
                 
             elif event['type'] == 'checkout.session.failed':
                 pass
+            else:
+                logger.info(f"[connect webhook] unhandled event type {event['type']}, ignoring")
             return success_resp()
         
         except Exception as e:
