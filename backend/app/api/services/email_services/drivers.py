@@ -125,7 +125,8 @@ class DriverEmailServices(EmailServices):
         )
 
         subject = "Ride cancelled"
-        cta_url = f"{slug}.{self.BASE_URL}/driver/bookings"
+        scheme = "https" if self.ENV == "production" else "http"
+        cta_url = f"{scheme}://{self._tenant_host(slug)}/driver/bookings"
 
         route = (
             f"{L.highlight(pickup)} → {L.highlight(dropoff)}"

@@ -261,6 +261,38 @@ class TenantEmailServices(EmailServices):
         html_body = L.build_email(body, footer_brand="Maison")
         self._email(subject, html_body)
 
+    def founding_operator_email(self, tenant_obj: Tenants, promo_code: str):
+        """Sent once, right after signup, to one of the first 10 tenants — the
+        code is never shown in the UI, only here, so it's redeemable at
+        Stripe Checkout (`allow_promotion_codes`) for 100% off."""
+        subject = "You're a Maison founding operator — your code is free"
+
+        body = (
+            L.p(f"Hi {L.first_name(tenant_obj.full_name)},")
+            + L.p(
+                "You're one of our first 10 operators, so your subscription is on us. "
+                "When you get to checkout, enter this promo code for 100% off:"
+            )
+            + L.p(
+                "This covers the plan you pick today. If you upgrade to a higher "
+                "tier later, that tier is billed at full price.",
+                margin_bottom="0",
+            )
+            + L.section_block(
+                L.p(
+                    f'<span style="font-family: {L.FONT_MONO}; font-size: 1.1em; font-weight: 600;">{html.escape(promo_code)}</span>',
+                    margin_bottom="0",
+                )
+            )
+            + L.p(
+                "A card is still required to activate the subscription — the coupon covers the charge.",
+                margin_bottom="0",
+            )
+            + L.signoff_maison_team()
+        )
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
+
     def subscription_confirmation_email(self, tenant_obj: Tenants, plan: str):
         """Confirm to the tenant that their subscription is now active."""
         subject = "Your Maison subscription is active"

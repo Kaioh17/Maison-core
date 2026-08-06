@@ -8,7 +8,7 @@ from ..services.vehicle_service import (
 )
 from app.schemas import vehicle, vehicle_config
 from app.schemas.general import StandardResponse as resp
-from .dependencies import is_tenants
+from .dependencies import is_tenants, require_active_subscription
 from app.utils.logging import logger
 router = APIRouter(
     prefix="/api/v1/vehicles",
@@ -79,6 +79,7 @@ async def get_vehicle_image_types(
 )
 async def add_vehicle(
     payload: vehicle.VehicleCreate,
+    is_tenant=Depends(require_active_subscription),
     vehicle_service: VehicleService = Depends(get_vehicle_service),
 ):
     vehicles = await vehicle_service.add_vehicle(payload)
@@ -131,7 +132,7 @@ async def get_vehicle_categories_public(
 )
 async def create_vehicle_category(
     payload: vehicle_config.VehicleRate,
-    is_tenant=Depends(is_tenants),
+    is_tenant=Depends(require_active_subscription),
     vehicle_service: VehicleService = Depends(get_vehicle_service),
 ):
     vehicles = await vehicle_service.add_vehicle_category(payload)
@@ -155,6 +156,7 @@ async def update_vehicle_image(
         description="Parallel labels for each file (e.g. front_exterior)."
     ),
     vehicle_image: Optional[list[UploadFile]] = File(None),
+    is_tenant=Depends(is_tenants),
     vehicle_service: VehicleService = Depends(get_vehicle_service),
 ):
     update_vehicle_image = await vehicle_service.update_vehicle_image(

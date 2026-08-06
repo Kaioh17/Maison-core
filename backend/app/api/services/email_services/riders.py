@@ -28,12 +28,7 @@ class RiderEmailServices(EmailServices):
             else operator_name
         )
         self.to_email = 'mubskill@gmail.com' if self.ENV == 'development' else to_email
-        if self.ENV == 'development':
-            self.from_email = 'Acme <onboarding@resend.dev>'
-        elif display_name and "@" not in str(from_email):
-            self.from_email = self._format_from(from_email, display_name)
-        else:
-            self.from_email = from_email
+        self.from_email = self._format_from(str(from_email), display_name or brand)
         self.operator_name = brand
         self.default_tz = "America/Chicago"
 
@@ -47,10 +42,13 @@ class RiderEmailServices(EmailServices):
         )
         return f"{slug}.{domain}" if domain else slug
 
-    def _confirm_booking_url(self, slug: str, confirm_token: str) -> str:
+    def _tenant_url(self, slug: str, path: str) -> str:
         host = self._tenant_host(slug)
         scheme = "https" if self.ENV == "production" else "http"
-        return f"{scheme}://{host}/riders/confirm-booking?token={quote(confirm_token, safe='')}"
+        return f"{scheme}://{host}{path}"
+
+    def _confirm_booking_url(self, slug: str, confirm_token: str) -> str:
+        return self._tenant_url(slug, f"/riders/confirm-booking?token={quote(confirm_token, safe='')}")
 
     def _format_local_datetime(self, dt, fmt: str = "%B %d, %Y at %I:%M %p") -> str:
         """Render datetimes in local rider timezone for email copy."""
@@ -77,7 +75,7 @@ class RiderEmailServices(EmailServices):
         body = (
             L.p(f"Hi {L.first_name(obj.full_name)},")
             + L.p("You can book rides and manage trips from your account.")
-            + L.primary_cta(f"{slug}.{self.BASE_URL}/riders/login", "Sign in →")
+            + L.primary_cta(self._tenant_url(slug, "/riders/login"), "Sign in →")
             + L.muted_p(f"Thank you for riding with {self.operator_name}.")
         )
         html_body = L.build_email(body, footer_brand=self.operator_name)
@@ -360,7 +358,7 @@ class RiderEmailServices(EmailServices):
             )
             + reason_block
             + L.p("You can book again anytime from your account.")
-            + L.primary_cta(f"{slug}.{self.BASE_URL}/riders/login", "Book a ride →")
+            + L.primary_cta(self._tenant_url(slug, "/riders/login"), "Book a ride →")
         )
         html_body = L.build_email(body, footer_brand=self.operator_name)
         self._email(subject, html_body)

@@ -21,6 +21,7 @@ from ..service_context import ServiceContext
 from ..stripe_services.checkout import BookingCheckout
 from ..email_services import drivers, tenants, riders
 from ..helper_service import  *
+from app.policies.plan_policy import PlanPolicy
 
 from app.models import tenant_setting
 db_exceptions = db_error_handler.DBErrorHandler
@@ -33,23 +34,21 @@ class TenantAnalyticService(ServiceContext):
     # db_exceptions = db_error_handler.DBErrorHandler
     METER_TO_MILE =  0.000621371
     MS_TO_MPH = 2.237
-    # role_to_booking_field  = {
-    #     "driver": booking.Bookings.driver_id,
-    #     "rider": booking.Bookings.rider_id,
-    #     "tenant": booking.Bookings.tenant_id,
-    #     }
     async def analytics(self):
         try:
             """
             This function is used for all rider booking related aggregations
             """
-            # count_sql = "select booking_status, count(*) as count_stat, sum(count(*)) over () as total_bookings from bookings where rider_id = :rider_id and tenant_id = :tenant_id group by booking_status"
+            # A booking counts as "billable" — and so contributes to revenue and to
+            # ride volume — unless it was cancelled. Every revenue figure and both
+            # 7-day series below use this same predicate so the KPI tiles, the bar
+            # chart and the sparkline on the tenant Overview page always agree.
             count_sql = """SELECT
                             (
                                 SELECT COUNT(*)
                                 FROM bookings
                                 WHERE tenant_id = :tenant_id
-                                AND booking_status = 'confirmed'
+                                AND booking_status = 'completed'
                             ) AS completed_rides,
 
                             (
@@ -64,26 +63,77 @@ class TenantAnalyticService(ServiceContext):
                                 FROM drivers
                                 WHERE tenant_id = :tenant_id
                                 AND is_active = true
-                            ) AS available_drivers, (select sum(estimated_price)  from bookings where tenant_id = :tenant_id) as total_revenue,
+                            ) AS available_drivers,
+                            (
+                                SELECT COALESCE(SUM(estimated_price), 0)
+                                FROM bookings
+                                WHERE tenant_id = :tenant_id
+                                AND booking_status <> 'cancelled'
+                            ) AS total_revenue,
                             (select count(id) from drivers where tenant_id = :tenant_id) as total_drivers
                             ,(select count(id) from vehicles where tenant_id = :tenant_id) as total_vehicles,
                             (select count(id) from bookings where tenant_id = :tenant_id) as total_bookings,
-                            (SELECT (  SELECT COALESCE(SUM(estimated_price), 0)  FROM bookings WHERE tenant_id = :tenant_id AND created_on >= DATE_TRUNC('day', NOW()) ) AS todays_revenue)
+                            (
+                                SELECT COALESCE(SUM(estimated_price), 0)
+                                FROM bookings
+                                WHERE tenant_id = :tenant_id
+                                AND booking_status <> 'cancelled'
+                                AND created_on >= DATE_TRUNC('day', NOW())
+                            ) AS todays_revenue
                             """
-                            # (select sum(estimated_price)  from bookings where tenant_id = :tenant_id and created_on >=  DATE_TRUNC('day', NOW())  as todays_revenue
-        #    (select sum(estimated_price)  from bookings where tenant_id = :tenant_id and payment_id IS NOT NULL and created_on >= (SELECT (NOW() - INTERVAL '5 day') AT TIME ZONE 'UTC')) as todays_revenue
             count_obj = self.db.execute(text(count_sql), {"tenant_id":self.tenant_id}).mappings().one()
-            
-            
-            # count_obj = count_.mappings().all()
-            
-            # aggregates = {}
-            # for i in range(len(count_obj)):
-            #     booking_status = count_obj[i]['booking_status']
-            #     count =  count_obj[i]['count_stat']
-            #     aggregates[booking_status] = count
-            # logger.debug(f"Count: {count_obj}")
-            return success_resp(msg="Reteieved analytics successful",data = count_obj)
+
+            can_view = PlanPolicy.can_view_analytics(self.plan, self.sub_status)
+
+            rev_rows = []
+            vol_rows = []
+            if can_view:
+                rev_sql = """
+                    SELECT to_char(day, 'Dy') AS date, COALESCE(rev, 0.0) AS revenue
+                    FROM generate_series(
+                        (NOW() AT TIME ZONE 'UTC')::date - INTERVAL '6 days',
+                        (NOW() AT TIME ZONE 'UTC')::date,
+                        '1 day'::interval
+                    ) AS day
+                    LEFT JOIN (
+                        SELECT DATE_TRUNC('day', created_on AT TIME ZONE 'UTC')::date AS d,
+                               SUM(estimated_price) AS rev
+                        FROM bookings
+                        WHERE tenant_id = :tenant_id
+                          AND booking_status <> 'cancelled'
+                          AND created_on >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '6 days'
+                        GROUP BY d
+                    ) agg ON agg.d = day
+                    ORDER BY day
+                """
+                rev_rows = self.db.execute(text(rev_sql), {"tenant_id": self.tenant_id}).mappings().all()
+
+                vol_sql = """
+                    SELECT to_char(day, 'Dy') AS date, COALESCE(cnt, 0)::int AS count
+                    FROM generate_series(
+                        (NOW() AT TIME ZONE 'UTC')::date - INTERVAL '6 days',
+                        (NOW() AT TIME ZONE 'UTC')::date,
+                        '1 day'::interval
+                    ) AS day
+                    LEFT JOIN (
+                        SELECT DATE_TRUNC('day', created_on AT TIME ZONE 'UTC')::date AS d,
+                               COUNT(*) AS cnt
+                        FROM bookings
+                        WHERE tenant_id = :tenant_id
+                          AND booking_status <> 'cancelled'
+                          AND created_on >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '6 days'
+                        GROUP BY d
+                    ) agg ON agg.d = day
+                    ORDER BY day
+                """
+                vol_rows = self.db.execute(text(vol_sql), {"tenant_id": self.tenant_id}).mappings().all()
+
+            result = dict(count_obj)
+            result['analytics_locked'] = not can_view
+            result['revenue_last_7_days'] = [dict(r) for r in rev_rows] if can_view else None
+            result['ride_volume_last_7_days'] = [dict(r) for r in vol_rows] if can_view else None
+
+            return success_resp(msg="Retrieved analytics successful", data=result)
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
             

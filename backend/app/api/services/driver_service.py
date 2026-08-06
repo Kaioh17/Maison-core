@@ -6,6 +6,9 @@ from ..core import deps
 from app.utils.logging import logger
 from .helper_service import *
 from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func
+from app.domain.plans import resolve_plan
+from app.policies.plan_policy import PlanPolicy
 from datetime import timedelta, datetime, timezone
 from .vehicle_service import VehicleService
 from .service_context import ServiceContext
@@ -44,6 +47,18 @@ class DriverService(ServiceContext):
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db) 
         
+    def _assert_tenant_can_add_vehicle(self, tenant_id):
+        """Apply the vehicle quota for a tenant resolved by id, not by session."""
+        profile = self.db.query(tenant_profile).filter(
+            tenant_profile.tenant_id == tenant_id
+        ).first()
+        plan = resolve_plan(getattr(profile, "subscription_plan", None))
+        sub_status = getattr(profile, "subscription_status", None)
+        current_count = self.db.scalar(
+            select(func.count()).where(vehicle_table.tenant_id == tenant_id)
+        ) or 0
+        PlanPolicy.assert_can_add_vehicle(plan, sub_status, current_count)
+
     async def register_driver(self,payload,tenant_id):
         """
         Completes driver registration after initial creation by a tenant.
@@ -93,7 +108,14 @@ class DriverService(ServiceContext):
                     logger.debug(f"Vehicle detected")
                     
                     await self._vehicle_exists(vehicle_data, driver_obj)
-                    
+
+                    # This route is unauthenticated (the driver has no account
+                    # yet), so the plan must be resolved from the driver's
+                    # tenant rather than from a current_user. Without this an
+                    # outsourced driver's vehicle bypassed the vehicle quota
+                    # enforced on POST /vehicles/add.
+                    self._assert_tenant_can_add_vehicle(driver_obj.tenant_id)
+
                     get_category_id = VehicleService(db = self.db, current_user = None)._get_category(driver_info['vehicle']['vehicle_category'],tenant_id= driver_obj.tenant_id)
                     vehicle_data.pop("vehicle_category", None)
 

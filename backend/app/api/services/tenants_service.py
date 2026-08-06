@@ -42,6 +42,12 @@ import httpx
 
 
 
+def founding_operator_slots_remaining(db) -> int:
+    """Slots left in the first-N founding-operator coupon. Never below 0."""
+    count = db.query(tenant.Tenants).count()
+    return max(0, plans.FOUNDING_OPERATOR_SLOTS - count)
+
+
 class TenantService(ServiceContext):
     def __init__(self, db, current_user):
          super().__init__(db, current_user)
@@ -153,12 +159,19 @@ class TenantService(ServiceContext):
             await self._set_up_tenant_settings(new_tenant_id, logo_path, slug)
             await self._create_vehicle_category_rate_table(new_tenant_id)
             
-            # Email: Send welcome email to tenant
-            tenants.TenantEmailServices(to_email=email, from_email='noreply', display_name=slug).welcome_email(
-                obj=new_tenant_info,
-                slug=slug
-            )
-            
+            # The welcome / "one step left to go live" email is sent from the
+            # checkout.session.completed webhook, not here — nothing is live
+            # until the tenant has actually subscribed.
+            tenant_email_service = tenants.TenantEmailServices(to_email=email, from_email='noreply', display_name=slug)
+
+            # First 10 tenants are founding operators: email the 100%-off coupon
+            # code. Never returned by an API response or shown in the UI.
+            if settings.promocode and self.db.query(self.tenant_info).count() <= plans.FOUNDING_OPERATOR_SLOTS:
+                tenant_email_service.founding_operator_email(
+                    tenant_obj=new_tenant_info,
+                    promo_code=settings.promocode,
+                )
+
             # Email: Notify admin of new tenant registration
             admin.AdminEmailServices(to_email=f'admin@{settings.domain}', from_email='noreply').new_tenant_notification_email(
                 tenant_obj=new_tenant_info
@@ -237,7 +250,14 @@ class TenantService(ServiceContext):
                 # logger.debug(f"Auth service {auth_service.access_token}")
                 return auth_service
                 # raise HTTPException(status_code=status.HTTP_302_FOUND, detail = "Tenant is already driver")
-            driver = driver_table(tenant_id = self.tenant_id, 
+
+            # Creating a driver row here consumes the same quota as onboard_drivers.
+            plan_policy.PlanPolicy.assert_can_onboard_driver(
+                plan=self.plan,
+                sub_status=self.sub_status,
+                current_count=self._count_drivers(self.tenant_id),
+            )
+            driver = driver_table(tenant_id = self.tenant_id,
                                        first_name = self.current_user.first_name,
                                         last_name = self.current_user.last_name,
                                        email = self.current_user.email,
@@ -539,14 +559,56 @@ class TenantService(ServiceContext):
             return count
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(exc=e, db=self.db)
+    @staticmethod
+    def _usage(used: int, allowed):
+        """Shape one quota line. allowed=None means unlimited."""
+        if allowed is None:
+            return {"used": used, "allowed": None, "remaining": None, "over_limit": False}
+        return {
+            "used": used,
+            "allowed": allowed,
+            "remaining": max(0, allowed - used),
+            "over_limit": used > allowed,
+        }
+
+    async def get_plan_limits(self):
+        """Current plan, subscription state and live usage for this tenant.
+
+        The frontend currently hardcodes the limit table in two places; this is
+        what lets it read the real numbers instead.
+        """
+        from .vehicle_service import VehicleService
+
+        vehicle_count = VehicleService(
+            db=self.db, current_user=self.current_user
+        )._count_vehicles(self.tenant_id) or 0
+        driver_count = self._count_drivers(self.tenant_id) or 0
+
+        data = {
+            "plan": self.plan.name,
+            "status": self.sub_status,
+            "is_entitled": plans.is_entitled(self.sub_status),
+            "maison_fee": self.plan.maison_fee,
+            "allow_property_support": self.plan.allow_property_support,
+            "vehicles": self._usage(vehicle_count, self.plan.max_vehicle),
+            "drivers": self._usage(driver_count, self.plan.max_driver_count),
+            # The full ladder, so the pricing pages render every tier's limits
+            # and take rate from here rather than keeping their own copy.
+            "catalog": [p.to_dict() for p in plans.PLAN_LADDER],
+        }
+        meta = {"founding_operator_slots_remaining": founding_operator_slots_remaining(self.db)}
+        return success_resp(msg="Retrieved plan limits", data=data, meta=meta)
+
     async def onboard_drivers(self, payload):
         try:
             ##check policies
             cur_driver_count = self._count_drivers(self.tenant_id)
             logger.debug(f"DRiver counnt {cur_driver_count}")
-            sub_plan=self.sub_plan
-            plan = plans.PLAN_REGISTRY[sub_plan]
-            plan_policy.PlanPolicy.can_add_driver(plan=plan, current_driver_count=cur_driver_count)
+            plan_policy.PlanPolicy.assert_can_onboard_driver(
+                plan=self.plan,
+                sub_status=self.sub_status,
+                current_count=cur_driver_count,
+            )
             await self._confirm_driver_email_absence(payload)
             onboard_token = await self._onboarding_token(6)
             logger.info("Starting onboarding process....")

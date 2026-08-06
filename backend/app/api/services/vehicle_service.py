@@ -162,10 +162,13 @@ class VehicleService(ServiceContext):
             # print(f"Profile {profile_response.subscription_plan}")
             current_vehicle_count = self._count_vehicles(self.tenant_id)
             
-            #set policy             
-            plan = plans.PLAN_REGISTRY[self.sub_plan]
-            logger.debug(f"Name {plan}")
-            plan_policy.PlanPolicy.can_create_vehicle(plan=plan, current_vehicle_count=current_vehicle_count)
+            #set policy
+            logger.debug(f"Plan {self.plan.name} status {self.sub_status}")
+            plan_policy.PlanPolicy.assert_can_add_vehicle(
+                plan=self.plan,
+                sub_status=self.sub_status,
+                current_count=current_vehicle_count,
+            )
             
             tenants = self.db.query(tenant.Tenants).filter(tenant.Tenants.id == self.current_user.id).first()#for drivers TODO -> switch to a dependency injection
             if not tenants:

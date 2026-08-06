@@ -14,7 +14,8 @@ from app.utils.logging import logger
 
 
 
-# from .dependencies import get_tenant_id_from_token 
+# from .dependencies import get_tenant_id_from_token
+from .dependencies import require_active_subscription 
 
 router = APIRouter(
     prefix="/api/v1/tenant",
@@ -182,8 +183,10 @@ async def get_tenant_bookings(
 )
 async def tenant_book_ride(
     payload: booking.TenantCreateBooking,
+    # Status gate only, no quota: rides are not metered, and blocking a
+    # tenant's ability to create bookings would halt their operations.
+    is_tenant=Depends(require_active_subscription),
     booking_service: BookingService = Depends(get_booking_service),
-    # is_tenant = Depends(is_tenant)
 ):
     result = await booking_service.tenant_book_ride(payload)
     return result
@@ -213,6 +216,7 @@ async def list_tenant_rider_emails(
 )
 async def onboard_drivers(
     payload: tenant.OnboardDriver,
+    is_tenant=Depends(require_active_subscription),
     tenant_service: TenantService = Depends(get_tenant_service)
 ):
     logger.info("Onboarding driver...")
@@ -339,7 +343,9 @@ async def get_tenant_analytics(
     response_description="Result of driver conversion.",
 )
 async def become_driver(
-    request: Request, tenant_service: TenantService = Depends(get_tenant_service)
+    request: Request,
+    is_tenant=Depends(require_active_subscription),
+    tenant_service: TenantService = Depends(get_tenant_service),
 ):
     be_driver = await tenant_service.be_driver(request=request)
     return be_driver

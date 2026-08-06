@@ -11,13 +11,16 @@ class EmailServices:
     ENV=settings.environment
 
 
-    def _format_from(self, local_part: str, display_name: str, service: str = "boookings") -> str:
-        """Build Resend From header: dev uses Resend sandbox; prod uses display name + local@DOMAIN."""
-        if self.ENV == "development":
-            return "Acme <onboarding@resend.dev>"
-        if self.ENV == "production" and "@" in local_part:
-            return f"{display_name} <{display_name.lower()}.{service}@{self.DOMAIN}>"
-        return f"{display_name} <{local_part}@{self.DOMAIN}>"
+    # Verified Resend sending domain. Used in every env: Resend disables the
+    # onboarding@resend.dev sandbox once an account has a verified domain.
+    MAIL_DOMAIN = "usemaison.io"
+
+    def _format_from(self, local_part: str, display_name: str, service: str = "bookings") -> str:
+        """Build Resend From header: display name + local@MAIL_DOMAIN."""
+        if "@" in local_part:
+            local_part = f"{display_name.lower()}.{service}"
+        local_part = local_part.strip().replace(" ", "-")
+        return f"{display_name} <{local_part}@{self.MAIL_DOMAIN}>"
 
     def send_email(self,from_email,to_email, subject, html):
         
