@@ -22,6 +22,44 @@ class CheckoutSessionResponse(BaseModel):
     product_type: str
     sub_total: int
     
+class QuotaUsage(BaseModel):
+    used: int
+    allowed: Optional[int] = None      # null == unlimited
+    remaining: Optional[int] = None    # null == unlimited
+    over_limit: bool = False
+
+
+class PlanCatalogEntry(BaseModel):
+    """One tier as the pricing UI needs to render it. `null` == unlimited.
+
+    Carries the list price so that the public marketing page and the in-app
+    pricing table render from the same payload and cannot disagree. Stripe stays
+    the system of record for what is actually charged; this is the display copy.
+    """
+    name: str
+    max_vehicle: Optional[int] = None
+    max_driver_count: Optional[int] = None
+    maison_fee: float
+    allow_property_support: bool
+    allow_analytics: bool
+    # Cents, to avoid float money. 0 == free, which is not purchasable.
+    monthly_price_cents: int = 0
+
+
+class PlanLimitsResponse(BaseModel):
+    """Authoritative plan limits + live usage, so clients stop hardcoding them."""
+    plan: str
+    status: str
+    is_entitled: bool
+    maison_fee: float
+    allow_property_support: bool
+    vehicles: QuotaUsage
+    drivers: QuotaUsage
+    # Every tier, cheapest first -- lets the pricing pages render the full
+    # comparison table from this one call instead of duplicating the ladder.
+    catalog: list[PlanCatalogEntry] = []
+
+
 class SubscriptionUpgradeResponse(BaseModel):
     subscription_id: str
     tenant_id: int

@@ -58,7 +58,7 @@ class TenantUpdate(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = Field(None, min_length=1, max_length=100)
     drivers: Optional[int] = Field(None, ge=0)
-    plan: Optional[str] = Field(None, pattern=r'^(starter|growth|fleet|enterprise)$')
+    plan: Optional[str] = Field(None, pattern=r'^(free|growth|fleet)$')
     is_active: Optional[bool] = None
     
     
@@ -182,6 +182,14 @@ class TenantLogin(BaseModel):
     email: EmailStr
     password: str
 
+class DailyRevenue(BaseModel):
+    date: str
+    revenue: float
+
+class DailyRideCount(BaseModel):
+    date: str
+    count: int
+
 class BookingAnalyticsData(BaseModel):
     completed_rides: Optional[int] = None
     pending_rides: Optional[int] = None
@@ -191,6 +199,9 @@ class BookingAnalyticsData(BaseModel):
     total_vehicles: Optional[int] = None
     total_bookings: Optional[int] = None
     todays_revenue: Optional[float] = None
+    revenue_last_7_days: Optional[list[DailyRevenue]] = None
+    ride_volume_last_7_days: Optional[list[DailyRideCount]] = None
+    analytics_locked: bool = False
 
 
 class TenantRiderEmailItem(BaseModel):

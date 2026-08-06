@@ -30,6 +30,15 @@ class Settings(BaseSettings):
 
     stripe_public_key: str = Field(validation_alias=AliasChoices("stripe_public_key", "pk_test"))
     stripe_secret_key: str = Field(validation_alias=AliasChoices("stripe_secret_key", "sk_test"))
+    # Stripe price ids per SaaS tier. Must match the frontend's VITE_STRIPE_PRICE_*.
+    # These are what the plan a tenant receives is derived from -- never the
+    # client-supplied product_type.
+    stripe_price_starter: str = ""
+    stripe_price_growth: str = ""
+    stripe_price_fleet: str = ""
+    # Stripe coupon code for the first 10 founding operators (100% off). Emailed
+    # to eligible tenants after signup, never shown in the UI or API responses.
+    promocode: str = ""
     resend_key: str
     supabase_anon_key: str
     supabase_url: str
