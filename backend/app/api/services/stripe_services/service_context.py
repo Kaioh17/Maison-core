@@ -17,6 +17,7 @@ class ServiceContext:
         self.DOMAIN = settings.domain
         self.WEBHOOK_SECRET = settings.webhook_secret
         self.CONNECT_WEBHOOK_SECRET = settings.connect_webhook_secret
+        self.BILLING_PORTAL_CONFIG_ID = settings.stripe_billing_portal_config_id
         if self.current_user:
             self.role = self.current_user.role
             if self.role == 'tenant':

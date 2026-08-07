@@ -100,7 +100,22 @@ class StripeService(ServiceContext):
                                 detail="Could not create checkout session")
 
     async def upgrade_subscription(self,price_id, product_type):
-        """Use to upgrade subscrition"""
+        """Start a tier change -- confirmed in Stripe's Billing Portal, not silently billed here.
+
+        A price change on an existing subscription is real money movement
+        (immediate prorated invoice via always_invoice). Calling
+        `Subscription.modify()` directly from the API bills the tenant with
+        zero on-screen confirmation of the card or the amount, which is
+        exactly the auto-renewal-statute exposure flagged in
+        directives.md security-isolation-2026-07. Instead we hand back a
+        Billing Portal URL, scoped by `flow_data.subscription_update_confirm`
+        to this one price change, so Stripe's own hosted screen shows the
+        card on file and the prorated amount before anything bills. The
+        actual `Subscription.modify` happens inside Stripe once the tenant
+        confirms there; `customer.subscription.updated` (webhooks.py) picks
+        up the resulting plan/status change same as any other Stripe-side
+        update. See directives.md billing-confirm-2026-08.
+        """
         resolved_plan = self._resolve_requested_plan(price_id, product_type)
         try:
             logger.info(f"{self.current_user.slug} get customer")
@@ -108,49 +123,70 @@ class StripeService(ServiceContext):
             # valid = Validations._tenants_exist(get_customer)
             customer_id = get_customer.stripe_customer_id
             current_sub_id = get_customer.cur_subscription_id
-            logger.info(f" creating checkout session {customer_id} ")
+            if not current_sub_id:
+                # Free-tier tenants hold no Stripe subscription (see billing.py) --
+                # there is nothing to update, so their first paid plan is a new
+                # Checkout session, not a portal-confirmed change.
+                logger.info(f"{self.current_user.slug} has no subscription yet; starting checkout instead of upgrade")
+                return await self.create_checkout_session(price_id, product_type)
+            logger.info(f" creating billing portal session for {customer_id} ")
             subscription = stripe.Subscription.retrieve(current_sub_id)
             sub_item_id = subscription['items']['data'][0].id
             current_price_id = subscription['items']['data'][0]['price']['id']
 
-            modify_kwargs = dict(
-                items=[{
-                    "id": sub_item_id,
-                    "price": price_id
-                }],
-                proration_behavior="always_invoice", # This bills them immediately for the difference
-                metadata= {
-                    'tenant_id': self.current_user.id,
-                    'product_type': resolved_plan
-                },
-            )
             # The founding-operator coupon (see directives.md founding-terms-2026-08)
-            # is scoped to the tier picked at signup. Stripe discounts attach to the
-            # subscription, not the price, so left alone they'd ride along onto a
-            # higher-priced tier here. Strip them whenever the price actually changes.
+            # is scoped to the tier picked at signup and must not ride along onto a
+            # higher-priced tier. Two things had to be true to strip it and neither
+            # was, which is how a Fleet upgrade billed $0.00 in test-mode verification
+            # (directives.md billing-confirm-2026-08):
+            #   1. `Subscription.modify(discounts=[])` does NOT clear a discount --
+            #      Stripe's own docs: an empty *array* "leaves discounts unchanged";
+            #      only an empty *string* clears them.
+            #   2. The Billing Portal's `subscription_update_confirm.discounts` field
+            #      has no clear/remove semantics at all -- it only *applies* a coupon,
+            #      so passing it anything was never going to strip the existing one.
+            # So the discount has to be detached from the subscription itself, here,
+            # server-side, with the one call Stripe documents as actually clearing it
+            # -- before the portal session (which can only carry the state forward,
+            # not fix it) is ever created.
             if price_id != current_price_id and (subscription.get('discount') or subscription.get('discounts')):
-                modify_kwargs['discounts'] = []
+                stripe.Subscription.modify(current_sub_id, discounts="")
 
-            checkout_session = stripe.Subscription.modify(current_sub_id, **modify_kwargs)
-            return success_resp(
-                msg="Upgraded checkout session",
-                data={
-                    'subscription_id': checkout_session.id,
-                    'tenant_id': self.current_user.id,
-                    'customer_id': checkout_session.customer,
-                    'product_type': resolved_plan,
-                    'status': checkout_session.status,  # e.g. "active"
+            portal_session = stripe.billing_portal.Session.create(
+                customer=customer_id,
+                configuration=self.BILLING_PORTAL_CONFIG_ID,
+                return_url=f"{self.BASE_URL}/tenant/settings/plans",
+                flow_data={
+                    "type": "subscription_update_confirm",
+                    "subscription_update_confirm": {
+                        "subscription": current_sub_id,
+                        "items": [{
+                            "id": sub_item_id,
+                            "price": price_id,
+                            "quantity": 1,
+                        }],
+                    },
+                    "after_completion": {
+                        "type": "redirect",
+                        "redirect": {"return_url": f"{self.BASE_URL}/tenant/settings/plans"},
+                    },
                 },
             )
-            return success_resp(msg = "Upgraded checkout session", 
-                                data = {'Checkout_session_url':checkout_session.url,
-                                        'tenant_id': self.current_user.id,
-                                        'customer_id': checkout_session.customer,
-                                        'product_type': product_type,
-                                       },
-                                )
+            return success_resp(
+                msg="Confirm your plan change",
+                data={
+                    'portal_url': portal_session.url,
+                    'tenant_id': self.current_user.id,
+                    'customer_id': customer_id,
+                    'product_type': resolved_plan,
+                },
+            )
+        except HTTPException:
+            raise
         except Exception as e:
-            raise e
+            logger.error(f"Billing portal session creation failed: {e}")
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY,
+                                detail="Could not start plan change")
     
     async def get_customer_subscription_status(customer_id):
         subs = stripe.Subscription.list(customer=customer_id, limit =1)

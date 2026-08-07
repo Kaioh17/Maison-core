@@ -1,3 +1,4 @@
+from typing import Union
 from fastapi import APIRouter, Request, status, Path
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
@@ -45,10 +46,18 @@ async def create_checkout_session(
 @router.patch(
     "/",
     status_code=status.HTTP_201_CREATED,
-    response_model=general.StandardResponse[subscription.SubscriptionUpgradeResponse],
+    response_model=general.StandardResponse[
+        Union[subscription.PortalSessionResponse, subscription.CheckoutSessionResponse]
+    ],
     summary="Upgrade or change subscription",
-    description="Stripe portal / upgrade flow for existing tenant subscription. Requires **tenant** JWT.",
-    response_description="Checkout or portal payload.",
+    description=(
+        "Returns a Stripe-hosted URL to redirect the tenant to -- never bills directly. "
+        "An existing subscription gets a **Billing Portal** URL scoped to confirming this one "
+        "price change (card on file + prorated amount, see `PortalSessionResponse`); a tenant "
+        "with no subscription yet (free tier) gets a **Checkout session** URL instead, since "
+        "there is nothing to update -- see `CheckoutSessionResponse`. Requires **tenant** JWT."
+    ),
+    response_description="Checkout or billing-portal redirect payload.",
 )
 async def upgrade_subscription(
     payload: subscription.SubscriptionCreate,

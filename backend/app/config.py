@@ -33,9 +33,14 @@ class Settings(BaseSettings):
     # Stripe price ids per SaaS tier. Must match the frontend's VITE_STRIPE_PRICE_*.
     # These are what the plan a tenant receives is derived from -- never the
     # client-supplied product_type.
-    stripe_price_starter: str = ""
+    stripe_price_free: str = ""
     stripe_price_growth: str = ""
     stripe_price_fleet: str = ""
+    # Billing Portal configuration scoped to subscription price-switching only
+    # (no cancel, no payment-method-only) -- see directives.md
+    # billing-confirm-2026-08. Confirms a tier change with Stripe's own card +
+    # prorated-amount screen instead of a silent Subscription.modify().
+    stripe_billing_portal_config_id: str = ""
     # Stripe coupon code for the first 10 founding operators (100% off). Emailed
     # to eligible tenants after signup, never shown in the UI or API responses.
     promocode: str = ""

@@ -81,8 +81,9 @@ class TestTierLadder:
             assert isinstance(p.monthly_price_cents, int)
 
     def test_only_free_is_unpriced(self):
-        # A zero price means "not purchasable" to the frontend, which routes
-        # those tiers past checkout. Exactly one tier may claim it.
+        # Zero is the dollar amount shown on the pricing page, not whether the
+        # tier is purchasable -- free still goes through Stripe Checkout at
+        # $0 so a card gets collected. Exactly one tier may claim it.
         unpriced = [p.name for p in PLAN_LADDER if p.monthly_price_cents == 0]
         assert unpriced == ["free"]
 
@@ -204,12 +205,13 @@ class TestBillingPriceMapping:
         assert billing.price_to_plan("price_G") == "growth"
         assert billing.price_to_plan("price_F") == "fleet"
 
-    def test_free_is_not_purchasable(self):
-        from app.domain.billing import plan_to_price
+    def test_free_has_a_real_price(self, monkeypatch):
+        from app.domain import billing
 
-        # free is the tier you hold by *not* subscribing, so it has no price.
-        # Mapping it to one would let a tenant "check out" of a paid plan.
-        assert plan_to_price("free") is None
+        # free is a real $0 Stripe price like every other tier now, so a card
+        # still gets collected at signup (payment_method_collection='always').
+        monkeypatch.setattr(billing, "_PLAN_TO_PRICE", {"free": "price_0"})
+        assert billing.plan_to_price("free") == "price_0"
 
     def test_unknown_price_returns_none(self):
         # Fail closed: an unrecognised price must never grant a tier.

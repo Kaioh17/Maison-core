@@ -1,7 +1,16 @@
 """Guards the founding-operator coupon scope (directives.md founding-terms-2026-08):
-it must not carry over when a tenant upgrades to a higher-priced tier. Stripe
-discounts attach to the subscription, not the price, so `Subscription.modify`
-silently keeps a 100%-off coupon applied to the new price unless we strip it.
+it must not carry over when a tenant upgrades to a higher-priced tier.
+
+A tier change is confirmed in Stripe's Billing Portal (directives.md
+billing-confirm-2026-08), but the portal's own
+`flow_data.subscription_update_confirm.discounts` field only *applies* a
+coupon -- it has no clear/remove semantics, and `Subscription.modify` with
+`discounts=[]` (an empty *array*) is documented by Stripe to leave discounts
+unchanged, not clear them. Both were tried and both no-op, which is how a
+Fleet upgrade billed $0.00 in real test-mode verification. The only
+documented way to actually strip a discount is `Subscription.modify(...,
+discounts="")` (an empty *string*), called directly on the subscription
+before the portal session is created.
 """
 import asyncio
 from types import SimpleNamespace
@@ -56,12 +65,14 @@ def test_price_change_strips_the_discount(service):
         "stripe.Subscription.retrieve",
         return_value=_subscription("price_growth", discounted=True),
     ), patch(
-        "stripe.Subscription.modify",
-        return_value=SimpleNamespace(id="sub_test", customer="cus_test", status="active"),
-    ) as modify:
+        "stripe.Subscription.modify"
+    ) as modify, patch(
+        "stripe.billing_portal.Session.create",
+        return_value=SimpleNamespace(url="https://billing.stripe.com/p/session_test"),
+    ):
         asyncio.run(service.upgrade_subscription("price_fleet", "fleet"))
 
-    assert modify.call_args.kwargs["discounts"] == []
+    modify.assert_called_once_with("sub_test", discounts="")
 
 
 def test_same_price_leaves_discount_alone(service):
@@ -73,16 +84,18 @@ def test_same_price_leaves_discount_alone(service):
         "stripe.Subscription.retrieve",
         return_value=_subscription("price_growth", discounted=True),
     ), patch(
-        "stripe.Subscription.modify",
-        return_value=SimpleNamespace(id="sub_test", customer="cus_test", status="active"),
-    ) as modify:
+        "stripe.Subscription.modify"
+    ) as modify, patch(
+        "stripe.billing_portal.Session.create",
+        return_value=SimpleNamespace(url="https://billing.stripe.com/p/session_test"),
+    ):
         asyncio.run(service.upgrade_subscription("price_growth", "growth"))
 
-    assert "discounts" not in modify.call_args.kwargs
+    modify.assert_not_called()
 
 
-def test_no_existing_discount_omits_the_param(service):
-    """No coupon on the subscription -- nothing to strip, don't send the param."""
+def test_no_existing_discount_skips_the_strip_call(service):
+    """No coupon on the subscription -- nothing to strip, don't call modify."""
     with patch(
         "app.api.services.stripe_services.stripe_tier_service.price_to_plan",
         return_value="fleet",
@@ -90,9 +103,11 @@ def test_no_existing_discount_omits_the_param(service):
         "stripe.Subscription.retrieve",
         return_value=_subscription("price_growth", discounted=False),
     ), patch(
-        "stripe.Subscription.modify",
-        return_value=SimpleNamespace(id="sub_test", customer="cus_test", status="active"),
-    ) as modify:
+        "stripe.Subscription.modify"
+    ) as modify, patch(
+        "stripe.billing_portal.Session.create",
+        return_value=SimpleNamespace(url="https://billing.stripe.com/p/session_test"),
+    ):
         asyncio.run(service.upgrade_subscription("price_fleet", "fleet"))
 
-    assert "discounts" not in modify.call_args.kwargs
+    modify.assert_not_called()

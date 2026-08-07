@@ -60,9 +60,11 @@ class PlanLimitsResponse(BaseModel):
     catalog: list[PlanCatalogEntry] = []
 
 
-class SubscriptionUpgradeResponse(BaseModel):
-    subscription_id: str
+class PortalSessionResponse(BaseModel):
+    """A tier change is confirmed in Stripe's Billing Portal, not billed
+    server-side -- this URL shows the card on file and the prorated amount
+    before anything charges. See directives.md billing-confirm-2026-08."""
+    portal_url: str
     tenant_id: int
     customer_id: str
     product_type: str
-    status: str
