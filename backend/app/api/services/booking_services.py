@@ -311,6 +311,7 @@ class BookingService(ServiceContext):
                     vehicle_info=vehicle_info,
                     driver_name=driver_full_name if response.driver_id else None,
                     driver_phone=driver_phone,
+                    tenant_contact_phone=getattr(tenant_obj, "phone_no", None),
                 )
                 await asyncio.sleep(3)
                 # Email: Send new booking notification to tenant
