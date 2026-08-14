@@ -290,6 +290,7 @@ class DriverService(ServiceContext):
                         )
                         tenant_contact_email = tenant_row.email if tenant_row else None
                         tenant_contact_phone = tenant_row.phone_no if tenant_row else None
+                        vehicle_info = booking_obj.vehicle.vehicle_name if booking_obj.vehicle else None
                         riders.RiderEmailServices(
                             to_email=rider_obj.email, from_email=self.tenant_email, operator_name=op
                         ).booking_status_update_email(
@@ -302,6 +303,7 @@ class DriverService(ServiceContext):
                             driver_phone=driver_phone,
                             tenant_contact_email=tenant_contact_email,
                             tenant_contact_phone=tenant_contact_phone,
+                            vehicle_info=vehicle_info,
                         )
                         # Send cancellation email if status is cancelled
                         if action == 'cancelled':

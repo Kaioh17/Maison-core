@@ -141,9 +141,11 @@ class RiderEmailServices(EmailServices):
         vehicle_info: str = None,
         driver_name: str = None,
         driver_phone: str = None,
+        tenant_contact_phone: str = None,
     ):
-        """Booking confirmed — facts + one reassurance line."""
-        subject = "Your ride is confirmed"
+        """Booking received, pending driver confirmation — facts + one reassurance line."""
+        first = L.first_name(rider_obj.full_name)
+        subject = f"We've got your ride request, {first}"
 
         pickup_time = (
             self._format_local_datetime(booking_obj.pickup_time)
@@ -153,7 +155,7 @@ class RiderEmailServices(EmailServices):
         estimated_price = f"${booking_obj.estimated_price:.2f}" if hasattr(booking_obj, 'estimated_price') and booking_obj.estimated_price else "TBD"
         dropoff = getattr(booking_obj, 'dropoff_location', None) or ""
 
-        details = (
+        trip_details = (
             L.detail_kv("Pickup", L.highlight(booking_obj.pickup_location))
             + "<br/>"
             + (
@@ -161,22 +163,44 @@ class RiderEmailServices(EmailServices):
                 if dropoff
                 else ""
             )
-            + L.detail_kv("Time", html.escape(pickup_time, quote=False))
+            + L.detail_kv("Pickup time", html.escape(pickup_time, quote=False))
             + "<br/>"
+            + L.detail_kv("Estimated fare", html.escape(str(estimated_price), quote=False))
         )
-        if driver_name:
-            details += L.detail_kv("Driver", html.escape(str(driver_name), quote=False)) + "<br/>"
-        if driver_phone and str(driver_phone).strip():
-            details += L.detail_kv("Driver phone", html.escape(str(driver_phone), quote=False)) + "<br/>"
-        if vehicle_info:
-            details += L.detail_kv("Vehicle", html.escape(str(vehicle_info), quote=False)) + "<br/>"
-        details += L.detail_kv("Estimate", html.escape(str(estimated_price), quote=False))
+
+        driver_block = ""
+        if driver_name and str(driver_name).strip():
+            driver_line = html.escape(str(driver_name), quote=False)
+            if driver_phone and str(driver_phone).strip():
+                driver_line += " &middot; " + html.escape(str(driver_phone), quote=False)
+            driver_block = (
+                L.p("<strong>Driver assigned (pending confirmation)</strong>", margin_bottom="4px")
+                + L.p(driver_line, margin_bottom="4px" if vehicle_info else "16px")
+            )
+            if vehicle_info and str(vehicle_info).strip():
+                driver_block += L.p(html.escape(str(vehicle_info), quote=False))
+
+        contact_line = (
+            f"Just reply to this email or call {html.escape(str(tenant_contact_phone), quote=False)}."
+            if tenant_contact_phone and str(tenant_contact_phone).strip()
+            else "Just reply to this email."
+        )
 
         body = (
-            L.p(f"Hi {L.first_name(rider_obj.full_name)},")
-            + L.p("Your ride is confirmed.")
-            + L.p(details)
-            + L.p("We'll send you a reminder one hour before pickup.")
+            L.p(f"Hi {first},")
+            + L.p(
+                f"Thanks for booking with {self.operator_name}. Your ride is in, we're just "
+                "waiting on your driver to confirm. That usually only takes a few minutes."
+            )
+            + L.p("<strong>Trip details</strong>", margin_bottom="4px")
+            + L.p(trip_details)
+            + driver_block
+            + L.p(
+                "We'll send a second email the moment it's confirmed. If anything changes on "
+                "our end before then, you'll hear from us first, no need to check back."
+            )
+            + L.p(f"Questions in the meantime? {contact_line}")
+            + L.p(f"See you soon,<br/>{self.operator_name}", margin_bottom="0")
         )
         html_body = L.build_email(body, footer_brand=self.operator_name)
         self._email(subject, html_body)
@@ -193,6 +217,7 @@ class RiderEmailServices(EmailServices):
         tenant_contact_email: str = None,
         tenant_contact_phone: str = None,
         review_comment: str = None,
+        vehicle_info: str = None,
     ):
         """Status change — factual; confirmed/completed get richer copy; optional feedback CTA on complete."""
         raw_status = (
@@ -205,7 +230,7 @@ class RiderEmailServices(EmailServices):
         feedback_href = (feedback_url or "").strip() or None
 
         if raw_status == 'confirmed':
-            subject = f"Your {self.operator_name} ride is confirmed ✳︎"
+            subject = f"You're confirmed, {first}"
             pickup_time = (
                 self._format_local_datetime(booking_obj.pickup_time)
                 if hasattr(booking_obj.pickup_time, 'strftime')
@@ -218,41 +243,48 @@ class RiderEmailServices(EmailServices):
                 if hasattr(booking_obj, 'estimated_price') and booking_obj.estimated_price is not None
                 else "TBD"
             )
-            details_lines = (
-                L.detail_kv("From", L.highlight(pickup))
+            has_driver = bool(driver_name and str(driver_name).strip())
+            driver_label = driver_name if has_driver else "Your driver"
+
+            trip_details = (
+                L.detail_kv("Pickup", L.highlight(pickup))
                 + "<br/>"
-                + (L.detail_kv("To", L.highlight(dropoff)) + "<br/>" if dropoff else "")
+                + (L.detail_kv("Drop-off", L.highlight(dropoff)) + "<br/>" if dropoff else "")
                 + L.detail_kv("Pickup time", html.escape(pickup_time, quote=False))
                 + "<br/>"
                 + (
-                    L.detail_kv("Driver phone", html.escape(str(driver_phone), quote=False)) + "<br/>"
-                    if driver_phone and str(driver_phone).strip()
+                    L.detail_kv("Vehicle", html.escape(str(vehicle_info), quote=False)) + "<br/>"
+                    if vehicle_info and str(vehicle_info).strip()
                     else ""
                 )
-                + L.detail_kv("Estimate", html.escape(estimate, quote=False))
+                + L.detail_kv("Estimated fare", html.escape(estimate, quote=False))
             )
-            driver_line = (
-                f"Your driver {driver_name} will arrive promptly at the scheduled time "
-                "and ensure your journey is smooth from start to finish."
-                if (driver_name and str(driver_name).strip())
-                else (
-                    "Your driver will arrive promptly at the scheduled time "
-                    "and ensure your journey is smooth from start to finish."
+
+            driver_block = ""
+            if has_driver:
+                driver_line = html.escape(str(driver_name), quote=False)
+                if driver_phone and str(driver_phone).strip():
+                    driver_line += " &middot; " + html.escape(str(driver_phone), quote=False)
+                driver_block = (
+                    L.p("<strong>Your driver</strong>", margin_bottom="4px")
+                    + L.p(driver_line)
                 )
-            )
+
             body = (
                 L.p(f"Hi {first},")
                 + L.p(
-                    "We're all set for your upcoming trip. Here are the details so you can "
-                    "travel with complete peace of mind:"
+                    f"You're all set. {html.escape(str(driver_label), quote=False)} has confirmed "
+                    "your ride and will be ready right on time."
                 )
-                + L.p(details_lines)
-                + L.p(driver_line)
+                + L.p("<strong>Trip details</strong>", margin_bottom="4px")
+                + L.p(trip_details)
+                + driver_block
                 + L.p(
-                    f"Thank you for riding with {self.operator_name} — we're looking forward to "
-                    "getting you there comfortably and right on time."
+                    f"{html.escape(str(driver_label), quote=False)} will have you on your way as "
+                    "soon as you're ready, no need to wait around once you step out."
                 )
-                + L.p(f"— The {self.operator_name} Team", margin_bottom="0")
+                + L.p(f"Thanks for booking with {self.operator_name}. We'll see you soon.")
+                + L.p(f"{self.operator_name} team", margin_bottom="0")
             )
             html_body = L.build_email(body, footer_brand=self.operator_name)
             self._email(subject, html_body)

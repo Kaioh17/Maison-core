@@ -311,6 +311,7 @@ class BookingService(ServiceContext):
                     vehicle_info=vehicle_info,
                     driver_name=driver_full_name if response.driver_id else None,
                     driver_phone=driver_phone,
+                    tenant_contact_phone=getattr(tenant_obj, "phone_no", None),
                 )
                 await asyncio.sleep(3)
                 # Email: Send new booking notification to tenant
@@ -551,14 +552,15 @@ class BookingService(ServiceContext):
 
             
     async def get_bookings_by(self,booking_id = None ,booking_status: str = None,
-                              service_type: str =None,vehicle_id: int =None, 
-                              limit: int = None ):
+                              service_type: str =None,vehicle_id: int =None,
+                              limit: int = None, rider_id: int = None ):
         try:
-            
+
             limit_per_user= {"rider": 5, "tenant": 25, "driver":5}
             limit = limit_per_user[self.role.lower()] if limit == None else limit
             execute_params ={"booking_status":booking_status, "tenant_id":self.tenant_id,
-                            "service_type":service_type, "vehicle_id":vehicle_id, "booking_id":booking_id, "limit":limit}
+                            "service_type":service_type, "vehicle_id":vehicle_id, "booking_id":booking_id, "limit":limit,
+                            "rider_id":rider_id}
                                 
             
             ####A booking should always have a vehicle_id but booking will not always hav ea driver
@@ -572,14 +574,15 @@ class BookingService(ServiceContext):
                       
                 stmt = """select b.* , CONCAT(v.make,' ',v.model,' ',v.year) as vehicle, CONCAT(u.first_name,' ',u.last_name) as customer_name, u.phone_no as customer_phone, CONCAT(d.first_name,' ',d.last_name) as driver_name, d.phone_no as driver_phone
                     from bookings b join vehicles v on v.id = b.vehicle_id join users u on u.id = b.rider_id left join drivers d on d.id = b.driver_id
-                    where b.tenant_id = :tenant_id and ((:booking_status is null or b.booking_status = :booking_status) 
-                    and (:service_type is null or b.service_type = :service_type) 
-                    and (:vehicle_id is null or b.vehicle_id=:vehicle_id))
+                    where b.tenant_id = :tenant_id and ((:booking_status is null or b.booking_status = :booking_status)
+                    and (:service_type is null or b.service_type = :service_type)
+                    and (:vehicle_id is null or b.vehicle_id=:vehicle_id)
+                    and (:rider_id is null or b.rider_id=:rider_id))
                     and (:booking_id is null or b.id=:booking_id)
                     order by b.created_on desc
                     limit :limit
                     """
-                
+
                 booking_query = self.db.execute(text(stmt), execute_params)
                     
             elif self.role.lower() == 'driver':

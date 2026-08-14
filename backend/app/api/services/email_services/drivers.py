@@ -90,8 +90,8 @@ class DriverEmailServices(EmailServices):
 
         subject = "New ride assigned" if assigned else "New ride available"
 
-        suffix = "/driver/bookings"
-        cta_url = f"{self.BASE_URL}/{slug or 'default'}{suffix}"
+        scheme = "https" if self.ENV == "production" else "http"
+        cta_url = f"{scheme}://{self._tenant_host(slug)}/driver/bookings"
 
         body = (
             L.p(L.detail_kv("Pickup", L.highlight(pickup)))

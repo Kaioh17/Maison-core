@@ -52,16 +52,28 @@ class BeDriver(BaseModel):
 class TenantUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=200)
     last_name: Optional[str] = Field(None, min_length=1, max_length=200)
+    email: Optional[EmailStr] = None
     phone_no: Optional[str] = Field(None, pattern=r'^\+?[\d\s\-\(\)]+$')
     company_name: Optional[str] = Field(None, min_length=1, max_length=200)
+    slug: Optional[str] = Field(None, min_length=1, max_length=100, pattern=r'^[a-z0-9-]+$')
     logo_url: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = Field(None, min_length=1, max_length=100)
     drivers: Optional[int] = Field(None, ge=0)
     plan: Optional[str] = Field(None, pattern=r'^(free|growth|fleet)$')
     is_active: Optional[bool] = None
-    
-    
+
+    @field_validator('email')
+    def validate_email(cls, v):
+        return v.lower() if v else v
+
+    @field_validator('slug', mode='before')
+    def validate_slug(cls, value: str) -> any:
+        if value:
+            return value.lower().strip().replace(' ', '-').replace('_', '-')
+        return value
+
+
 class TenantProfile(BaseModel):
     tenant_id: int = Field(exclude=True)
     company_name: str = Field(..., max_length=200)
@@ -207,3 +219,12 @@ class BookingAnalyticsData(BaseModel):
 class TenantRiderEmailItem(BaseModel):
     id: int
     email: EmailStr
+    first_name: str
+    last_name: str
+    phone_no: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    created_on: datetime
+    total_bookings: int = 0
