@@ -65,6 +65,26 @@ async def get_tenant_company_info(
     return company
 
 
+@router.patch(
+    "/",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[tenant.TenantResponse],
+    summary="Update current tenant account / company profile",
+    description=(
+        "Partial update. Accepts any of: **`first_name`**, **`last_name`**, **`email`**, **`phone_no`** "
+        "(account info) and/or **`company_name`**, **`slug`**, **`city`**, **`address`** (company profile). "
+        "Requires **tenant** JWT."
+    ),
+    response_description="Updated tenant profile payload.",
+)
+async def update_tenant_company_info(
+    payload: tenant.TenantUpdate,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    updated = await tenant_service.update_company_info(payload)
+    return updated
+
+
 @router.post(
     "/add",
     status_code=status.HTTP_201_CREATED,
@@ -157,19 +177,19 @@ async def get_vehicles_deprecated(
     response_model=general.StandardResponse[list[booking.BookingPublic]],
     summary="List bookings for this tenant",
     description=(
-        "Filter by **`booking_status`**, **`service_type`**, **`vehicle_id`**, **`booking_id`**, or **`limit`**. "
+        "Filter by **`booking_status`**, **`service_type`**, **`vehicle_id`**, **`rider_id`**, **`booking_id`**, or **`limit`**. "
         "Requires **tenant** JWT; results scoped to tenant."
     ),
     response_description="List of bookings.",
 )
 async def get_tenant_bookings(
     booking_id: Optional[str] = None,
-    booking_status: Optional[str] = Query(None, description="only this labels can be passed 'pending', 'confirmed', 'active', 'cancelled', 'no_show'"),service_type: Optional[str] =None, vehicle_id: Optional[int] =None,limit: Optional[int] =None, 
+    booking_status: Optional[str] = Query(None, description="only this labels can be passed 'pending', 'confirmed', 'active', 'cancelled', 'no_show'"),service_type: Optional[str] =None, vehicle_id: Optional[int] =None, rider_id: Optional[int] =None, limit: Optional[int] =None,
     booking_service: BookingService = Depends(get_booking_service)
 ):
     logger.debug("I am hittting tenant for bookings ")
-    bookings = await booking_service.get_bookings_by(booking_id=booking_id, booking_status=booking_status, service_type=service_type, vehicle_id=vehicle_id, limit=limit)
-        
+    bookings = await booking_service.get_bookings_by(booking_id=booking_id, booking_status=booking_status, service_type=service_type, vehicle_id=vehicle_id, rider_id=rider_id, limit=limit)
+
     return bookings
 
 
@@ -196,9 +216,9 @@ async def tenant_book_ride(
     "/riders",
     status_code=status.HTTP_200_OK,
     response_model=general.StandardResponse[list[tenant.TenantRiderEmailItem]],
-    summary="List tenant rider emails",
-    description="Returns all rider id and email pairs for this tenant. Requires **tenant** JWT.",
-    response_description="List of rider id and email.",
+    summary="List tenant riders",
+    description="Returns all riders for this tenant with contact and logistics details (name, email, phone, address, signed-up date). Requires **tenant** JWT.",
+    response_description="List of riders with basic contact/logistics details.",
 )
 async def list_tenant_rider_emails(
     tenant_service: TenantService = Depends(get_tenant_service),

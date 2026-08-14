@@ -310,6 +310,52 @@ class TenantService(ServiceContext):
         except Exception as e:
             logger.error(f"Unexpected error in get_company_info: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
+
+    async def update_company_info(self, payload):
+        # Fields live on two tables: account info on `tenants`, company profile on
+        # `tenants_profile`. Any payload field not in one of these sets (e.g. plan,
+        # is_active, drivers) is silently ignored — this is a self-service endpoint,
+        # not an admin one.
+        tenant_fields = {"first_name", "last_name", "email", "phone_no"}
+        profile_fields = {"company_name", "slug", "address", "city"}
+        try:
+            tenant_row = self.db.query(self.tenant_info).filter(self.tenant_info.id == self.tenant_id).first()
+            profile_row = self.db.query(self.tenant_profile).filter(self.tenant_profile.tenant_id == self.tenant_id).first()
+            if not tenant_row or not profile_row:
+                raise HTTPException(status_code=404, detail="Company cannot be found")
+
+            data = payload.model_dump(exclude_unset=True, exclude_none=True)
+
+            if "email" in data and data["email"] != tenant_row.email:
+                self._check_unique_fields(self.tenant_info, {"email": data["email"]})
+            if "phone_no" in data and data["phone_no"] != tenant_row.phone_no:
+                self._check_unique_fields(self.tenant_info, {"phone_no": data["phone_no"]})
+            if "company_name" in data and data["company_name"] != profile_row.company_name:
+                self._check_unique_fields(self.tenant_profile, {"company_name": data["company_name"]})
+            if "slug" in data and data["slug"] != profile_row.slug:
+                if data["slug"] in self.RESERVED_SLUGS:
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                        detail=f"The slug '{data['slug']}' is reserved and cannot be used. Please choose a different slug.")
+                if self.db.query(self.tenant_profile).filter(self.tenant_profile.slug == data["slug"]).first():
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Slug already exists")
+
+            for field, value in data.items():
+                if field in tenant_fields:
+                    setattr(tenant_row, field, value)
+                elif field in profile_fields:
+                    setattr(profile_row, field, value)
+
+            self.db.commit()
+            return await self.get_company_info()
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(e, self.db)
+            raise HTTPException(status_code=500, detail="Database error occurred")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in update_company_info: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+
     # async def _set_up_tenant_settings(self, new_tenant_id, logo_url, slug):
     #     try: 
     #         logger.debug(f"Logo url{logo_url}")
@@ -695,15 +741,44 @@ class TenantService(ServiceContext):
     async def list_rider_emails(self):
         try:
             riders = (
-                self.db.query(user_table.id, user_table.email)
+                self.db.query(
+                    user_table.id,
+                    user_table.email,
+                    user_table.first_name,
+                    user_table.last_name,
+                    user_table.phone_no,
+                    user_table.address,
+                    user_table.city,
+                    user_table.state,
+                    user_table.postal_code,
+                    user_table.created_on,
+                    func.count(booking_table.id).label("total_bookings"),
+                )
+                .outerjoin(booking_table, booking_table.rider_id == user_table.id)
                 .filter(
                     user_table.tenant_id == self.tenant_id,
                     user_table.role == "rider",
                 )
+                .group_by(user_table.id)
                 .order_by(user_table.email.asc())
                 .all()
             )
-            data = [{"id": row.id, "email": row.email} for row in riders]
+            data = [
+                {
+                    "id": row.id,
+                    "email": row.email,
+                    "first_name": row.first_name,
+                    "last_name": row.last_name,
+                    "phone_no": row.phone_no,
+                    "address": row.address,
+                    "city": row.city,
+                    "state": row.state,
+                    "postal_code": row.postal_code,
+                    "created_on": row.created_on,
+                    "total_bookings": row.total_bookings,
+                }
+                for row in riders
+            ]
             return success_resp(
                 msg="Rider emails retrieved.",
                 data=data,
