@@ -30,8 +30,10 @@ class AuthService:
     def __init__(self, db):
         self.db = db
     MAX_ATTEMPTS = 3
-    WINDOW_MINUTES=5    
+    WINDOW_MINUTES=5
     environment = settings.environment
+    # ponytail: per-role session length so drivers/riders aren't logged out mid-shift/trip
+    REFRESH_DAYS_BY_ROLE = {"driver": 30, "rider": 90}
     
     def login(self, request, user_credentials, role:str):
         try:
@@ -91,10 +93,12 @@ class AuthService:
                 tenant_id = user.tenant_id
                 auto_refresh = True
                 
+            refresh_days = self.REFRESH_DAYS_BY_ROLE.get(role, settings.refresh_token_expire_days)
+
             access_token = create_access_token(data = {"id": str(user.id), "role": user.role,  "tenant_id": str(tenant_id)})
-            refresh_token = create_refresh_token(data = {"id": str(user.id), "role": user.role,  "tenant_id": str(tenant_id), "auto_refresh": auto_refresh})
-                
-                    
+            refresh_token = create_refresh_token(data = {"id": str(user.id), "role": user.role,  "tenant_id": str(tenant_id), "auto_refresh": auto_refresh}, expire_days=refresh_days)
+
+
             # logger.info(f"refresh token: {refresh_token}")
 
             response = JSONResponse(content = {"access_token": access_token})
@@ -103,9 +107,9 @@ class AuthService:
                 key = "refresh_token",
                 value= refresh_token,
                 httponly=True,
-                secure=secure, #set to true for production 
+                secure=secure, #set to true for production
                 samesite="lax",
-                max_age=60 * 60 * 24 * 30,
+                max_age=60 * 60 * 24 * refresh_days,
                 path= "/api"  # Changed from "/api/v1/login/refresh_tenants" to "/api"
             )
             

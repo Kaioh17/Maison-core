@@ -20,20 +20,11 @@ class TenantEmailServices(EmailServices):
         self.to_email = 'mubskill@gmail.com' if self.ENV == 'development' else to_email
         self.from_email = self._format_from(from_email, display_name)
 
-    def _public_domain(self) -> str:
-        """Marketing / app host (e.g. usemaison.io) — not API base_url."""
-        d = (self.DOMAIN or "").replace("https://", "").replace("http://", "").strip("/").split("/")[0]
-        if not d or "localhost" in d or "127.0.0.1" in d:
-            return "usemaison.io"
-        return d
-
     def _maison_web(self, path: str) -> str:
-        """Absolute URL on the public site, e.g. /tenant/login -> https://usemaison.io/tenant/login"""
-        p = path if path.startswith("/") else f"/{path}"
-        return f"https://{self._public_domain()}{p}"
-
-    def _tenant_host(self, slug: str) -> str:
-        return f"{slug}.{self._public_domain()}"
+        """Absolute URL on the public site, e.g. /tenant/login -> https://usemaison.io/tenant/login
+        in production, or http://localhost:3000/tenant/login in local dev -- follows DOMAIN/ENV
+        from config rather than hardcoding the prod host, so local emails are actually clickable."""
+        return self._public_url(path)
 
     def onboarding_email(self):
 
@@ -332,6 +323,33 @@ class TenantEmailServices(EmailServices):
             + L.p("Your account settings were updated.")
             + (settings_block if settings_block else "")
             + L.p("If you didn't make this change, reply to this email.")
+        )
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
+
+    def driver_application_email(self, tenant_obj: Tenants, driver_obj, slug: str):
+        """Notify the tenant a driver applied through the public site and needs review/approval."""
+        applicant_name = f"{driver_obj.first_name} {driver_obj.last_name}".strip()
+        subject = f"New driver application — {applicant_name}"
+
+        driver_type_label = (getattr(driver_obj, "driver_type", "") or "").replace("_", " ").title()
+
+        details = (
+            L.detail_kv("Name", html.escape(applicant_name, quote=False))
+            + "<br/>"
+            + L.detail_kv("Email", html.escape(driver_obj.email, quote=False))
+            + (
+                "<br/>" + L.detail_kv("Driver type", html.escape(driver_type_label, quote=False))
+                if driver_type_label
+                else ""
+            )
+        )
+
+        body = (
+            L.p(f"Hi {L.first_name(tenant_obj.full_name)},")
+            + L.p(f"<strong>{applicant_name}</strong> applied to drive for you. Review the request and approve it to send them their registration link.")
+            + L.p(details)
+            + L.primary_cta(self._maison_web("/tenant/drivers"), "Review application →")
         )
         html_body = L.build_email(body, footer_brand="Maison")
         self._email(subject, html_body)

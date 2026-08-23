@@ -32,21 +32,6 @@ class RiderEmailServices(EmailServices):
         self.operator_name = brand
         self.default_tz = "America/Chicago"
 
-    def _tenant_host(self, slug: str) -> str:
-        domain = (
-            (self.DOMAIN or "")
-            .replace("https://", "")
-            .replace("http://", "")
-            .strip("/")
-            .split("/")[0]
-        )
-        return f"{slug}.{domain}" if domain else slug
-
-    def _tenant_url(self, slug: str, path: str) -> str:
-        host = self._tenant_host(slug)
-        scheme = "https" if self.ENV == "production" else "http"
-        return f"{scheme}://{host}{path}"
-
     def _confirm_booking_url(self, slug: str, confirm_token: str) -> str:
         return self._tenant_url(slug, f"/riders/confirm-booking?token={quote(confirm_token, safe='')}")
 

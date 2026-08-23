@@ -76,10 +76,10 @@ def create_access_token(data: dict):
 
     return encoded_jwt
 
-def create_refresh_token(data: dict):
+def create_refresh_token(data: dict, expire_days: int = None):
     to_encode = data.copy()
 
-    expire = datetime.utcnow() + timedelta(days= REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.utcnow() + timedelta(days = expire_days if expire_days is not None else REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

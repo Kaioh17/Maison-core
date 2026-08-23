@@ -3,7 +3,7 @@ from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
 # from ..services import driver_service
-from app.schemas import driver, booking, general
+from app.schemas import driver, booking, general, tenant as tenant_schemas
 from ..core import deps
 from .dependencies import is_driver, api_key_header, API_KEY, verify_api_key
 from typing import Optional
@@ -62,6 +62,29 @@ async def verify_driver_token(
     logger.info("Driver..")
     token = await driver_service.check_token(slug=slug, token=token)
     return token
+
+
+@router.post(
+    "/{slug}/apply",
+    status_code=status.HTTP_201_CREATED,
+    response_model=general.StandardResponse[dict],
+    dependencies=[Depends(verify_api_key)],
+    summary="Apply to drive (self-serve request)",
+    description=(
+        "Public pre-invite step: a prospective driver requests to join tenant **`slug`**'s fleet. "
+        "Creates an unapproved driver record and emails both the applicant and the tenant. "
+        "Requires **`X-API-Key`** header matching server config."
+    ),
+    response_description="Application acknowledgement.",
+)
+async def apply_to_drive(
+    slug: str = Path(..., description="Tenant slug from the public site."),
+    payload: tenant_schemas.OnboardDriver = ...,
+    driver_service: DriverService = Depends(get_unauthorized_driver_service),
+):
+    logger.info("Driver application received..")
+    result = await driver_service.apply(payload, slug=slug)
+    return result
 
 
 @router.patch(

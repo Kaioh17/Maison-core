@@ -31,6 +31,7 @@ class ServiceType(Enum):
 class PaymentType(Enum):
     CASH = "cash"
     CARD = "card"
+    CARD_PICKUP = "card_pickup"
     ZELLE = "zelle"
 
 class DriverType(Enum):

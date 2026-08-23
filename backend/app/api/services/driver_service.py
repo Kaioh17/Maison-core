@@ -31,22 +31,93 @@ class DriverService(ServiceContext):
             
             response=self.db.query(tenant_profile).filter(tenant_profile.slug == slug).first()
             tenant_id = response.tenant_id
-            dresponse=self.db.query(driver_table).filter(driver_table.driver_token == token, driver_table.tenant_id == tenant_id, driver_table.updated_on == None).first()
-            
+            # is_token gates reuse (flips True below once verified) -- NOT updated_on, which also
+            # flips on unrelated writes like a tenant approving the driver (sets driver_token/is_active)
+            # and would otherwise lock a driver out of verifying their own freshly-issued token.
+            dresponse=self.db.query(driver_table).filter(driver_table.driver_token == token, driver_table.tenant_id == tenant_id, driver_table.is_token == False).first()
+
             if not dresponse:
                 logger.error(f"Incorrect token entered. try again...")
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                     detail = "Incorrect token entered. try again...")
-                
-            await self._ensure_token_not_expired_(created_on = dresponse.created_on) #check token
+
+            # Token is (re)issued at approval time for self-serve applications, so expiry
+            # must count from there (updated_on) rather than the original application's
+            # created_on -- falls back to created_on for the tenant-invite flow, where the
+            # row is never touched before this call and updated_on is still null.
+            await self._ensure_token_not_expired_(created_on = dresponse.updated_on or dresponse.created_on)
             
             dresponse.is_token = True
             self.db.commit()
-            return success_resp(msg="Token Correct you can now register..", data={"tenant_id":tenant_id})
+            # Hand back what was already collected at application/invite time so the
+            # registration form can pre-fill instead of asking for it twice, and so
+            # driver_type is presented as already decided rather than re-asked.
+            return success_resp(msg="Token Correct you can now register..", data={
+                "tenant_id": tenant_id,
+                "first_name": dresponse.first_name,
+                "last_name": dresponse.last_name,
+                "email": dresponse.email,
+                "driver_type": dresponse.driver_type,
+            })
         
         except db_exceptions.COMMON_DB_ERRORS as e:
-            db_exceptions.handle(e, self.db) 
-        
+            db_exceptions.handle(e, self.db)
+
+    async def apply(self, payload, slug):
+        """
+        Self-serve driver application from the public site: a prospective
+        driver requests to join a tenant's fleet before any invite exists.
+
+        Creates an *unapproved* driver row -- `driver_token` is left blank so
+        the existing `/driver/{slug}/verify` -> `/driver/register` flow can't
+        be reached until a tenant approves the application (see
+        TenantService.approve_driver, which fills the token in and emails it).
+        Notifies both the applicant and the tenant.
+        """
+        try:
+            tenant_id = Validations(db=self.db)._verify_slug(slug)
+
+            # ponytail: no plan-quota check here (unlike TenantService.onboard_drivers) --
+            # a tenant can still only Approve up to what their plan allows in practice,
+            # but nothing stops the applications themselves from piling up past that.
+            # Add plan_policy.PlanPolicy.assert_can_onboard_driver in approve_driver if
+            # abuse becomes a real problem.
+            existing = self.db.query(driver_table).filter(
+                driver_table.email == payload.email,
+                driver_table.tenant_id == tenant_id,
+            ).first()
+            if existing:
+                logger.warning("Driver application already exists for this email")
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                    detail="An application with this email already exists.")
+
+            driver_info = payload.model_dump()
+            new_driver = driver_table(
+                tenant_id=tenant_id,
+                driver_token="",
+                is_registered="pending",
+                **driver_info,
+            )
+            self.db.add(new_driver)
+            self.db.commit()
+            self.db.refresh(new_driver)
+
+            tenant_row = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+
+            drivers.DriverEmailServices(
+                to_email=new_driver.email, from_email='noreply', display_name=slug
+            ).application_received_email(obj=new_driver)
+
+            if tenant_row and tenant_row.email:
+                tenants.TenantEmailServices(
+                    to_email=tenant_row.email, from_email='noreply', display_name=slug
+                ).driver_application_email(tenant_obj=tenant_row, driver_obj=new_driver, slug=slug)
+
+            logger.info("Driver application received")
+            return success_resp(msg="Application received", data={"id": new_driver.id})
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, self.db)
+
     def _assert_tenant_can_add_vehicle(self, tenant_id):
         """Apply the vehicle quota for a tenant resolved by id, not by session."""
         profile = self.db.query(tenant_profile).filter(

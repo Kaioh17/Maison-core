@@ -678,11 +678,37 @@ class TenantService(ServiceContext):
 
         return success_resp(data=new_driver, msg="New driver onboarded successfully")
 
-    async def approve_driver(self, payload):
+    async def approve_driver(self, driver_id: int):
+        """
+        Approves a driver row that is awaiting review -- either a self-serve
+        application (see DriverService.apply) or a tenant invite the driver
+        hasn't finished registering yet. Issues the onboarding token and
+        emails the driver their registration link, same as `onboard_drivers`.
+        """
         try:
-            # logger.info(approve_driver)
-            pass
-            
+            driver_obj = self.db.query(self.driver_table).filter(
+                self.driver_table.id == driver_id,
+                self.driver_table.tenant_id == self.tenant_id,
+            ).first()
+            if not driver_obj:
+                logger.warning(f"Driver {driver_id} not found for tenant {self.tenant_id}")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found")
+            if driver_obj.is_registered == "registered":
+                logger.warning(f"Driver {driver_id} is already registered")
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Driver is already registered")
+
+            onboard_token = await self._onboarding_token(6)
+            driver_obj.driver_token = onboard_token
+            driver_obj.is_active = True
+            self.db.commit()
+            self.db.refresh(driver_obj)
+
+            drivers.DriverEmailServices(
+                to_email=driver_obj.email, from_email='driver', display_name=self.slug
+            ).onboarding_email(token=onboard_token, slug=self.slug)
+
+            logger.info(f"Driver {driver_id} approved")
+            return success_resp(msg="Driver approved", data={"id": driver_obj.id})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 

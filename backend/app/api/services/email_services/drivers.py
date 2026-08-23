@@ -16,11 +16,6 @@ class DriverEmailServices(EmailServices):
         self.to_email = 'mubskill@gmail.com' if self.ENV == 'development' else to_email
         self.from_email = self._format_from(from_email, display_name)
 
-    def _tenant_host(self, slug: str) -> str:
-            
-        domain = (self.DOMAIN or "").replace("https://", "").replace("http://", "").strip("/").split("/")[0]
-        return f"{slug}.{domain}" if domain else slug
-
     def _company_label(self, obj: Drivers) -> str:
         if getattr(obj, "tenants", None) and getattr(obj.tenants, "profile", None):
             return obj.tenants.profile.company_name or obj.slug
@@ -28,8 +23,7 @@ class DriverEmailServices(EmailServices):
 
     def onboarding_email(self, token, slug):
         subject = "Complete your driver registration"
-        host = self._tenant_host(slug)
-        verify_url = f"https://{host}/driver/verify"
+        verify_url = self._tenant_url(slug, "/driver/verify")
 
         body = (
             L.p("Use this code to finish registration (valid 24 hours):")
@@ -53,11 +47,28 @@ class DriverEmailServices(EmailServices):
     def _company_label_from_slug(self, slug: str) -> str:
         return slug.replace("-", " ").title() if slug else "Maison"
 
+    def application_received_email(self, obj: Drivers):
+        """Confirms a self-serve driver application was received and is pending review."""
+        subject = "We've got your application"
+        company = self._company_label(obj)
+
+        body = (
+            L.p(f"Hi {L.first_name(obj.full_name)},")
+            + L.p(
+                f"Thanks for applying to drive for <strong>{company}</strong>. "
+                "Your application is now pending review — we'll email you as soon as it's approved "
+                "with a link to finish setting up your account."
+            )
+            + L.p("No action is needed from you right now.", margin_bottom="0")
+        )
+        html_body = L.build_email(body, footer_brand=company)
+        self._email(subject, html_body)
+
     def welcome_(self, obj: Drivers):
         subject = "You're on Maison"
         company = self._company_label(obj)
         host = self._tenant_host(obj.slug)
-        sign_in = f"https://{host}/driver/login"
+        sign_in = self._tenant_url(obj.slug, "/driver/login")
 
         body = (
             L.p(f"Hi {L.first_name(obj.full_name)},")
@@ -90,8 +101,7 @@ class DriverEmailServices(EmailServices):
 
         subject = "New ride assigned" if assigned else "New ride available"
 
-        scheme = "https" if self.ENV == "production" else "http"
-        cta_url = f"{scheme}://{self._tenant_host(slug)}/driver/bookings"
+        cta_url = self._tenant_url(slug, "/driver/bookings")
 
         body = (
             L.p(L.detail_kv("Pickup", L.highlight(pickup)))
@@ -125,8 +135,7 @@ class DriverEmailServices(EmailServices):
         )
 
         subject = "Ride cancelled"
-        scheme = "https" if self.ENV == "production" else "http"
-        cta_url = f"{scheme}://{self._tenant_host(slug)}/driver/bookings"
+        cta_url = self._tenant_url(slug, "/driver/bookings")
 
         route = (
             f"{L.highlight(pickup)} → {L.highlight(dropoff)}"
@@ -162,7 +171,7 @@ class DriverEmailServices(EmailServices):
             L.p(f"Hi {L.first_name(obj.full_name)},")
             + L.p(f"Your account is now <strong>{status_text}</strong>.")
             + L.p(msg)
-            + L.primary_cta(f"{self.BASE_URL}/{obj.slug}/driver/login", "Sign in →")
+            + L.primary_cta(self._tenant_url(obj.slug, "/driver/login"), "Sign in →")
         )
         html_body = L.build_email(body, footer_brand=self._company_label(obj))
         self._email(subject, html_body)
@@ -176,7 +185,7 @@ class DriverEmailServices(EmailServices):
             L.p(f"Hi {L.first_name(obj.full_name)},")
             + L.p(f"Vehicle: {vehicle_name}")
             + (L.p(f"Plate: {plate}") if plate else "")
-            + L.primary_cta(f"https://{self._tenant_host(obj.slug)}/driver/login", "View in app →")
+            + L.primary_cta(self._tenant_url(obj.slug, "/driver/login"), "View in app →")
         )
         html_body = L.build_email(body, footer_brand=self._company_label(obj))
         self._email(subject, html_body)

@@ -245,6 +245,26 @@ async def onboard_drivers(
 
 
 @router.patch(
+    "/drivers/{driver_id}/approve",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=general.StandardResponse[dict],
+    summary="Approve a pending driver",
+    description=(
+        "Approves a driver awaiting review (self-serve application or unfinished invite) and emails them "
+        "their registration link. Requires **tenant** JWT."
+    ),
+    response_description="Approval result.",
+)
+async def approve_driver(
+    driver_id: int,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    logger.info("Approving driver...")
+    result = await tenant_service.approve_driver(driver_id)
+    return result
+
+
+@router.patch(
     "/bookings/{booking_id}/assign-driver",
     status_code=status.HTTP_202_ACCEPTED,
     summary="Assign a driver to a booking",

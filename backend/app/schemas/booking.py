@@ -35,6 +35,7 @@ class ServiceType(str, Enum):
 class PaymentType(str, Enum):
     CASH = "cash"
     CARD = "card"
+    CARD_PICKUP = "card_pickup"
     ZELLE = "zelle"
 class Payment(BaseModel):
     is_approved: bool 
