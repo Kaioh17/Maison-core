@@ -252,6 +252,43 @@ class TenantEmailServices(EmailServices):
         html_body = L.build_email(body, footer_brand="Maison")
         self._email(subject, html_body)
 
+    def confirm_booking_reminder_email(
+        self,
+        booking_obj,
+        tenant_obj: Tenants,
+        slug: str,
+        rider_name: str = None,
+        driver_name: str = None,
+    ):
+        """Nudge the tenant to confirm/assign a driver for a still-pending trip as pickup approaches."""
+        passenger = (rider_name or "").strip() or "Passenger"
+        pickup = getattr(booking_obj, "pickup_location", None) or "TBD"
+        pickup_time = (
+            booking_obj.pickup_time.strftime("%B %d, %Y at %I:%M %p")
+            if hasattr(booking_obj, "pickup_time") and hasattr(booking_obj.pickup_time, "strftime")
+            else str(getattr(booking_obj, "pickup_time", "TBD"))
+        )
+        driver_line = driver_name if (driver_name and str(driver_name).strip()) else "Unassigned"
+
+        subject = f"Action needed: unconfirmed trip — {passenger}"
+        details = (
+            L.detail_kv("Passenger", html.escape(passenger, quote=False))
+            + "<br/>"
+            + L.detail_kv("Pickup", L.highlight(pickup))
+            + "<br/>"
+            + L.detail_kv("Pickup time", html.escape(pickup_time, quote=False))
+            + "<br/>"
+            + L.detail_kv("Driver", html.escape(str(driver_line), quote=False))
+        )
+        body = (
+            L.p(f"Hi {L.first_name(tenant_obj.full_name)},")
+            + L.p("This trip is still unconfirmed and pickup is coming up.")
+            + L.p(details)
+            + L.primary_cta(self._maison_web("/tenant/bookings"), "Review booking →")
+        )
+        html_body = L.build_email(body, footer_brand="Maison")
+        self._email(subject, html_body)
+
     def founding_operator_email(self, tenant_obj: Tenants, promo_code: str):
         """Sent once, right after signup, to one of the first 10 tenants — the
         code is never shown in the UI, only here, so it's redeemable at

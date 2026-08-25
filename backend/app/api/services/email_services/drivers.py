@@ -157,6 +157,62 @@ class DriverEmailServices(EmailServices):
         html_body = L.build_email(body, footer_brand=self._company_label_from_slug(slug or ""))
         self._email(subject, html_body)
 
+    def ride_reminder_email(
+        self,
+        booking_obj: object,
+        slug: str,
+        hours_before: int,
+        rider_name: str = None,
+        rider_phone: str = None,
+    ):
+        """Upcoming ride reminder — sent 24h and 1h before pickup."""
+        passenger = (rider_name or "").strip() or "Passenger"
+        pickup = getattr(booking_obj, "pickup_location", None) or "TBD"
+        pickup_time = (
+            booking_obj.pickup_time.strftime("%B %d, %Y at %I:%M %p")
+            if hasattr(booking_obj.pickup_time, "strftime")
+            else str(booking_obj.pickup_time)
+        )
+        when = "tomorrow" if hours_before >= 24 else f"in {hours_before} hour" + ("s" if hours_before != 1 else "")
+
+        subject = f"Reminder: ride {when}"
+        cta_url = self._tenant_url(slug, "/driver/bookings")
+
+        body = (
+            L.p(f"You have a ride {when}.")
+            + L.p(L.detail_kv("Pickup", L.highlight(pickup)))
+            + L.p(L.detail_kv("Passenger", html.escape(passenger, quote=False)))
+            + (
+                L.p(L.detail_kv("Passenger phone", html.escape(str(rider_phone), quote=False)))
+                if rider_phone and str(rider_phone).strip()
+                else ""
+            )
+            + L.p(L.detail_kv("Time", html.escape(pickup_time, quote=False)))
+            + L.primary_cta(cta_url, "Open in app →")
+        )
+        html_body = L.build_email(body, footer_brand=self._company_label_from_slug(slug or ""))
+        self._email(subject, html_body)
+
+    def confirm_booking_reminder_email(self, booking_obj: object, slug: str):
+        """Nudge to accept/confirm a ride that's still pending as pickup approaches."""
+        pickup = getattr(booking_obj, "pickup_location", None) or "TBD"
+        pickup_time = (
+            booking_obj.pickup_time.strftime("%B %d, %Y at %I:%M %p")
+            if hasattr(booking_obj.pickup_time, "strftime")
+            else str(booking_obj.pickup_time)
+        )
+        subject = "Action needed: confirm your upcoming ride"
+        cta_url = self._tenant_url(slug, "/driver/bookings")
+
+        body = (
+            L.p("A ride assigned to you is still unconfirmed and pickup is coming up.")
+            + L.p(L.detail_kv("Pickup", L.highlight(pickup)))
+            + L.p(L.detail_kv("Time", html.escape(pickup_time, quote=False)))
+            + L.primary_cta(cta_url, "Confirm ride →")
+        )
+        html_body = L.build_email(body, footer_brand=self._company_label_from_slug(slug or ""))
+        self._email(subject, html_body)
+
     def status_change_email(self, obj: Drivers, is_active: bool):
         status_text = "active" if is_active else "inactive"
         subject = f"Your driver account is {status_text}"

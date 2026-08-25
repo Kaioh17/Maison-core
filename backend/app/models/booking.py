@@ -40,6 +40,12 @@ class Bookings(Base):
     balance_intent_id = Column(String, nullable=True, index=True)#switc to nullable false after cleaning db
     payment_id = Column(String, nullable=True, index=True)#switc to nullable false after cleaning db
 
+    # Reminder tracking -- one-shot flags so the periodic reminder job (app/reminders.py)
+    # never double-sends across runs.
+    reminder_24h_sent = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    reminder_1h_sent = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    confirm_reminder_sent = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)
