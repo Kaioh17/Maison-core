@@ -154,7 +154,7 @@ async def get_manifest(
 ):
     host = _resolve_host(request)
     snapshot = service.resolve_branding(host)
-    manifest = service.build_manifest(snapshot)
+    manifest = service.build_manifest(snapshot, is_tenant_app=service.is_tenant_app_host(host))
     logger.debug(
         f"PWA manifest served host={host!r} slug={(snapshot.slug if snapshot else None)!r}"
     )

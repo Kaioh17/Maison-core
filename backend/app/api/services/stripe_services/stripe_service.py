@@ -154,8 +154,8 @@ class StripeService(ServiceContext):
         if resp and not resp.is_verified:
             onboarding_link = stripe.AccountLink.create(
                     account=acct_id,  # Your existing Account ID
-                    refresh_url=f"{self.BASE_URL}/tenant/reauth",
-                    return_url=f"{self.BASE_URL}/tenant/return",
+                    refresh_url=f"{self.TENANT_APP_BASE_URL}/tenant/reauth",
+                    return_url=f"{self.TENANT_APP_BASE_URL}/tenant/return",
                     type="account_onboarding",
                     collection_options={
                         "fields": "eventually_due", # Use "eventually_due" to get them fully set up

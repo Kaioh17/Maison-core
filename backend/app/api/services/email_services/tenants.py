@@ -21,10 +21,11 @@ class TenantEmailServices(EmailServices):
         self.from_email = self._format_from(from_email, display_name)
 
     def _maison_web(self, path: str) -> str:
-        """Absolute URL on the public site, e.g. /tenant/login -> https://usemaison.io/tenant/login
-        in production, or http://localhost:3000/tenant/login in local dev -- follows DOMAIN/ENV
-        from config rather than hardcoding the prod host, so local emails are actually clickable."""
-        return self._public_url(path)
+        """Absolute URL on the tenant-operator dashboard host, e.g. /tenant/login ->
+        https://app.usemaison.io/tenant/login in production, or http://app.localhost:3000/tenant/login
+        in local dev -- every CTA in this file points into the operator dashboard, which lives on
+        the dedicated `app.` subdomain, not the public marketing site."""
+        return self._tenant_url("app", path)
 
     def onboarding_email(self):
 

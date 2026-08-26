@@ -224,8 +224,8 @@ class AdminService(ServiceContext):
         try:
             account_link = stripe.AccountLink.create(
                 account=account_id,
-                refresh_url=f"{settings.base_url}/tenant/reauth",
-                return_url=f"{settings.base_url}/tenant/return",
+                refresh_url=f"{self.TENANT_APP_BASE_URL}/tenant/reauth",
+                return_url=f"{self.TENANT_APP_BASE_URL}/tenant/return",
                 type="account_onboarding",
                 collection_options={"fields": "eventually_due"},
             )

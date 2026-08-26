@@ -14,6 +14,14 @@ class ServiceContext:
         stripe.api_key = settings.stripe_secret_key
         self.client = StripeClient(sk) # for stripe connect v2
         self.BASE_URL = settings.base_url
+        # Tenant-operator dashboard lives on its own `app.` subdomain, not the
+        # apex/marketing host -- every Stripe redirect back into /tenant/* must
+        # land there. Computed once here so callers don't each re-derive it.
+        if "://" in self.BASE_URL:
+            _scheme, _host = self.BASE_URL.split("://", 1)
+            self.TENANT_APP_BASE_URL = f"{_scheme}://app.{_host}"
+        else:
+            self.TENANT_APP_BASE_URL = f"app.{self.BASE_URL}"
         self.DOMAIN = settings.domain
         self.WEBHOOK_SECRET = settings.webhook_secret
         self.CONNECT_WEBHOOK_SECRET = settings.connect_webhook_secret

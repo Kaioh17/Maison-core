@@ -75,7 +75,7 @@ class StripeService(ServiceContext):
                 # design partner with no card on file is a free pilot, which
                 # PRICING_RATIONALE.md section 3 rules out.
                 payment_method_collection='always',
-                success_url= f"{self.BASE_URL}/success",
+                success_url= f"{self.TENANT_APP_BASE_URL}/success",
                 cancel_url= f"{self.BASE_URL}/cancel",
                 metadata=sub_metadata,
                 subscription_data={'metadata': sub_metadata},
@@ -155,7 +155,7 @@ class StripeService(ServiceContext):
             portal_session = stripe.billing_portal.Session.create(
                 customer=customer_id,
                 configuration=self.BILLING_PORTAL_CONFIG_ID,
-                return_url=f"{self.BASE_URL}/tenant/settings/plans",
+                return_url=f"{self.TENANT_APP_BASE_URL}/tenant/settings/plans",
                 flow_data={
                     "type": "subscription_update_confirm",
                     "subscription_update_confirm": {
@@ -168,7 +168,7 @@ class StripeService(ServiceContext):
                     },
                     "after_completion": {
                         "type": "redirect",
-                        "redirect": {"return_url": f"{self.BASE_URL}/tenant/settings/plans"},
+                        "redirect": {"return_url": f"{self.TENANT_APP_BASE_URL}/tenant/settings/plans"},
                     },
                 },
             )

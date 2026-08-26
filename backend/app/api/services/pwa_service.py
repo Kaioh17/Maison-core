@@ -23,7 +23,7 @@ from app.utils.logging import logger
 from .helper_service import tenant_branding, tenant_profile, tenant_table, Validations, HTTPException
 
 # Subdomains that are infrastructure / marketing, not tenant slugs.
-RESERVED_SUBDOMAIN_LABELS = {"www", "api", "admin"}
+RESERVED_SUBDOMAIN_LABELS = {"www", "api", "admin", "app"}
 
 # Conservative hex pattern; falls back to defaults when validation fails.
 HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?$")
@@ -152,6 +152,12 @@ class PwaService:
         raw = (self._settings.domain or "").lower().strip()
         return raw.split(":", 1)[0]
 
+    def is_tenant_app_host(self, host: Optional[str]) -> bool:
+        """True for the tenant-operator dashboard host, `app.{main_domain}`."""
+        if not host:
+            return False
+        return _strip_port(host) == f"app.{self.main_domain}"
+
     def resolve_branding(self, host: Optional[str]) -> Optional[TenantBrandingSnapshot]:
         """
         Return tenant branding for the host, or None when the host has no slug
@@ -211,14 +217,18 @@ class PwaService:
             accent_color=_normalize_color(branding.primary_color, DEFAULT_ACCENT_COLOR),
         )
 
-    def build_manifest(self, snapshot: Optional[TenantBrandingSnapshot]) -> dict:
+    def build_manifest(self, snapshot: Optional[TenantBrandingSnapshot], *, is_tenant_app: bool = False) -> dict:
         """
         Build a JSON-serializable web app manifest tailored to the tenant.
-        Falls back to Maison defaults when snapshot is None.
+        Falls back to Maison defaults when snapshot is None. `is_tenant_app`
+        is set for the `app.{main_domain}` operator dashboard host so the
+        installed PWA opens straight at the dashboard (ProtectedRoute already
+        bounces an unauthenticated visit to /tenant/login) instead of the
+        generic root, which would otherwise show the marketing landing page.
         """
         if snapshot is None:
-            name = DEFAULT_APP_NAME
-            short_name = DEFAULT_APP_NAME
+            name = "Maison for Business" if is_tenant_app else DEFAULT_APP_NAME
+            short_name = "Maison" if is_tenant_app else DEFAULT_APP_NAME
             theme = DEFAULT_THEME_COLOR
             bg = DEFAULT_BACKGROUND_COLOR
             icons = self._default_icon_entries()
@@ -229,12 +239,19 @@ class PwaService:
             bg = snapshot.background_color
             icons = self._tenant_icon_entries(snapshot)
 
+        start_url = "/tenant/overview" if is_tenant_app else "/?source=pwa"
+        description = (
+            "Manage your fleet, drivers, and bookings."
+            if is_tenant_app
+            else f"{name} — book a ride."
+        )
+
         return {
             "name": name,
             "short_name": short_name,
-            "description": f"{name} — book a ride.",
-            "start_url": "/?source=pwa",
-            "id": "/?source=pwa",
+            "description": description,
+            "start_url": start_url,
+            "id": start_url,
             "scope": "/",
             "display": "standalone",
             "display_override": ["standalone", "minimal-ui"],
