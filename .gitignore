@@ -15,6 +15,7 @@ backend/alembic/versions
 
 *.txt
 backend/logs
+backend/celerybeat-schedule
 
 .vscode/settings.json
 
