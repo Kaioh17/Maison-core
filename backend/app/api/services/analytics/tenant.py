@@ -22,18 +22,34 @@ from ..stripe_services.checkout import BookingCheckout
 from ..email_services import drivers, tenants, riders
 from ..helper_service import  *
 from app.policies.plan_policy import PlanPolicy
+from app.config import Settings
 
 from app.models import tenant_setting
 db_exceptions = db_error_handler.DBErrorHandler
+settings = Settings()
+
+# The demo tenant's bookings are seeded once (see ./mock-tenant) with created_on
+# fixed at seed time, so any "today" / "last 7 days" window drains to empty as real
+# days pass. Rather than re-seeding on a cron, the demo's time-windowed figures are
+# a fixed look -- flat numbers, not live queries -- so the dashboard always reads as
+# "active today" regardless of how long ago the tenant was seeded. Everything else
+# (total revenue, ride/fleet counts) is real seeded data and ages fine, so it's left
+# alone.
+DEMO_REVENUE_LAST_7_DAYS = [420.0, 610.0, 385.0, 725.0, 540.0, 895.0, 1284.5]
+DEMO_RIDE_VOLUME_LAST_7_DAYS = [3, 5, 2, 6, 4, 7, 9]
 
 class TenantAnalyticService(ServiceContext):
     def __init__(self, db, current_user):
         
         super().__init__(db, current_user)
-            
+
     # db_exceptions = db_error_handler.DBErrorHandler
     METER_TO_MILE =  0.000621371
     MS_TO_MPH = 2.237
+
+    @property
+    def is_demo_tenant(self):
+        return bool(settings.demo_tenant_slug) and getattr(self, "slug", None) == settings.demo_tenant_slug
     async def analytics(self):
         try:
             """
@@ -87,7 +103,13 @@ class TenantAnalyticService(ServiceContext):
 
             rev_rows = []
             vol_rows = []
-            if can_view:
+            if can_view and self.is_demo_tenant:
+                last_7_days = [self.time_now.date() - timedelta(days=i) for i in range(6, -1, -1)]
+                count_obj = dict(count_obj)
+                count_obj['todays_revenue'] = DEMO_REVENUE_LAST_7_DAYS[-1]
+                rev_rows = [{"date": d.strftime('%a'), "revenue": r} for d, r in zip(last_7_days, DEMO_REVENUE_LAST_7_DAYS)]
+                vol_rows = [{"date": d.strftime('%a'), "count": c} for d, c in zip(last_7_days, DEMO_RIDE_VOLUME_LAST_7_DAYS)]
+            elif can_view:
                 rev_sql = """
                     SELECT to_char(day, 'Dy') AS date, COALESCE(rev, 0.0) AS revenue
                     FROM generate_series(

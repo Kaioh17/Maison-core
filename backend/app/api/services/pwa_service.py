@@ -23,7 +23,7 @@ from app.utils.logging import logger
 from .helper_service import tenant_branding, tenant_profile, tenant_table, Validations, HTTPException
 
 # Subdomains that are infrastructure / marketing, not tenant slugs.
-RESERVED_SUBDOMAIN_LABELS = {"www", "api", "admin", "app"}
+RESERVED_SUBDOMAIN_LABELS = {"www", "api", "admin", "app", "ekko"}
 
 # Conservative hex pattern; falls back to defaults when validation fails.
 HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?$")

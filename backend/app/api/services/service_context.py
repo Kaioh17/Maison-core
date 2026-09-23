@@ -14,7 +14,7 @@ class ServiceContext:
         :param db: Description
         :param current_user: Description
         """
-        self.RESERVED_SLUGS = {'api', 'www'}
+        self.RESERVED_SLUGS = {'api', 'www', 'ekko'}
         
         self.db = db
         self.current_user=current_user

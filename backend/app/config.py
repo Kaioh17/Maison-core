@@ -56,3 +56,12 @@ class Settings(BaseSettings):
     api_key: str
     cors_origins: str
     domain: str
+
+    # Demo tenant (see ./mock-tenant). Empty slug == demo endpoint disabled.
+    demo_tenant_slug: str = ""
+    demo_tenant_email: str = ""
+    demo_tenant_password: str = ""
+    demo_driver_email: str = ""
+    demo_driver_password: str = ""
+    demo_rider_email: str = ""
+    demo_rider_password: str = ""
