@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi.params import Depends
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import Settings
@@ -17,6 +17,21 @@ engine  = create_engine(DATABASE_URL,
                          max_overflow = 20,
                          pool_timeout= 30,
                          pool_recycle=1800)
+
+
+
+@event.listens_for(engine, "checkin")
+def _clear_tenant_setting(dbapi_connection, connection_record):
+    """`SET app.current_tenant_id` (see get_db) is session scoped and survives a commit, so without this
+    a pooled connection would carry the previous request's tenant into the next one."""
+    try:
+        cur = dbapi_connection.cursor()
+        cur.execute("RESET app.current_tenant_id")
+        dbapi_connection.commit()
+        cur.close()
+    except Exception:  # connection is being discarded anyway
+        pass
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

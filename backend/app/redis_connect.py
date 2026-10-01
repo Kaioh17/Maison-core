@@ -5,11 +5,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 settings = Settings()
-redis_client = redis.Redis(
-    host= settings.host,
-    port= settings.redis_port,
-    db=0
-)
+# from_url so a password in redis_url (redis://:password@host:6379) is honoured, same as Celery.
+redis_client = redis.Redis.from_url(settings.redis_url, db=0)
 try:
     redis_client.ping()
     print("^_^ Redis Connection successful")
