@@ -76,7 +76,8 @@ class StripeService(ServiceContext):
                 # PRICING_RATIONALE.md section 3 rules out.
                 payment_method_collection='always',
                 success_url= f"{self.TENANT_APP_BASE_URL}/success",
-                cancel_url= f"{self.BASE_URL}/cancel",
+                # Back to the dashboard, where an unsubscribed tenant is prompted again.
+                cancel_url= f"{self.TENANT_APP_BASE_URL}/tenant/overview",
                 metadata=sub_metadata,
                 subscription_data={'metadata': sub_metadata},
                 customer=customer_id
@@ -188,6 +189,116 @@ class StripeService(ServiceContext):
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY,
                                 detail="Could not start plan change")
     
+    def get_billing_overview(self):
+        """Subscription ids from our DB plus the live money picture from Stripe.
+
+        Sync on purpose: the router declares it with a plain `def`, so FastAPI
+        runs these blocking Stripe calls in its threadpool rather than on the
+        event loop. The subscription itself is required; the invoice preview
+        and invoice list degrade to empty so one failing call doesn't blank
+        the whole page.
+        """
+        profile = self.db.query(tenant_profile).filter(
+            tenant_profile.tenant_id == self.current_user.id
+        ).first()
+        data = {
+            'subscription_id': profile.cur_subscription_id,
+            'customer_id': profile.stripe_customer_id,
+            'stripe': None,
+            'stripe_error': None,
+        }
+        if not profile.cur_subscription_id:
+            return success_resp(msg="No subscription", data=data)
+        try:
+            data['stripe'] = self._load_stripe_billing(profile)
+        except Exception as e:
+            logger.error(f"Billing overview failed for tenant {self.current_user.id}: {e}")
+            data['stripe_error'] = "Could not load billing details from Stripe."
+        return success_resp(msg="Retrieved billing overview", data=data)
+
+    def _load_stripe_billing(self, profile):
+        sub = stripe.Subscription.retrieve(
+            profile.cur_subscription_id,
+            expand=['default_payment_method', 'discounts'],
+        )
+        item = sub['items']['data'][0]
+        price = item['price']
+        recurring = price.get('recurring') or {}
+        quantity = item.get('quantity') or 1
+        # Basil API moved the billing period off the subscription onto its items.
+        period_start = item.get('current_period_start') or sub.get('current_period_start')
+        period_end = item.get('current_period_end') or sub.get('current_period_end')
+        cancelling = bool(sub.get('cancel_at_period_end'))
+
+        next_invoice_amount = None
+        if not cancelling and sub.get('status') in ('active', 'trialing', 'past_due'):
+            try:
+                preview = stripe.Invoice.create_preview(
+                    customer=profile.stripe_customer_id, subscription=profile.cur_subscription_id
+                )
+                next_invoice_amount = preview.get('amount_due')
+            except Exception as e:
+                logger.warning(f"Upcoming invoice preview failed for tenant {self.current_user.id}: {e}")
+
+        invoices = []
+        try:
+            for inv in stripe.Invoice.list(customer=profile.stripe_customer_id, limit=12).data:
+                if inv.get('status') == 'draft':
+                    continue
+                invoices.append({
+                    'id': inv['id'], 'number': inv.get('number'), 'created': inv['created'],
+                    'status': inv.get('status'), 'amount_due': inv.get('amount_due') or 0,
+                    'amount_paid': inv.get('amount_paid') or 0, 'currency': inv.get('currency') or 'usd',
+                    'hosted_invoice_url': inv.get('hosted_invoice_url'), 'invoice_pdf': inv.get('invoice_pdf'),
+                })
+        except Exception as e:
+            logger.warning(f"Invoice list failed for tenant {self.current_user.id}: {e}")
+
+        return {
+            'status': sub.get('status'),
+            'currency': sub.get('currency') or price.get('currency') or 'usd',
+            'interval': recurring.get('interval'),
+            'interval_count': recurring.get('interval_count') or 1,
+            'recurring_amount': (price.get('unit_amount') or 0) * quantity,
+            'next_invoice_amount': next_invoice_amount,
+            'current_period_start': period_start,
+            'current_period_end': period_end,
+            'cancel_at_period_end': cancelling,
+            'started_on': sub.get('start_date'),
+            'discount': self._discount_summary(sub),
+            'payment_method': self._card_summary(sub, profile),
+            'invoices': invoices,
+        }
+
+    @staticmethod
+    def _discount_summary(sub):
+        discounts = sub.get('discounts') or []
+        first = discounts[0] if discounts else None
+        if not first or isinstance(first, str):  # an unexpanded id carries no detail
+            return None
+        # Basil keeps `coupon` on the discount; later API versions nest it under `source`.
+        coupon = first.get('coupon') or (first.get('source') or {}).get('coupon') or {}
+        return {
+            'name': coupon.get('name') or coupon.get('id'),
+            'percent_off': coupon.get('percent_off'),
+            'amount_off': coupon.get('amount_off'),
+            'duration': coupon.get('duration'),
+            'duration_in_months': coupon.get('duration_in_months'),
+        }
+
+    @staticmethod
+    def _card_summary(sub, profile):
+        pm = sub.get('default_payment_method')
+        if not pm or isinstance(pm, str):
+            customer = stripe.Customer.retrieve(
+                profile.stripe_customer_id, expand=['invoice_settings.default_payment_method']
+            )
+            pm = (customer.get('invoice_settings') or {}).get('default_payment_method')
+        card = (pm or {}).get('card') if pm and not isinstance(pm, str) else None
+        if not card:
+            return None
+        return {k: card.get(k) for k in ('brand', 'last4', 'exp_month', 'exp_year')}
+
     async def get_customer_subscription_status(customer_id):
         subs = stripe.Subscription.list(customer=customer_id, limit =1)
         if subs.data:

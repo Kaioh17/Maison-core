@@ -19,6 +19,7 @@ from .email_services import drivers, tenants, riders
 from .email_services.email_services import EmailServices
 from .helper_service import  *
 from ..core.oauth2 import create_booking_confirm_token, verify_booking_confirm_token
+from .pricing_calc import quote_total, deposit_amount
 
 from app.models import tenant_setting
 db_exceptions = db_error_handler.DBErrorHandler
@@ -726,42 +727,26 @@ class BookingService(ServiceContext):
                     booking_price = booking_price[i]
                     break
             logger.debug(booking_price)
-            base_fare = pricing.base_fare
-            vehicle_rate = vehicle_category.vehicle_flat_rate
-            
-            if service_type!= 'hourly':
-                #calculate price
-                
-                logger.info(f"base_fare = {pricing.base_fare}")
-                per_mile_rate = pricing.per_mile_rate 
-                
-                
-                per_minute_rate = pricing.per_minute_rate 
-                min_duration = (distance/speed) * 360 #duration in minutes 
-                total_quote = base_fare + (per_mile_rate * distance) + (per_minute_rate * min_duration) + vehicle_rate 
-                logger.debug(f"Total quote for ride: {total_quote}")
-                if payload.service_type.lower() == 'airport':
-                
-                    # logger.debug(f"{booking_price.__dict__}")
-                    
-                    stc_rate = booking_price.stc_rate #For airports only  [STC(Surface Transport Charge)]
-                    gratuity_rate = booking_price.gratuity_rate  #For airports only  [Percentage]
-                    airport_gate_fee = booking_price.airport_gate_fee  #For airports only  [flat fee]
-                    meet_and_greet_fee = booking_price.meet_and_greet_fee  #For airports only  [flat fee]
-                    logger.debug("Airport calculation in progress ")
-                
-                    total_quote = total_quote * stc_rate * gratuity_rate + airport_gate_fee + meet_and_greet_fee
-            else:
-                per_hour_rate = pricing.per_hour_rate
-                hours = payload.hours
-                total_quote = base_fare + vehicle_rate + (per_hour_rate * hours)
-            
+            total_quote = quote_total(
+                service_type,
+                pricing.base_fare,
+                vehicle_category.vehicle_flat_rate,
+                per_mile_rate=pricing.per_mile_rate,
+                per_minute_rate=pricing.per_minute_rate,
+                per_hour_rate=pricing.per_hour_rate,
+                distance=distance or 0.0,
+                speed=speed or 1.0,
+                hours=getattr(payload, "hours", None) or 0.0,
+                stc_rate=getattr(booking_price, "stc_rate", None),
+                gratuity_rate=getattr(booking_price, "gratuity_rate", None),
+                airport_gate_fee=getattr(booking_price, "airport_gate_fee", None),
+                meet_and_greet_fee=getattr(booking_price, "meet_and_greet_fee", None),
+            )
+            logger.debug(f"Total quote for ride: {total_quote}")
+
             deposit = 0.00
             if is_deposit:
-                deposit_fee = booking_price.deposit_fee
-                deposit_type = booking_price.deposit_type
-                
-                deposit = total_quote * deposit_fee if deposit_type == 'percentage' else deposit_fee
+                deposit = deposit_amount(total_quote, booking_price.deposit_type, booking_price.deposit_fee)
 
             return {"total": round(total_quote, 2), "deposit": round(deposit, 2)} 
             return round(total_quote, 2) 

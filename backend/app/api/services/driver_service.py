@@ -12,6 +12,7 @@ from app.policies.plan_policy import PlanPolicy
 from datetime import timedelta, datetime, timezone
 from .vehicle_service import VehicleService
 from .service_context import ServiceContext
+from .payout_service import PayoutService
 from .email_services import drivers, tenants, riders
 from ..services.stripe_services import checkout
 
@@ -371,6 +372,7 @@ class DriverService(ServiceContext):
                 logger.debug(f"UPdated {booking_obj.booking_status}")
                 if action == "completed":
                     driver.completed_rides += 1
+                    PayoutService.record_completion(self.db, booking_obj, driver)
                 if action == 'completed' and old_payment_status == 'deposit_paid': 
                     logger.debug("Checkout statrted")
                     await checkout.BookingCheckout(self.current_user, self.db).checkout_session(booking_obj=booking_obj)

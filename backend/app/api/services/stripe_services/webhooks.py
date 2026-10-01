@@ -23,7 +23,7 @@ from ...services.helper_service import *
 from .stripe_service import StripeService
 from ...services.email_services.tenants import TenantEmailServices
 from app.domain.billing import price_to_plan
-from app.domain.plans import PlanName, SubStatus, resolve_plan, resolve_status
+from app.domain.plans import SubStatus, resolve_plan, resolve_status
 
 class WebhookServices(ServiceContext):
     """
@@ -215,9 +215,10 @@ class WebhookServices(ServiceContext):
                     f"{subscription.get('customer')}. Skipping."
                 )
                 return {"status": "success"}
-            tenant_obj.subscription_status = resolve_status(subscription.get('status')) \
-                if subscription.get('status') else SubStatus.CANCELED.value
-            tenant_obj.subscription_plan = PlanName.FREE.value
+            # With no subscription id the tenant is unsubscribed, not "on free":
+            # free is itself a subscription, and upgrades need an id to modify.
+            tenant_obj.subscription_status = SubStatus.UNSUBSCRIBED.value
+            tenant_obj.subscription_plan = None
             tenant_obj.cur_subscription_id = None
         else:
             # Nothing mutated; skip the commit entirely.

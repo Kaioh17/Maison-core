@@ -65,7 +65,9 @@ class ServiceContext:
             tenant_profile.tenant_id == tenant_id
         ).first()
         self.plan = resolve_plan(getattr(self.profile_response, "subscription_plan", None))
-        self.sub_plan = self.plan.name
+        # Quotas fall back to FREE_PLAN (an unsubscribed tenant is blocked by status
+        # anyway), but the plan *name* is only reported when a plan is stored.
+        self.sub_plan = self.plan.name if getattr(self.profile_response, "subscription_plan", None) else None
         # NB: the column is subscription_status; the previous commented-out line
         # misspelled it as `subscripton_status`, which is why it was never wired up.
         self.sub_status = resolve_status(

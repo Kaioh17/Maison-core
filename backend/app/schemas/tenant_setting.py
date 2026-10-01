@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, validator, model_validator, field_validator
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 import re
 class ConfigTypes(str, Enum):
     BRANDING = "branding"
@@ -75,6 +75,24 @@ class FeaturesConfig(BaseModel):
     )
 
 
+class PayRule(BaseModel):
+    type: Literal["percent", "flat"]
+    value: float = Field(..., ge=0, description="Percent of the fare (0-100), or flat dollars per ride.")
+
+    @model_validator(mode="after")
+    def _percent_cap(self):
+        if self.type == "percent" and self.value > 100:
+            raise ValueError("A percent rule cannot exceed 100")
+        return self
+
+
+class DriverPayConfig(BaseModel):
+    """Current driver pay policy. History lives in bookings.driver_earning, not here."""
+    default: PayRule
+    in_house: Optional[PayRule] = Field(None, description="Overrides default for in-house drivers.")
+    outsourced: Optional[PayRule] = Field(None, description="Overrides default for outsourced drivers.")
+
+
 class TenantConfig(BaseModel):
     booking: Optional[BookingConfig] = Field(
         None,
@@ -87,6 +105,10 @@ class TenantConfig(BaseModel):
     features: Optional[FeaturesConfig] = Field(
         None,
         description="Feature toggles controlling optional product capabilities."
+    )
+    driver_pay: Optional[DriverPayConfig] = Field(
+        None,
+        description="Driver pay policy applied to rides completed from now on. Unset = no earnings are recorded."
     )
 class UpdateTenantSetting(BaseModel):
     zelle_number: Optional[str] =Field(None)
@@ -232,3 +254,26 @@ class updated_visuals(BaseModel):
     logo_url: Optional[str] = None
     favicon_url: Optional[str] = None
     
+
+
+class PricingScenarioRequest(BaseModel):
+    """Unsaved pricing values to preview; any field left out uses the saved value."""
+    base_fare: Optional[float] = Field(None, ge=0)
+    per_mile_rate: Optional[float] = Field(None, ge=0)
+    per_minute_rate: Optional[float] = Field(None, ge=0)
+    per_hour_rate: Optional[float] = Field(None, ge=0)
+
+
+class PricingScenario(BaseModel):
+    service_type: str
+    vehicle_category: str
+    label: str
+    distance_miles: Optional[float] = None
+    hours: Optional[float] = None
+    total: float
+    deposit: float
+
+
+class PricingScenarioResponse(BaseModel):
+    avg_speed_mph: float
+    scenarios: list[PricingScenario]

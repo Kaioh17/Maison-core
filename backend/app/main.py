@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Depends, Security, HTTPException, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import APIKeyHeader
-from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admins,subscriptions, logs, slug, webhooks, dependencies, temp_qr, pwa, demo, ai
+from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admins,subscriptions, logs, slug, webhooks, dependencies, temp_qr, pwa, demo, ai, payouts
 from app.db.database import engine
 from app.api.core.demo_guard import block_demo_writes
 from app.models import *
@@ -210,6 +210,7 @@ app.include_router(temp_qr.router)
 app.include_router(pwa.router)
 app.include_router(demo.router)
 app.include_router(ai.router)
+app.include_router(payouts.router)
 
 
 

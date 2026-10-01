@@ -22,7 +22,11 @@ class SubStatus(str, Enum):
     CANCELED = "canceled"
     UNPAID = "unpaid"
     INCOMPLETE = "incomplete"
-    INACTIVE = "inactive"  # legacy default already present in the DB
+    INACTIVE = "inactive"  # legacy value; no longer written
+    # No Stripe subscription on file. This is NOT the free plan: free is a real
+    # $0 subscription, so a tenant needs a subscription id to be on any plan
+    # (and to be upgraded later). Never entitled; stored plan is NULL.
+    UNSUBSCRIBED = "unsubscribed"
 
 
 # Statuses allowed to consume quota. past_due is deliberately included: a failed

@@ -165,20 +165,23 @@ class TenantService(ServiceContext):
             # The welcome / "one step left to go live" email is sent from the
             # checkout.session.completed webhook, not here — nothing is live
             # until the tenant has actually subscribed.
-            tenant_email_service = tenants.TenantEmailServices(to_email=email, from_email='noreply', display_name=slug)
+            # The tenant is already committed: a failed notification email must
+            # not turn a successful signup into a 500.
+            try:
+                tenant_email_service = tenants.TenantEmailServices(to_email=email, from_email='noreply', display_name=slug)
 
-            # First 10 tenants are founding operators: email the 100%-off coupon
-            # code. Never returned by an API response or shown in the UI.
-            if settings.promocode and self.db.query(self.tenant_info).count() <= plans.FOUNDING_OPERATOR_SLOTS:
-                tenant_email_service.founding_operator_email(
-                    tenant_obj=new_tenant_info,
-                    promo_code=settings.promocode,
-                )
+                # First 10 tenants are founding operators: email the 100%-off coupon
+                # code. Never returned by an API response or shown in the UI.
+                if settings.promocode and self.db.query(self.tenant_info).count() <= plans.FOUNDING_OPERATOR_SLOTS:
+                    tenant_email_service.founding_operator_email(
+                        tenant_obj=new_tenant_info,
+                        promo_code=settings.promocode,
+                    )
 
-            # Email: Notify admin of new tenant registration
-            admin.AdminEmailServices(to_email=f'admin@{settings.domain}', from_email='noreply').new_tenant_notification_email(
-                tenant_obj=new_tenant_info
-            )
+                # Email: Notify admin of new tenant registration
+                admin.AdminEmailServices().new_tenant_notification_email(tenant_obj=new_tenant_info)
+            except Exception:
+                logger.exception("Tenant %s created but signup notification email failed", new_tenant_id)
 
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
@@ -615,7 +618,7 @@ class TenantService(ServiceContext):
         driver_count = self._count_drivers(self.tenant_id) or 0
 
         data = {
-            "plan": self.plan.name,
+            "plan": self.sub_plan,  # None when unsubscribed
             "status": self.sub_status,
             "is_entitled": plans.is_entitled(self.sub_status),
             "maison_fee": self.plan.maison_fee,

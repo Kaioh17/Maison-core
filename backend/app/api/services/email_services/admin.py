@@ -8,7 +8,8 @@ class AdminEmailServices(EmailServices):
     """
     Platform admin notifications — brief, factual.
     """
-    def __init__(self, to_email, from_email: str = 'noreply', display_name: str = 'Maison'):
+    def __init__(self, to_email: str = None, from_email: str = 'noreply', display_name: str = 'Maison'):
+        to_email = to_email or f"admin@{self._bare_domain()}"
         self.to_email = 'mubskill@gmail.com' if self.ENV == 'development' else to_email
         self.from_email = self._format_from(from_email, display_name)
 

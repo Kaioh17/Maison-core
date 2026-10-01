@@ -69,6 +69,23 @@ async def update_tenant_pricing(
     return upated_tenant_setting
 
 
+@router.post(
+    "/pricing/scenarios",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[tenant_setting.PricingScenarioResponse],
+    summary="Preview fares for sample trips",
+    description=(
+        "Quotes every service type x vehicle class x sample trip with the same math as real bookings. "
+        "Optional body fields override saved pricing so unsaved edits can be previewed. Requires **tenant** JWT."
+    ),
+)
+async def price_scenarios(
+    payload: tenant_setting.PricingScenarioRequest,
+    tenant_settings_service: TenantSettingsService = Depends(get_tenant_setting_service),
+):
+    return await tenant_settings_service.price_scenarios(payload)
+
+
 @router.patch(
     "/branding",
     status_code=status.HTTP_202_ACCEPTED,

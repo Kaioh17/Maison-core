@@ -23,6 +23,14 @@ SQLALCHEMY_DATABASE_URL = settings.db_url
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
 )
+
+# These tests create tables and empty them after every test. The container's own DB_URL points at the
+# dev database and overrides .env.test, so refuse to run unless the target is clearly a test database.
+if not (engine.url.database or "").endswith("_test"):
+    raise RuntimeError(
+        f"Refusing to run tests against database {engine.url.database!r}: its name must end in '_test'. "
+        "Set DB_URL to a test database, e.g. DB_URL=postgresql://postgres:1308@db:5432/maison_test"
+    )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create test database tables
@@ -186,22 +194,12 @@ def user_token(test_user):
 
 @pytest.fixture(autouse=True)
 def cleanup_db():
-    """Clean up database after each test"""
+    """Empty the test database after each test.
+
+    TRUNCATE ... CASCADE follows every foreign key (booking_ratings, payouts, ...), so it cannot be
+    blocked by a dependent table the way per-table DELETEs were. The old fallback, drop_all, can never
+    succeed because tables share the `id_seq` sequence, so it only turned a cleanup problem into an error.
+    """
     yield
-    # Clean up all data after each test
-    try:
-        # Delete data in reverse dependency order
-        db = TestingSessionLocal()
-        try:
-            db.execute(text("DELETE FROM bookings"))
-            db.execute(text("DELETE FROM vehicles"))
-            db.execute(text("DELETE FROM drivers"))
-            db.execute(text("DELETE FROM users"))
-            db.execute(text("DELETE FROM tenants"))
-            db.commit()
-        finally:
-            db.close()
-    except Exception:
-        # If cleanup fails, recreate tables
-        Base.metadata.drop_all(bind=engine)
-        Base.metadata.create_all(bind=engine) 
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE bookings, vehicles, drivers, users, tenants RESTART IDENTITY CASCADE"))

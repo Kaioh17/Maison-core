@@ -48,7 +48,7 @@ class PlanCatalogEntry(BaseModel):
 
 class PlanLimitsResponse(BaseModel):
     """Authoritative plan limits + live usage, so clients stop hardcoding them."""
-    plan: str
+    plan: Optional[str] = None  # null == unsubscribed (no plan at all)
     status: str
     is_entitled: bool
     maison_fee: float
@@ -68,3 +68,54 @@ class PortalSessionResponse(BaseModel):
     tenant_id: int
     customer_id: str
     product_type: str
+
+class BillingDiscount(BaseModel):
+    name: Optional[str] = None
+    percent_off: Optional[float] = None
+    amount_off: Optional[int] = None          # cents
+    duration: Optional[str] = None            # once | repeating | forever
+    duration_in_months: Optional[int] = None
+
+
+class BillingPaymentMethod(BaseModel):
+    brand: Optional[str] = None
+    last4: Optional[str] = None
+    exp_month: Optional[int] = None
+    exp_year: Optional[int] = None
+
+
+class BillingInvoice(BaseModel):
+    id: str
+    number: Optional[str] = None
+    created: int                              # unix seconds
+    status: Optional[str] = None              # paid | open | void | uncollectible
+    amount_due: int = 0                       # cents
+    amount_paid: int = 0                      # cents
+    currency: str = "usd"
+    hosted_invoice_url: Optional[str] = None
+    invoice_pdf: Optional[str] = None
+
+
+class BillingStripe(BaseModel):
+    """What Stripe is actually charging. Stripe is the system of record for
+    money; nothing here is derived from the plan catalogue."""
+    status: str
+    currency: str = "usd"
+    interval: Optional[str] = None            # month | year | ...
+    interval_count: int = 1
+    recurring_amount: int = 0                 # cents per interval at list price
+    next_invoice_amount: Optional[int] = None  # cents after discounts; None when nothing is coming
+    current_period_start: Optional[int] = None  # unix seconds
+    current_period_end: Optional[int] = None    # next renewal, or end date if cancelling
+    cancel_at_period_end: bool = False
+    started_on: Optional[int] = None
+    discount: Optional[BillingDiscount] = None
+    payment_method: Optional[BillingPaymentMethod] = None
+    invoices: list[BillingInvoice] = []
+
+
+class BillingOverviewResponse(BaseModel):
+    subscription_id: Optional[str] = None
+    customer_id: Optional[str] = None
+    stripe: Optional[BillingStripe] = None    # null: no subscription, or Stripe unreachable
+    stripe_error: Optional[str] = None

@@ -14,6 +14,7 @@ from .service_context import ServiceContext
 from .email_services import tenants
 from app.schemas.tenant_setting import *
 from sqlalchemy.orm.attributes import flag_modified
+from .pricing_calc import quote_total, deposit_amount
 
 
 
@@ -116,7 +117,11 @@ with Session(engine) as session: # Or use an existing session
         for field, value in payload.dict().items():
             logger.debug(f"{field}")
             logger.debug(f"{value}")
-            if field == 'config' and value != None and len(value['booking']['types']) > len(data_mapped['config']['booking']['types']):
+            if field == 'config' and value != None:
+                # Saving one section must not erase the others (e.g. driver_pay, or keys this schema
+                # does not know): overlay only the sections that were sent onto the stored config.
+                value = {k: v for k, v in value.items() if v is not None}
+            if field == 'config' and value and 'booking' in value and len(value['booking']['types']) > len(data_mapped['config']['booking']['types']):
                 new_type = value['booking']['types']
                 # logger.debug(f"{new_type}")
                 current_types = [k for k, v in data_mapped['config']['booking']['types'].items()]
@@ -147,6 +152,8 @@ with Session(engine) as session: # Or use an existing session
             # return
             
                 
+            if field == 'config':
+                value = {**(data_mapped['config'] or {}), **value}
             if hasattr(setting_obj, field):
                 setattr(setting_obj, field, value)
 
@@ -187,6 +194,66 @@ with Session(engine) as session: # Or use an existing session
             return success_resp(msg='Updated Pricing config successfuly', data=response)
         except  db_exceptions.COMMON_DB_ERRORS as d:
             db_exceptions.handle(d, self.db)
+    # Sample trips used by the pricing scenario calculator (miles / hours).
+    SCENARIO_MILES = (5, 15, 30, 50)
+    SCENARIO_HOURS = (2, 4, 8)
+    SCENARIO_SPEED_MPH = 30.0
+
+    async def price_scenarios(self, payload):
+        """Quotes every service type x vehicle class x sample trip, using the same math as real bookings."""
+        try:
+            pricing = self.db.query(tenant_pricing).filter(tenant_pricing.tenant_id == self.tenant_id).first()
+            if not pricing:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pricing config not found")
+            p = {f: getattr(pricing, f) or 0.0 for f in ("base_fare", "per_mile_rate", "per_minute_rate", "per_hour_rate")}
+            p.update(payload.model_dump(exclude_none=True))
+
+            booking_rows = {
+                b.service_type: b
+                for b in self.db.query(tenant_booking_price).filter(tenant_booking_price.tenant_id == self.tenant_id)
+            }
+            setting = self.db.query(tenant_setting_table).filter(tenant_setting_table.tenant_id == self.tenant_id).first()
+            deposit_required = ((setting.config or {}).get("booking", {}).get("types", {}) if setting else {})
+            categories = [
+                (c.vehicle_category or "Standard", c.vehicle_flat_rate or 0.0)
+                for c in self.db.query(vehicle_category_table)
+                .filter(vehicle_category_table.tenant_id == self.tenant_id)
+                .order_by(vehicle_category_table.vehicle_flat_rate)
+            ] or [("Standard", 0.0)]
+
+            trips = (
+                [("dropoff", f"{m} mi, ~{round(m / self.SCENARIO_SPEED_MPH * 60)} min", m, None) for m in self.SCENARIO_MILES]
+                + [("airport", f"{m} mi, ~{round(m / self.SCENARIO_SPEED_MPH * 60)} min", m, None) for m in self.SCENARIO_MILES]
+                + [("hourly", f"{h} hours", None, h) for h in self.SCENARIO_HOURS]
+            )
+            rows = []
+            for service_type, label, miles, hours in trips:
+                cfg = booking_rows.get(service_type)
+                for category, flat_rate in categories:
+                    total = quote_total(
+                        service_type, p["base_fare"], flat_rate,
+                        per_mile_rate=p["per_mile_rate"], per_minute_rate=p["per_minute_rate"],
+                        per_hour_rate=p["per_hour_rate"],
+                        distance=miles or 0.0, speed=self.SCENARIO_SPEED_MPH, hours=hours or 0.0,
+                        stc_rate=getattr(cfg, "stc_rate", None), gratuity_rate=getattr(cfg, "gratuity_rate", None),
+                        airport_gate_fee=getattr(cfg, "airport_gate_fee", None),
+                        meet_and_greet_fee=getattr(cfg, "meet_and_greet_fee", None),
+                    )
+                    deposit = 0.0
+                    if cfg and deposit_required.get(service_type, {}).get("is_deposit_required"):
+                        deposit = deposit_amount(total, cfg.deposit_type, cfg.deposit_fee)
+                    rows.append({
+                        "service_type": service_type, "vehicle_category": category, "label": label,
+                        "distance_miles": miles, "hours": hours,
+                        "total": round(total, 2), "deposit": round(deposit, 2),
+                    })
+            return success_resp(
+                msg="Pricing scenarios calculated",
+                data={"avg_speed_mph": self.SCENARIO_SPEED_MPH, "scenarios": rows},
+            )
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, self.db)
+
     async def update_tenant_branding(self, payload):
         try:
             response = self.db.query(tenant_branding).filter(tenant_branding.tenant_id == self.tenant_id).first()

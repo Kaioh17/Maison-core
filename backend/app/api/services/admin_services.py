@@ -56,7 +56,7 @@ class AdminService(ServiceContext):
         logger.info(f"Tenant {tenant_id} has been deleted")
         
         # Email: Notify admin of tenant deletion
-        admin_email.AdminEmailServices(to_email=f'admin@{settings.domain}', from_email='noreply').tenant_deletion_confirmation_email(
+        admin_email.AdminEmailServices().tenant_deletion_confirmation_email(
             tenant_id=tenant_id,
             company_name=company_name,
             deleted_by='admin'

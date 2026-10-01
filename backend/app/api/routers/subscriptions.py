@@ -90,6 +90,27 @@ async def get_plan_limits(
     return await tenant_service.get_plan_limits()
 
 
+@router.get(
+    "/billing",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[subscription.BillingOverviewResponse],
+    summary="Billing details from Stripe",
+    description=(
+        "The tenant's subscription and customer ids plus what Stripe is actually charging: "
+        "recurring amount, next invoice after discounts, billing cycle, card on file and recent "
+        "invoices. `stripe` is null when the tenant has no subscription; `stripe_error` is set "
+        "when Stripe could not be reached. Requires **tenant** JWT and is not subscription-gated."
+    ),
+    response_description="Subscription ids and Stripe billing details.",
+)
+def get_billing_overview(
+    stripe_service: StripeService = Depends(get_stripe_subscription_service),
+    is_tenant=Depends(is_tenants),
+):
+    # Plain `def`: blocking Stripe calls run in FastAPI's threadpool.
+    return stripe_service.get_billing_overview()
+
+
 # NB: must stay declared ABOVE `GET /{customer_id}`. FastAPI matches routes in
 # declaration order, and that catch-all would otherwise swallow "/plans" and try
 # to read it as a Stripe customer id.

@@ -1,4 +1,5 @@
 import stripe
+from decimal import Decimal, ROUND_HALF_UP
 from .service_context import ServiceContext
 from .service_context import ServiceContext
 from fastapi import HTTPException, status, Depends
@@ -89,9 +90,8 @@ class BookingCheckout(ServiceContext):
                     customer_id = await self._create_stripe_cutstomer()
                 #application fee
                 fee_rate = resolve_plan(self.sub_plan).maison_fee
-                calc =self._to_dollars(unit_amount) * fee_rate
-                maison_fee = self._to_cent(calc)
-                logger.debug(f"Maison fee {self._to_dollars(unit_amount) } * {fee_rate} = {self._to_dollars(maison_fee)}")
+                maison_fee = self._fee_cents(unit_amount, fee_rate)
+                logger.debug(f"Maison fee {unit_amount} cents * {fee_rate} = {maison_fee} cents")
                 confirm =False
                 payment_id = None
                 if self.role == 'driver':
@@ -246,18 +246,13 @@ class BookingCheckout(ServiceContext):
         except Exception as e:
             raise e 
     def _to_cent(self, price):
-        try: # *100
-            to_cent = int(price * 100)
-            return to_cent
-        except Exception as e:
-            raise e     
-        
-    def _to_dollars(self, price):
-        try: # *100
-            to_cent = int(price / 100)
-            return to_cent
-        except Exception as e:
-            raise e   
+        """Dollars to whole cents, rounded half up. int(price * 100) truncates float noise (19.99 -> 1998)."""
+        return int((Decimal(str(price)) * 100).quantize(Decimal("1"), ROUND_HALF_UP))
+
+    def _fee_cents(self, amount_cents, rate):
+        """Platform fee in whole cents on the exact charge amount, rounded half up."""
+        return int((Decimal(amount_cents) * Decimal(str(rate))).quantize(Decimal("1"), ROUND_HALF_UP))
+
 def get_checkout_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
     return BookingCheckout(current_user=current_user,
                     db=db)

@@ -27,6 +27,9 @@ class Bookings(Base):
     booking_status = Column(String,CheckConstraint("booking_status IN ('pending', 'completed', 'cancelled', 'delayed', 'confirmed')",name="booking_status_check_constraint") ,nullable=False, default = 'pending', server_default=text("'pending'"))
     cancellation_reason = Column(String, nullable=True) ## unique to cancellations
     estimated_price =  Column(Float, nullable=True)
+    # Driver's share of estimated_price, frozen when the ride is completed. Source of truth for
+    # driver pay: later changes to the tenant's pay rule never touch it. NULL = no rule at completion.
+    driver_earning = Column(Float, nullable=True)
     payment_method = Column(String, nullable=True)
     zelle_number = Column(String(200), nullable=True)
     zelle_email = Column(String(200), nullable=True)

@@ -82,7 +82,7 @@ class AIService(ServiceContext):
         drivers = db.query(Drivers).filter(Drivers.tenant_id == tid)
         vehicles = db.query(Vehicles).filter(Vehicles.tenant_id == tid)
         lines = [
-            f"Plan: {self.sub_plan} (subscription {self.sub_status})",
+            f"Plan: {self.sub_plan or 'none'} (subscription {self.sub_status})",
             f"Bookings by status: {by_status or 'none'}; billable revenue to date: ${float(revenue):,.2f}",
             f"Drivers: {drivers.count()} total, {drivers.filter(Drivers.is_active.is_(True)).count()} active",
             f"Vehicles: {vehicles.count()}",

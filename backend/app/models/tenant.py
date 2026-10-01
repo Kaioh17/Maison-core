@@ -95,8 +95,8 @@ class TenantProfile(Base):
     stripe_customer_id = Column(String, nullable=True, index=True, unique=True)
     stripe_account_id =  Column(String, nullable=True, index=True, unique=True)
     charges_enabled = Column(Boolean, nullable=True, index=False, default=False)
-    subscription_status = Column(String, nullable=True, default= "inactive")
-    subscription_plan = Column(String, nullable=True, default="free")
+    subscription_status = Column(String, nullable=True, default="unsubscribed")
+    subscription_plan = Column(String, nullable=True)  # NULL until a subscription exists
     
     cur_subscription_id = Column(String,nullable=True, unique=True)
 

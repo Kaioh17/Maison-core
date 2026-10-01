@@ -85,8 +85,8 @@ class TenantProfile(BaseModel):
     stripe_customer_id: Optional[str] = Field(None)
     stripe_account_id: Optional[str] = Field(None)
 
-    subscription_status: Optional[str] = Field(default="free")
-    subscription_plan: Optional[str] = Field(default="free")
+    subscription_status: Optional[str] = Field(default="unsubscribed")
+    subscription_plan: Optional[str] = Field(default=None)
     created_on: datetime = Field()
     updated_on: Optional[datetime] = Field(None)
     company: Optional[str] = Field(None)  # Computed property
