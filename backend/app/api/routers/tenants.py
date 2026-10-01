@@ -265,6 +265,65 @@ async def approve_driver(
 
 
 @router.patch(
+    "/drivers/{driver_id}/status",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[dict],
+    summary="Deactivate or reactivate a driver",
+    description=(
+        "Reversible alternative to deletion: set **`is_active`** to false to stop new ride assignments, "
+        "true to restore. Registered drivers only; the driver is emailed. Requires **tenant** JWT."
+    ),
+    response_description="Updated driver status.",
+)
+async def set_driver_status(
+    driver_id: int,
+    is_active: bool,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    return await tenant_service.set_driver_active(driver_id, is_active)
+
+
+@router.post(
+    "/drivers/{driver_id}/deletion-request",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[driver.DriverDeletionRequestResponse],
+    summary="Start permanent driver deletion (step 1 of 2)",
+    description=(
+        "Checks the driver can be deleted and returns the warnings to show the tenant plus a single-use "
+        "**`confirmation_token`** (valid for 10 minutes). Nothing is deleted. Requires **tenant** JWT."
+    ),
+    response_description="Warnings and confirmation token.",
+)
+async def request_driver_deletion(
+    driver_id: int,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    logger.info("Requesting driver deletion...")
+    return await tenant_service.request_driver_deletion(driver_id)
+
+
+@router.delete(
+    "/drivers/{driver_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[dict],
+    summary="Permanently delete a driver (step 2 of 2)",
+    description=(
+        "Irreversible. Requires the **`confirmation_token`** from the deletion-request step, the driver's "
+        "email retyped as **`confirm_email`**, and **`acknowledge_permanent: true`**. Drivers with booking or "
+        "payout history are refused. Requires **tenant** JWT."
+    ),
+    response_description="Deletion result.",
+)
+async def delete_driver(
+    driver_id: int,
+    payload: driver.DriverDeleteConfirm,
+    tenant_service: TenantService = Depends(get_tenant_service),
+):
+    logger.info("Deleting driver...")
+    return await tenant_service.delete_driver(driver_id, payload)
+
+
+@router.patch(
     "/bookings/{booking_id}/assign-driver",
     status_code=status.HTTP_202_ACCEPTED,
     summary="Assign a driver to a booking",

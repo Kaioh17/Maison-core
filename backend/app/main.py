@@ -1,15 +1,16 @@
 from fastapi import FastAPI, Request, Depends, Security, HTTPException, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import APIKeyHeader
-from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admins,subscriptions, logs, slug, webhooks, dependencies, temp_qr, pwa, demo
+from app.api.routers import tenants, auth, drivers, bookings, users, vehicles, tenant_settings, admins,subscriptions, logs, slug, webhooks, dependencies, temp_qr, pwa, demo, ai
 from app.db.database import engine
+from app.api.core.demo_guard import block_demo_writes
 from app.models import *
 # from utils import logging
 from fastapi.middleware.cors import CORSMiddleware
 
-from slowapi import Limiter,_rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.middleware import SlowAPIMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from app.api.core.rate_limit import limiter, DefaultRateLimitMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from slowapi.errors import RateLimitExceeded
 from app.config import Settings
 
@@ -18,17 +19,7 @@ environment = settings.environment
 ##add frontend urls and middleware 
 #user cors
 
-##GEts the ip and Path 
-def ip_and_path(request: Request):
-    ip = get_remote_address
-    path = request.url.path
-    return f"{ip}:{path}"
-
-limiter = Limiter(
-    key_func= ip_and_path, #rate limit by ip address
-    storage_uri = settings.redis_url if settings.redis_url else None,
-    default_limits = ["30/minute", "100/second"]
-)
+is_dev = environment.lower() == 'development'
 
 Base.metadata.create_all(bind=engine)
 def custom_openapi():
@@ -140,6 +131,7 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 app = FastAPI(
+    dependencies=[Depends(block_demo_writes)],  # demo tenant is read-only; one central place
     title = "Maison multi-tenant ride sharing API",
     description="Multi-tenant ride-sharing platform",
     version="1.0.0",
@@ -147,10 +139,10 @@ app = FastAPI(
         "name": "Maison Development Team",
         "email": f"dev@{settings.domain}"
     },
-    # docs_url="/docs" if environment == 'development' else None,
-    docs_url="/docs",
-    redoc_url="/redoc" if environment == 'development' else None,
-    openapi_url="/openapi.json",
+    # API docs and the schema are a map of every route, so they are dev-only.
+    docs_url="/docs" if is_dev else None,
+    redoc_url="/redoc" if is_dev else None,
+    openapi_url="/openapi.json" if is_dev else None,
     redirect_slashes=False,
     openapi_tags=[
         {
@@ -168,6 +160,8 @@ app = FastAPI(
 # app = FastAPI(swagger_ui_parameters={"syntaxHighlight": {"theme": "obsidian"}})
 # CORS for frontend (dev: Vite at 3000; docker: nginx serves same-origin and proxies /api)
 # Also includes mobile app origins for Flutter development
+# Added before CORS so CORS is the outer layer and a 429 still carries the CORS headers.
+app.add_middleware(DefaultRateLimitMiddleware)
 _cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()] 
 app.add_middleware(
     CORSMiddleware,
@@ -177,8 +171,8 @@ app.add_middleware(
     # allow_origin_regex=r"^https?://[\w-]+(\.usemaison\.io|\.localhost(:\d+)?)$",
     allow_origin_regex=r"^https?://([\w-]+\.)?(usemaison\.io|localhost(:\d+)?)$",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-API-Key", "X-Tenant-Slug"],
 )
 
 app.openapi = custom_openapi
@@ -188,7 +182,16 @@ app.openapi = custom_openapi
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
+
+# Behind a reverse proxy / load balancer request.client is the proxy, so every user would share one
+# rate-limit bucket. Set TRUSTED_PROXIES to the proxy IPs/CIDRs (comma separated) so X-Forwarded-For is
+# honoured, and ONLY for those hosts: with "*" on a directly exposed port a client could spoof its IP.
+# Added last so it is the outermost middleware and runs before the limiter.
+if settings.trusted_proxies.strip():
+    app.add_middleware(
+        ProxyHeadersMiddleware,
+        trusted_hosts=[h.strip() for h in settings.trusted_proxies.split(",") if h.strip()],
+    )
 
 
 app.include_router(tenants.router)
@@ -198,7 +201,7 @@ app.include_router(users.router)
 app.include_router(bookings.router)
 app.include_router(vehicles.router)
 app.include_router(tenant_settings.router)
-app.include_router(admins.router, dependencies=[Depends(dependencies.verify_api_key)])
+app.include_router(admins.router, dependencies=[Depends(dependencies.verify_api_key), Depends(dependencies.is_admin)])
 app.include_router(subscriptions.router)
 app.include_router(logs.router)
 app.include_router(slug.router)
@@ -206,6 +209,7 @@ app.include_router(webhooks.router)
 app.include_router(temp_qr.router)
 app.include_router(pwa.router)
 app.include_router(demo.router)
+app.include_router(ai.router)
 
 
 

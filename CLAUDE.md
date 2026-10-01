@@ -86,7 +86,7 @@ This is the primary multi-tenant isolation mechanism. All queries in services **
 - Each tenant has a unique `slug` (subdomain identifier)
 - `TenantSettings` stores flexible config as JSONB
 - `TenantBranding` stores white-label visual config (colors, logos)
-- PWA manifest and icons are resolved per-host from the `Host` header (`/api/v1/pwa/`)
+- PWA manifest and icons are resolved per-host from the `Host` / `X-Forwarded-Host` header by routes at the URL root (`/manifest.webmanifest`, `/icons/icon-*.png`, `/apple-touch-icon.png`; see `routers/pwa.py`). Unknown or inactive slugs get the default Maison manifest. Icons are rendered with Pillow from the tenant icon/logo (`utils/pwa_icons.py`), versioned by `tenant_branding.updated_on`, and cached immutably when requested with the matching `?v=`.
 - Public slug endpoints allow rider sign-up and branding lookup without auth
 
 ### Environment config

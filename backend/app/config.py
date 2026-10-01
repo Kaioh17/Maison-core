@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     promocode: str = ""
     resend_key: str
     supabase_anon_key: str
+    # Server-side key for storage writes. Set it and deny anon writes in Supabase; falls back to the anon key.
+    supabase_service_key: str = ""
     supabase_url: str
     base_url: str
     api_url: str
@@ -56,6 +58,8 @@ class Settings(BaseSettings):
     api_key: str
     cors_origins: str
     domain: str
+    # Reverse proxies whose X-Forwarded-For is trusted for client-IP rate limiting (comma separated IPs/CIDRs).
+    trusted_proxies: str = ""
 
     # Demo tenant (see ./mock-tenant). Empty slug == demo endpoint disabled.
     demo_tenant_slug: str = ""
@@ -65,3 +69,11 @@ class Settings(BaseSettings):
     demo_driver_password: str = ""
     demo_rider_email: str = ""
     demo_rider_password: str = ""
+
+    # --- Maison AI assistant (tenant-facing chat) ---
+    # ai_provider: "openai" | "gemini". Empty key for the chosen provider == assistant disabled (503).
+    ai_provider: str = "gemini"
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.6-flash"

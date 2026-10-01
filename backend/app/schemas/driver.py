@@ -87,3 +87,24 @@ class RiderDriverResponse(BaseModel):
 class DriverLogin(BaseModel):
     email: EmailStr
     password: str
+
+class DriverDeletionRequestResponse(BaseModel):
+    """Step 1 of permanent driver deletion: warnings + a short-lived single-use token."""
+    driver_id: int
+    driver_name: str
+    warnings: list[str]
+    confirmation_token: str
+    expires_in_seconds: int
+
+
+class DriverDeleteConfirm(BaseModel):
+    """Step 2: every flag must be satisfied or nothing is deleted."""
+    confirmation_token: str = Field(..., min_length=1)
+    confirm_email: EmailStr = Field(..., description="The driver's exact email, retyped by the tenant")
+    acknowledge_permanent: bool = Field(..., description="Must be true: deletion is permanent and cannot be undone")
+
+    @field_validator('acknowledge_permanent')
+    def must_acknowledge(cls, v):
+        if v is not True:
+            raise ValueError('You must acknowledge that deletion is permanent and cannot be undone')
+        return v

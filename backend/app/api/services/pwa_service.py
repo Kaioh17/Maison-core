@@ -9,18 +9,22 @@ both platforms snapshot the metadata before client-side React mounts.
 """
 from __future__ import annotations
 
+import hashlib
 import re
+from collections import OrderedDict
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db.database import get_base_db
-from app.utils.logging import logger
+from app.utils.pwa_icons import fetch_logo, render_letter_icon_png, render_logo_icon_png
 
-from .helper_service import tenant_branding, tenant_profile, tenant_table, Validations, HTTPException
+from .slug_services import SlugService
 
 # Subdomains that are infrastructure / marketing, not tenant slugs.
 RESERVED_SUBDOMAIN_LABELS = {"www", "api", "admin", "app", "ekko"}
@@ -28,18 +32,48 @@ RESERVED_SUBDOMAIN_LABELS = {"www", "api", "admin", "app", "ekko"}
 # Conservative hex pattern; falls back to defaults when validation fails.
 HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?$")
 
-# Default Maison brand fallbacks (mirror values used in the frontend shell).
+# Default Maison brand (the app's own --bw-bg / --bw-accent dark tokens), used
+# for the apex host and for tenants that have branding turned off, exactly like
+# the frontend shell does.
 DEFAULT_APP_NAME = "Maison"
-DEFAULT_THEME_COLOR = "#0f0d1a"
-DEFAULT_BACKGROUND_COLOR = "#0f0d1a"
-DEFAULT_ACCENT_COLOR = "#6c63e8"
+DEFAULT_THEME_COLOR = "#0B0B0C"
+DEFAULT_BACKGROUND_COLOR = "#0B0B0C"
+DEFAULT_ACCENT_COLOR = "#6e5bd8"
 
-# Static assets shipped in the frontend `public/` folder for the apex / main
-# domain (no tenant slug). nginx serves these from disk; PWA routes 302 here
-# when `resolve_branding` returns None so home-screen icons match brand
-# artwork instead of server-generated letter marks.
-MAISON_STATIC_APP_ICON = "/icons/icon.png"
-MAISON_STATIC_FAVICON_PNG = "/favicon-48x48.png"
+MAISON_ICON_BYTES = (Path(__file__).resolve().parents[2] / "static" / "maison-icon.png").read_bytes()
+MAISON_ICON_VERSION = hashlib.sha1(MAISON_ICON_BYTES).hexdigest()[:10]
+
+# Only these sizes are ever rendered, so the icon cache stays bounded no matter
+# what sizes iOS (or a scanner) probes for. Requests snap to the nearest.
+ICON_SIZES = (64, 180, 192, 512)
+
+NAME_MAX = 45
+SHORT_NAME_MAX = 12
+
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f-\x9f\u200b\u2028\u2029\ufeff]")
+
+
+def clean_name(value: Optional[str]) -> str:
+    """Strip control/invisible characters and collapse whitespace."""
+    return " ".join(_CONTROL_CHARS_RE.sub(" ", value or "").split())
+
+
+def make_short_name(name: str) -> str:
+    """
+    Home-screen label: the full name if it fits in 12 characters, else as many
+    whole words as fit, else the first 12 characters. Mirrors `shortAppName` in
+    the frontend (`src/utils/tenantName.ts`); keep both in sync.
+    """
+    if len(name) <= SHORT_NAME_MAX:
+        return name
+    out = ""
+    for word in name.split(" "):
+        candidate = f"{out} {word}".strip()
+        if len(candidate) > SHORT_NAME_MAX:
+            break
+        out = candidate
+    # ponytail: counts code points, so a ZWJ emoji can be cut mid-sequence; the rstrip drops the dangling joiner.
+    return out or name[:SHORT_NAME_MAX].rstrip("\u200d\ufe0f ")
 
 
 @dataclass(frozen=True)
@@ -53,25 +87,39 @@ class TenantBrandingSnapshot:
     theme_color: str
     background_color: str
     accent_color: str
+    # `tenant_branding.updated_on`: logos are re-uploaded to a stable URL, so the
+    # URL alone cannot tell caches that the image changed.
+    updated_on: str = ""
 
     @property
     def display_name(self) -> str:
-        return (self.company_name or self.slug or DEFAULT_APP_NAME).strip() or DEFAULT_APP_NAME
+        name = clean_name(self.company_name) or clean_name(self.slug) or DEFAULT_APP_NAME
+        if len(name) <= NAME_MAX:
+            return name
+        return name[:NAME_MAX].rsplit(" ", 1)[0] if " " in name[:NAME_MAX] else name[:NAME_MAX]
 
     @property
     def short_name(self) -> str:
-        """First word of display name capped at 12 characters (manifest convention)."""
-        name = self.display_name
-        first_word = name.split()[0] if name else DEFAULT_APP_NAME
-        return first_word[:12]
+        return make_short_name(self.display_name)
 
     @property
     def initial(self) -> str:
-        """First printable character of the display name, used for fallback icons."""
+        """First letter or digit of the name (emoji and punctuation do not render in the icon font)."""
         for ch in self.display_name:
-            if ch.strip():
+            if ch.isalnum():
                 return ch.upper()
         return "M"
+
+    @property
+    def icon_sources(self) -> list[str]:
+        """Tenant icon first, then the logo."""
+        return [u for u in (self.favicon_url, self.logo_url) if u]
+
+    @property
+    def version(self) -> str:
+        """Changes whenever anything that affects the rendered icon changes."""
+        raw = "|".join([self.favicon_url or "", self.logo_url or "", self.updated_on, self.background_color, self.accent_color, self.initial])
+        return hashlib.sha1(raw.encode()).hexdigest()[:10]
 
 
 def _normalize_color(value: Optional[str], fallback: str) -> str:
@@ -135,8 +183,16 @@ def extract_slug_from_host(host: Optional[str], main_domain: str) -> Optional[st
 
     return None
 
-from .slug_services import SlugService
-from app.schemas.slug import TenantSlugResponse
+# Rendered icons by (version, size, maskable). Per-process and bounded; the version
+# in the key means a changed logo can never be served from a stale entry.
+_ICON_CACHE: "OrderedDict[tuple[str, int, bool], bytes]" = OrderedDict()
+_ICON_CACHE_MAX = 256
+
+
+def snap_icon_size(requested: int) -> int:
+    return min(ICON_SIZES, key=lambda s: abs(s - requested))
+
+
 class PwaService:
     """Resolves tenant branding for PWA endpoints from a request host."""
 
@@ -160,61 +216,31 @@ class PwaService:
 
     def resolve_branding(self, host: Optional[str]) -> Optional[TenantBrandingSnapshot]:
         """
-        Return tenant branding for the host, or None when the host has no slug
-        or the tenant is not active.
+        Return tenant branding for the host, or None when the host has no slug or
+        the tenant is unknown/inactive (callers then serve default Maison branding,
+        so an install never breaks on a bad slug).
         """
-        logger.debug(host)
         slug = extract_slug_from_host(host, self.main_domain)
-
         if not slug:
             return None
-        # verified_tenant_id = Validations(self.db)._verify_slug(slug)
-        tenant_manifest = SlugService(self.db, current_user=None).verify_slug(slug=slug)
-        tenant_manifest = tenant_manifest.data
-        if not tenant_manifest:
-            raise HTTPException(404, "Slug does not exists")
-        logger.debug(tenant_manifest['profile']['company_name'])
-
-        return TenantBrandingSnapshot(
-            slug=slug,
-            company_name=(tenant_manifest['profile']['company_name'] or "").strip(),
-            favicon_url=(tenant_manifest['branding']['favicon_url'] or "").strip() or None,
-            logo_url=(tenant_manifest['branding']['logo_url'] or "").strip() or None,
-            theme_color=_normalize_color(tenant_manifest['branding']['background_color'], DEFAULT_THEME_COLOR),
-            background_color=_normalize_color(tenant_manifest['branding']['background_color'], DEFAULT_BACKGROUND_COLOR),
-            accent_color=_normalize_color(tenant_manifest['branding']['primary_color'], DEFAULT_ACCENT_COLOR),
-        )
-        
         try:
-            row = (
-                self.db.query(tenant_profile, tenant_branding, tenant_table)
-                .join(tenant_branding, tenant_branding.tenant_id == tenant_profile.tenant_id)
-                .join(tenant_table, tenant_table.id == tenant_profile.tenant_id)
-                .filter(tenant_profile.slug == slug)
-                .first()
-            )
-        except Exception as exc:
-            # Failures here must not break PWA install metadata; fall back silently.
-            logger.warning(f"PWA branding lookup failed for slug={slug!r}: {exc}")
+            data = SlugService(self.db, current_user=None).verify_slug(slug=slug).data
+        except HTTPException:
             return None
-
-        if not row:
-            return None
-
-        profile, branding, tenant = row
-        # Skip soft-deleted/inactive tenants so we don't serve their branding to
-        # the world; the public default Maison branding will be returned instead.
-        if getattr(tenant, "is_active", True) is False:
-            return None
-
+        profile, branding = data["profile"], data["branding"]
+        # Mirror the frontend: tenant colours apply only when branding is enabled.
+        enabled = bool(branding.get("enable_branding"))
+        background = _normalize_color(branding.get("background_color"), DEFAULT_BACKGROUND_COLOR) if enabled else DEFAULT_BACKGROUND_COLOR
+        accent = _normalize_color(branding.get("primary_color"), DEFAULT_ACCENT_COLOR) if enabled else DEFAULT_ACCENT_COLOR
         return TenantBrandingSnapshot(
             slug=slug,
-            company_name=(profile.company_name or "").strip(),
-            favicon_url=(branding.favicon_url or "").strip() or None,
-            logo_url=(branding.logo_url or profile.logo_url or "").strip() or None,
-            theme_color=_normalize_color(branding.background_color, DEFAULT_THEME_COLOR),
-            background_color=_normalize_color(branding.background_color, DEFAULT_BACKGROUND_COLOR),
-            accent_color=_normalize_color(branding.primary_color, DEFAULT_ACCENT_COLOR),
+            company_name=profile.get("company_name") or "",
+            favicon_url=(branding.get("favicon_url") or "").strip() or None,
+            logo_url=(branding.get("logo_url") or "").strip() or None,
+            theme_color=background,
+            background_color=background,
+            accent_color=accent,
+            updated_on=str(branding.get("updated_on") or branding.get("created_on") or ""),
         )
 
     def build_manifest(self, snapshot: Optional[TenantBrandingSnapshot], *, is_tenant_app: bool = False) -> dict:
@@ -228,119 +254,85 @@ class PwaService:
         """
         if snapshot is None:
             name = "Maison for Business" if is_tenant_app else DEFAULT_APP_NAME
-            short_name = "Maison" if is_tenant_app else DEFAULT_APP_NAME
+            short_name = DEFAULT_APP_NAME
             theme = DEFAULT_THEME_COLOR
             bg = DEFAULT_BACKGROUND_COLOR
-            icons = self._default_icon_entries()
+            version = MAISON_ICON_VERSION
         else:
             name = snapshot.display_name
             short_name = snapshot.short_name
             theme = snapshot.theme_color
             bg = snapshot.background_color
-            icons = self._tenant_icon_entries(snapshot)
+            version = snapshot.version
 
         start_url = "/tenant/overview" if is_tenant_app else "/?source=pwa"
+        # Unique per tenant even if two tenants are ever served from one origin.
+        app_id = f"/?tenant={snapshot.slug}" if snapshot else start_url
         description = (
             "Manage your fleet, drivers, and bookings."
             if is_tenant_app
-            else f"{name} — book a ride."
+            else f"{name} \u2014 book a ride."
         )
+        icon = lambda path, sizes, purpose: {"src": f"/icons/{path}?v={version}", "sizes": sizes, "type": "image/png", "purpose": purpose}
 
         return {
+            "id": app_id,
             "name": name,
             "short_name": short_name,
             "description": description,
             "start_url": start_url,
-            "id": start_url,
             "scope": "/",
             "display": "standalone",
-            "display_override": ["standalone", "minimal-ui"],
-            "orientation": "any",
             "background_color": bg,
             "theme_color": theme,
             "lang": "en",
             "dir": "ltr",
             "categories": ["business", "travel"],
-            "icons": icons,
+            "icons": [
+                icon("icon-192.png", "192x192", "any"),
+                icon("icon-512.png", "512x512", "any"),
+                icon("icon-maskable-512.png", "512x512", "maskable"),
+            ],
         }
 
-    def _default_icon_entries(self) -> list[dict]:
-        # Main Ma domain: ship icons from the frontend bundle (`public/icons/icon.png`).
-        # Tenant subdomains use the same manifest shape but resolve icon URLs via
-        # the backend `/icons/icon-*.png` handlers (redirect or generated).
-        return [
-            {
-                "src": MAISON_STATIC_APP_ICON,
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "any",
-            },
-            {
-                "src": MAISON_STATIC_APP_ICON,
-                "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "any",
-            },
-            {
-                "src": MAISON_STATIC_APP_ICON,
-                "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "maskable",
-            },
-        ]
+    def render_icon(self, snapshot: Optional[TenantBrandingSnapshot], size: int, maskable: bool) -> tuple[bytes, bool]:
+        """
+        Icon PNG for the host, falling back tenant icon -> logo -> initials on the
+        brand colour -> Maison icon. Returns `(png, stable)`; `stable` is False when
+        a logo exists but could not be downloaded, so callers must not cache that
+        result for long (the real icon may appear on the next attempt).
+        """
+        version = snapshot.version if snapshot else MAISON_ICON_VERSION
+        key = (version, size, maskable)
+        cached = _ICON_CACHE.get(key)
+        if cached is not None:
+            _ICON_CACHE.move_to_end(key)
+            return cached, True
 
-    def _tenant_icon_entries(self, _snapshot: TenantBrandingSnapshot) -> list[dict]:
-        # Manifest entries point at backend routes so each size + maskable flag
-        # is handled consistently (`pwa._icon_response`).
-        # TODO switch from default maison entry to a 
-        logger.debug(f'_snapshpot =  {_snapshot.logo_url}')
-        icon_src = _snapshot.logo_url or f"/icons/icon.png"
-    
-        entries = [
-            {
-                "src": icon_src,
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "any",
-            },
-            {
-                "src": icon_src,
-                "sizes": "512x512", 
-                "type": "image/png",
-                "purpose": "any",
-            },
-        ]
-        
-        # Only add maskable if we have a real logo, otherwise use generated
-        maskable_src = icon_src or f"/icons/icon.png"
-        entries.append({
-            "src": maskable_src,
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable",
-        })
-        
-        return entries
-        return [
-            {
-                "src": _snapshot.logo_url,
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "any",
-            },
-            {
-                "src": _snapshot.logo_url,
-                "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "any",
-            },
-            {
-                "src": _snapshot.logo_url,
-                "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "maskable",
-            },
-        ]
+        stable = True
+        png: Optional[bytes] = None
+        if snapshot is None:
+            png = render_logo_icon_png(MAISON_ICON_BYTES, size, DEFAULT_BACKGROUND_COLOR, maskable)
+        else:
+            trusted_host = urlparse(self._settings.supabase_url).hostname or ""
+            for url in snapshot.icon_sources:
+                data = fetch_logo(url, trusted_host)
+                if data is None:
+                    stable = False
+                    continue
+                png = render_logo_icon_png(data, size, snapshot.background_color, maskable)
+                if png:
+                    break
+            if png is None:
+                png = render_letter_icon_png(snapshot.initial, size, snapshot.accent_color)
+        if png is None:
+            png = render_letter_icon_png("M", size, DEFAULT_ACCENT_COLOR)
+
+        if stable:
+            _ICON_CACHE[key] = png
+            while len(_ICON_CACHE) > _ICON_CACHE_MAX:
+                _ICON_CACHE.popitem(last=False)
+        return png, stable
 
 
 def get_pwa_service(db: Session = Depends(get_base_db)) -> PwaService:
