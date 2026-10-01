@@ -26,7 +26,7 @@ class AdminBase(BaseModel):
     def validate_email(cls, v):
         return v.lower()
 class CreateAdmin(AdminBase):
-    password: str = Field(...)
+    password: str = Field(..., min_length=8)
 class AdminResponse(AdminBase):
     pass
 

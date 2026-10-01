@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
 from app.schemas import tenant, general, admin
 from app.utils.logging import logger
-from ..services.admin_services import AdminService, get_admin_service, unauthenticated_admin_service
+from ..services.admin_services import AdminService, get_admin_service
 
 router = APIRouter(
     prefix="/api/v1/admin",
@@ -17,8 +17,7 @@ router = APIRouter(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a tenant (destructive)",
     description=(
-        "**Admin only** — cascades tenant data per ORM. "
-        "Protect with network policy / auth in production (currently open if router is mounted)."
+        "**Admin only** — cascades tenant data per ORM."
     ),
     response_description="No content on success.",
     include_in_schema=False,
@@ -37,7 +36,7 @@ async def delete_tenant(
     status_code=status.HTTP_200_OK,
     response_model=general.StandardResponse[list[tenant.TenantResponse]],
     summary="List all tenants",
-    description="Returns every tenant record for admin dashboards. **Unauthenticated** in code — lock down in production.",
+    description="Returns every tenant record for admin dashboards. **Admin only.**",
     response_description="Standard response with tenant list and meta counts.",
     include_in_schema=False,
 )
@@ -55,12 +54,12 @@ async def get_all_tenants(
     status_code=201,
     response_model=general.StandardResponse[admin.AdminResponse],
     summary="Create admin",
-    description="Returns every tenant record for admin dashboards. ",
-    response_description="Standard response with tenant list and meta counts.",
+    description="Creates another platform admin. **Admin JWT required** (the first admin is seeded out of band).",
+    response_description="The created admin.",
     include_in_schema=False,
 )
 async def create_admin(payload: admin.CreateAdmin,
-                        admin_service: AdminService = Depends(unauthenticated_admin_service)
+                        admin_service: AdminService = Depends(get_admin_service)
                           ):
     admin = await admin_service.create_admin(payload)
     return general.StandardResponse(

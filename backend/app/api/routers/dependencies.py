@@ -1,5 +1,6 @@
+import secrets
 from fastapi import Depends, HTTPException, status, Request, Security
-from ..core import deps
+from ..core import deps, oauth2
 from app.config import Settings
 from app.utils.logging import logger
 from app.db.database import get_db
@@ -26,6 +27,17 @@ def is_tenants(current_tenant = Depends(deps.get_current_user)):
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail = "unauthorized user")
     return current_tenant
+
+def is_admin(current_admin = Depends(deps.get_current_user)):
+    """Platform admin only. The shared X-API-Key is public (it ships in the web bundle), so it is not auth."""
+    if current_admin.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail = "Admin access required")
+    return current_admin
+
+def get_onboarding_claims(token: str = Depends(oauth2.oauth2_scheme)):
+    """Driver onboarding session from `GET /driver/{slug}/verify` (not a login token)."""
+    return oauth2.verify_driver_onboarding_token(token)
 
 def is_driver(current_driver = Depends(deps.get_current_user)):
     if current_driver.role not in ("driver", "tenant"):
@@ -64,7 +76,7 @@ ENV = settings.environment
 API_KEY = settings.api_key
 api_key_header = APIKeyHeader(name="X-API-Key")
 def verify_api_key(key: str = Security(api_key_header)):
-    if key != API_KEY:
+    if not secrets.compare_digest(key.encode(), API_KEY.encode()):
         # logger.debug(f'')
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

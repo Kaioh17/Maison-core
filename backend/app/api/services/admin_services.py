@@ -327,6 +327,3 @@ class AdminService(ServiceContext):
         
 def get_admin_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
     return AdminService(db = db, current_user=current_user)
-def unauthenticated_admin_service(db=Depends(get_base_db)):
-    """No JWT: use get_base_db — get_db would require Bearer via get_tenant_id_from_token."""
-    return AdminService(db=db, current_user=None)
