@@ -241,7 +241,8 @@ class WebhookServices(ServiceContext):
           set tenant_profile.stripe_account_id from event['account'], charges_enabled, and
           mark tenant verified/active.
         - payment_intent.succeeded / charge.succeeded: update booking payment_status from metadata.
-        - checkout.session.completed (Connect context): rider checkout updates (see handler).
+        Anything else (checkout.session.*, payment.created) is acknowledged and ignored.
+        Payment events are only applied when event['account'] is the tenant that owns the booking.
 
         event['account'] is the connected account ID (acct_...) for Connect events.
         """
@@ -263,146 +264,108 @@ class WebhookServices(ServiceContext):
         
         logger.info(f"webhook event:[{event['type']}] for {tenant_stripe_id}")
         try:
-            
             if event['type'] in ('account.updated' ,'account.created', 'v1.account.updated'):
-                logger.debug(event['type'])
-                # Persist Connect account id on tenant_profile once charges can be collected
-                account = event['data']['object']
-                logger.info(f"[DEBUG] [webhooks] Account is: {account}")
-                
-                metadata =  account.get('metadata', {})
-                logger.info(f"[DEBUG] [webhooks] Metadata: {metadata}")
-                tenant_id = metadata.get('tenant_id')
-                logger.info(f"[DEBUG] [webhooks] Tenant_id: {tenant_id}")
-                
-                response:tenant_profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first()
-                
-                if not response:
-                    raise HTTPException(404, "Tenant not found!")
-                logger.info(f"[DEBUG] [webhooks] respose: {response}")
-                
-                tenant_response:tenant_table = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
-                
-                if account.get('charges_enabled'):
-                    logger.debug(f"Tenant account status is {account.get('charges_enabled')}  q(≧▽≦q)")
-                    
-                    
-                    response.stripe_account_id = tenant_stripe_id
-                    response.charges_enabled = account.get('charges_enabled')
-                    tenant_response.is_verified = True
-                    tenant_response.is_active = True
-                    
-                    self.db.commit()
-                    logger.info(f"Tenant {tenant_stripe_id} is now ready to make some cash q(≧▽≦q)")
-                else:
-                    # Onboarding not finished — still save charges_enabled flag
-                    response.charges_enabled = account.get('charges_enabled')
-                    self.db.commit()   
-             
-                
-            elif event['type'] == 'checkout.session.completed' :
-                session = event['data']['object']
-                metadata = session.get('metadata', {})
-                rider_id = metadata.get('rider_id')
-                response:booking_table = self.db.query(booking_table).filter(booking_table.rider_id == rider_id)
-                response.payment_status = 'paid'
-                
-                logger.info(f"Payment recieved for tenant {tenant_stripe_id}")
+                self._handle_account_event(event, tenant_stripe_id)
             elif event['type'] in ('payment_intent.succeeded', 'charge.succeeded'):
-                try:
-                    logger.debug("Payment succeeded")
-                    status_dict = {
-                                    'deposit': 'deposit_paid',
-                                    'balance': 'balance_paid',
-                                    'full': 'full_paid'
-                                }
-                    intent = event['data']['object']
-                    logger.debug(f"Webhook object type {intent.get('object')}")
-                    
-                    
-                    customer_id = intent['customer'] 
-                    intent_id = intent['id']
-                    payment_id = intent['payment_method']
-                    metadata = intent.get('metadata', {})
-                    rider_id = metadata.get('rider_id')
-                    payment_type:str = metadata.get('payment_type')
-                    booking_id = metadata.get('booking_id')
-                    logger.debug(f"Rider {rider_id}")
-                    logger.debug(f"Meta {metadata}")
-                    
-                    # await asyncio.sleep(60)
-                    
-                    response:booking_table = self.db.query(booking_table).filter(booking_table.rider_id == rider_id,
-                                                                                booking_table.id == booking_id ).first()
-                    #Verify customer id or add new
-                    if not response:
-                        logger.debug(f"booking NOt found")
-                        raise HTTPException(404)
-                    logger.debug(response.__dict__)
-                    
-                    rider_obj:user_table =  self.db.query(user_table).filter(user_table.id == rider_id).first()
-                    if not rider_obj:
-                        logger.debug(f"booking NOt found")
-                        raise HTTPException(404)
-                    
-                    if not rider_obj.stripe_customer_id:
-                        rider_obj.stripe_customer_id = customer_id
-                    elif rider_obj.stripe_customer_id != customer_id:
-                        raise HTTPException(status.HTTP_409_CONFLICT, "Customer ids do not match")
-                    response.payment_status = status_dict[payment_type.lower()]
-                
-                    if payment_type == 'deposit':
-                        response.deposit_intent_id = intent_id
-                    elif payment_type in ('balance', 'full'):
-                      
-                        
-                        response.balance_intent_id = intent_id
-                    
-                    response.payment_id = payment_id
-                    
-                    self.db.commit()
-                    logger.info(f"Payment [{intent_id}] recieved for tenant {tenant_stripe_id}")
-                except Exception as e:
-                    raise e    
-            elif event['type'] == 'payment.created':
-                logger.debug("Charge succeeded")
-                status_dict = {
-                                'deposit': 'deposit_paid',
-                                'balance': 'balance_paid',
-                                'full': 'full_paid'
-                               }
-                intent = event['data']['object']
-              
-                logger.debug(f"Webhook object type {intent.get('object')}")
-                
-                if intent.get('payment_intent'):
-                    payment_intent = stripe.PaymentIntent.retrieve(
-                        intent['payment_intent'],
-                        stripe_account=tenant_stripe_id # Important for Connect
-                    )
-                    metadata = payment_intent.get('metadata', {})
-                    logger.debug(f'Meta {metadata}')
-                customer_id = intent['customer'] 
-                intent_id = intent['id']
-
-                metadata = intent.get('metadata', {})
-                rider_id = metadata.get('rider_id')
-                payment_type:str = metadata.get('payment_type')
-                
-                logger.debug(f"Rider {rider_id}")
-                logger.debug(f"Meta {metadata}")
-              
-                logger.info(f"Charge [{intent_id}] recieved for tenant {tenant_stripe_id}")
-                
-                
-            elif event['type'] == 'checkout.session.failed':
-                pass
+                self._handle_payment_succeeded(event, tenant_stripe_id)
             else:
+                # checkout.session.* / payment.created are not part of the booking flow (riders pay with
+                # PaymentIntents), so they are acknowledged and ignored.
                 logger.info(f"[connect webhook] unhandled event type {event['type']}, ignoring")
             return success_resp()
         
         except Exception as e:
+            self.db.rollback()
             raise e
+
+    # Bookings only ever move forward: a late or replayed 'deposit' event must not undo a 'full' payment.
+    _PAYMENT_RANK = {'pending': 0, 'deposit_paid': 1, 'balance_paid': 2, 'full_paid': 2}
+    _PAYMENT_STATUS = {'deposit': 'deposit_paid', 'balance': 'balance_paid', 'full': 'full_paid'}
+
+    def _handle_account_event(self, event, tenant_stripe_id):
+        account = event['data']['object']
+        tenant_id = (account.get('metadata') or {}).get('tenant_id')
+        if not tenant_stripe_id or account.get('id') != tenant_stripe_id:
+            logger.warning(f"[connect webhook] account event {event.get('id')} account mismatch, ignoring")
+            return
+
+        profile = self.db.query(tenant_profile).filter(tenant_profile.tenant_id == tenant_id).first() if tenant_id else None
+        if not profile:
+            raise HTTPException(404, "Tenant not found!")
+        # A tenant is bound to one connected account. Re-pointing it would redirect that tenant's payouts.
+        if profile.stripe_account_id and profile.stripe_account_id != tenant_stripe_id:
+            logger.error(f"[connect webhook] tenant {tenant_id} already linked to a different Stripe account, ignoring {event.get('id')}")
+            return
+
+        profile.charges_enabled = bool(account.get('charges_enabled'))
+        if account.get('charges_enabled'):
+            profile.stripe_account_id = tenant_stripe_id
+            tenant_obj = self.db.query(tenant_table).filter(tenant_table.id == tenant_id).first()
+            if tenant_obj:
+                tenant_obj.is_verified = True
+                tenant_obj.is_active = True
+            logger.info(f"Tenant {tenant_id} can now accept charges")
+        self.db.commit()
+
+    def _handle_payment_succeeded(self, event, tenant_stripe_id):
+        intent = event['data']['object']
+        metadata = intent.get('metadata') or {}
+        rider_id, booking_id = metadata.get('rider_id'), metadata.get('booking_id')
+        payment_type = (metadata.get('payment_type') or '').lower()
+        intent_id = intent.get('id')
+        if not (rider_id and booking_id and payment_type in self._PAYMENT_STATUS):
+            # e.g. a payment made on the connected account outside Maison's booking flow
+            logger.info(f"[connect webhook] {intent_id} has no Maison booking metadata, ignoring")
+            return
+
+        booking = self.db.query(booking_table).filter(booking_table.rider_id == rider_id,
+                                                      booking_table.id == booking_id).first()
+        if not booking:
+            logger.debug("booking not found")
+            raise HTTPException(404)
+
+        # Connect events are signed by Stripe but their metadata is not ours to trust: it can be set by whoever
+        # created the payment on that account. The event must come from the tenant that owns the booking.
+        owner_account = booking.tenant.profile.stripe_account_id if booking.tenant and booking.tenant.profile else None
+        if not owner_account or owner_account != tenant_stripe_id:
+            logger.error(f"[connect webhook] SECURITY: {intent_id} from account {tenant_stripe_id} "
+                         f"claims booking {booking.id} owned by {owner_account}; ignoring")
+            return
+        if metadata.get('tenant_id') not in (None, str(booking.tenant_id)):
+            logger.error(f"[connect webhook] SECURITY: {intent_id} tenant metadata does not match booking {booking.id}; ignoring")
+            return
+        amount = intent.get('amount')
+        total_cents = int(round((booking.estimated_price or 0) * 100))
+        if not isinstance(amount, int) or amount <= 0 or (total_cents and amount > total_cents):
+            logger.error(f"[connect webhook] SECURITY: {intent_id} amount {amount} outside 1..{total_cents} for booking {booking.id}; ignoring")
+            return
+
+        if intent_id in (booking.deposit_intent_id, booking.balance_intent_id):
+            return  # already recorded (payment_intent.succeeded and charge.succeeded both arrive)
+
+        rider_obj = self.db.query(user_table).filter(user_table.id == rider_id).first()
+        if not rider_obj:
+            raise HTTPException(404)
+        customer_id = intent.get('customer')
+        if customer_id:
+            if not rider_obj.stripe_customer_id:
+                rider_obj.stripe_customer_id = customer_id
+            elif rider_obj.stripe_customer_id != customer_id:
+                raise HTTPException(status.HTTP_409_CONFLICT, "Customer ids do not match")
+
+        new_status = self._PAYMENT_STATUS[payment_type]
+        if self._PAYMENT_RANK.get(booking.payment_status or 'pending', 0) <= self._PAYMENT_RANK[new_status]:
+            booking.payment_status = new_status
+        if payment_type == 'deposit':
+            booking.deposit_intent_id = intent_id
+        else:
+            booking.balance_intent_id = intent_id
+        if intent.get('payment_method'):
+            booking.payment_id = intent['payment_method']
+        self.db.commit()
+        logger.info(f"Payment [{intent_id}] recorded for booking {booking.id}")
+
+
 def get_ebhook_services(db = Depends(get_base_db)):
     """Dependency: webhook routes use base DB session; no logged-in user (Stripe signs requests)."""
     
