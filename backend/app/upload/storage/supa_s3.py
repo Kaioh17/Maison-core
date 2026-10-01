@@ -4,7 +4,8 @@ from app.utils.logging import logger
 
 settings = Settings()
 url = settings.supabase_url
-key = settings.supabase_anon_key
+# Prefer the server-side key so the buckets can deny anonymous writes (the anon key is public by design).
+key = settings.supabase_service_key or settings.supabase_anon_key
 # resend = settings.resend_key
 # logger.debug(resend)
 try:

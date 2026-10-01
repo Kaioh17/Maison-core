@@ -103,33 +103,42 @@ def _user_exist(db, data):
 
 
 
+import io
 import os
-@staticmethod
-#this is used to verify uploads from clients and direct to respective directory or s3 bucket 
-async def _verify_upload(logo_url,slug: str, upload_dir: str, file_path: str):
-    if logo_url:
-        try:
-            contents = await logo_url.read()
-            # Extract filename from the uploaded file
-            filename = logo_url.filename if hasattr(logo_url, 'filename') else 'image.jpg'
-            os.makedirs(upload_dir, exist_ok=True)
-            _file_path = f"{file_path}_{filename}"
-            with open(_file_path, "wb") as f:
-                f.write(contents)
-            logger.info(f"{_file_path}")
-            logger.info(f"{slug}, image is saved!!")
-            return file_path
-        except Exception as e:
-            logger.warning(f"Failed to save logo upload: {e}")
-            # Continue without failing the tenant creation
-    return None
+import re
+
+# Public uploads are decoded and re-identified server side: the client's content type and file name
+# are never trusted (an .html or .svg posing as a logo would be served from the storage domain).
+IMAGE_FORMATS = {"PNG": ("png", "image/png"), "JPEG": ("jpg", "image/jpeg"), "WEBP": ("webp", "image/webp"),
+                 "GIF": ("gif", "image/gif"), "ICO": ("ico", "image/x-icon")}
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
+
+async def read_validated_image(upload: UploadFile, max_bytes: int = MAX_IMAGE_BYTES):
+    """Return (bytes, safe_filename, mime). 413 if too big, 415 if it is not really a PNG/JPEG/WEBP/GIF/ICO."""
+    from PIL import Image, UnidentifiedImageError
+
+    contents = await upload.read(max_bytes + 1)
+    if len(contents) > max_bytes:
+        raise HTTPException(status_code=413, detail=f"Image must be at most {max_bytes // (1024 * 1024)}MB")
+    try:
+        with Image.open(io.BytesIO(contents)) as img:
+            fmt = img.format
+            img.verify()
+    except (UnidentifiedImageError, OSError, SyntaxError, Image.DecompressionBombError):
+        fmt = None
+    if fmt not in IMAGE_FORMATS:
+        raise HTTPException(status_code=415, detail="Upload a PNG, JPEG, WEBP, GIF or ICO image")
+    ext, mime = IMAGE_FORMATS[fmt]
+    stem = re.sub(r"[^A-Za-z0-9_-]", "_", os.path.splitext(os.path.basename(upload.filename or ""))[0])[:60] or "image"
+    return contents, f"{stem}.{ext}", mime
+
 
 from app.upload.storage.supa_s3 import supabase as supa
 
 class SupaS3:
-    async def _format_file_path(url, slug, vehicle_name: str =None, img_type:str=None, vehicle_id:int = None):
-         # Extract filename from the uploaded file
-        filename = url.filename if hasattr(url, 'filename') else 'image.jpg'
+    async def _format_file_path(url, slug, vehicle_name: str =None, img_type:str=None, vehicle_id:int = None, filename: str = None):
+        filename = filename or 'image.jpg'
         # os.makedirs(upload_dir, exist_ok=True)
         if vehicle_name:
             _file_path = f"{slug}/{vehicle_name.upper()}_{vehicle_id}/{img_type}/{slug}_{filename}"
@@ -155,7 +164,7 @@ class SupaS3:
         """
         try:
             
-            contents = await url.read()
+            contents, safe_name, mime = await read_validated_image(url)
 
             try:
                 supa.storage.get_bucket(id = bucket_name)
@@ -167,11 +176,11 @@ class SupaS3:
                    
                     )
 
-            logger.debug(f"Starting s3 upload for url {url.filename} of size {url.size} to {bucket_name}")
+            logger.debug(f"Starting s3 upload of {safe_name} ({len(contents)} bytes) to {bucket_name}")
             
-            _file_path = await SupaS3._format_file_path(url=url,slug=slug, vehicle_name=vehicle_name, img_type=img_type, vehicle_id=vehicle_id)
+            _file_path = await SupaS3._format_file_path(url=url,slug=slug, vehicle_name=vehicle_name, img_type=img_type, vehicle_id=vehicle_id, filename=safe_name)
 
-            supa.storage.from_(bucket_name).upload(path=_file_path, file=contents, file_options={'upsert':'true'})
+            supa.storage.from_(bucket_name).upload(path=_file_path, file=contents, file_options={'upsert':'true', 'content-type': mime})
             logger.debug("Upload successfull")
             transform =     {'logos':{ 'transform': {                            
                                         'width': 800,

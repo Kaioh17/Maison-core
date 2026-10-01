@@ -6,7 +6,7 @@ import json
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from pathlib import Path
-from .helper_service import _verify_upload, SupaS3, tenant_profile ,vehicle_table, vehicle_config_table, vehicle_category_table, success_resp
+from .helper_service import SupaS3, tenant_profile ,vehicle_table, vehicle_config_table, vehicle_category_table, success_resp
 from typing import Optional
 from sqlalchemy import column, func, select
 from app.policies import plan_policy

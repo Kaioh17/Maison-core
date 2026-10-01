@@ -15,13 +15,16 @@ Dependencies:
 - Utility modules for password hashing, database error handling, and logging
 """
 import os
+import secrets
+import redis
 from typing import Optional
 from fastapi import HTTPException, UploadFile, status, Form, File, Depends
 from sqlalchemy import func, text
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select
 from pydantic import EmailStr
-from app.models import tenant, driver, TenantSettings, vehicle, booking, vehicle_category_rate
+from app.models import tenant, driver, TenantSettings, vehicle, booking, vehicle_category_rate, payout
+from app.redis_connect import redis_client
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
 from datetime import datetime, timedelta 
@@ -530,25 +533,6 @@ class TenantService(ServiceContext):
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
     
-    async def _verify_upload(self, logo_url,slug):
-        if logo_url:
-            try:
-                contents = await logo_url.read()
-                # Extract filename from the uploaded file
-                filename = logo_url.filename if hasattr(logo_url, 'filename') else 'logo.jpg'
-                upload_dir =  "app/upload/logos"
-                os.makedirs(upload_dir, exist_ok=True)
-                file_path = f"{upload_dir}/{slug}_{filename}"
-                with open(file_path, "wb") as f:
-                    f.write(contents)
-                logger.info(f"{file_path}")
-                logger.info("{slug}, Logo is saved!!")
-                return file_path
-            except Exception as e:
-                logger.warning(f"Failed to save logo upload: {e}")
-                # Continue without failing the tenant creation
-        return None
-
     async def get_all_drivers(self, driver_id):
         try:
             logger.info(f"Getting all drivers for {self.tenant_id}")
@@ -709,6 +693,122 @@ class TenantService(ServiceContext):
 
             logger.info(f"Driver {driver_id} approved")
             return success_resp(msg="Driver approved", data={"id": driver_obj.id})
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(e, self.db)
+
+    # --- Permanent driver deletion (two steps, no schema change: the step-1 token lives in Redis) ---
+    DRIVER_DELETE_TTL = 600
+
+    def _driver_delete_key(self, driver_id: int) -> str:
+        return f"driver_delete:{self.tenant_id}:{driver_id}"
+
+    def _get_tenant_driver(self, driver_id: int):
+        driver_obj = self.db.query(self.driver_table).filter(
+            self.driver_table.id == driver_id,
+            self.driver_table.tenant_id == self.tenant_id,
+        ).first()
+        if not driver_obj:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found")
+        return driver_obj
+
+    def _driver_deletion_warnings(self, driver_obj) -> list[str]:
+        """Raises 409 if history/fleet data forbids deletion; otherwise returns the warnings to show."""
+        has_bookings = self.db.query(self.booking_table.id).filter(
+            self.booking_table.driver_id == driver_obj.id).first()
+        has_payouts = self.db.query(payout.Payout.id).filter(
+            payout.Payout.driving_id == driver_obj.id).first()
+        if has_bookings or has_payouts:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This driver has booking or payout history, which must be kept. Deactivate the driver instead.",
+            )
+
+        warnings = [
+            "This is permanent and cannot be undone. The driver cannot be restored.",
+            "The driver's account and login are removed immediately.",
+        ]
+        vehicle_obj = driver_obj.vehicle
+        if vehicle_obj:
+            if driver_obj.driver_type == "in_house":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Unassign this driver's fleet vehicle before deleting the driver.",
+                )
+            if self.db.query(self.booking_table.id).filter(
+                    self.booking_table.vehicle_id == vehicle_obj.id).first():
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This driver's vehicle is used by existing bookings, so the driver cannot be deleted.",
+                )
+            warnings.append("The driver's vehicle is deleted along with the driver.")
+        if driver_obj.stripe_account_id:
+            warnings.append("The driver's Stripe account is not closed. Handle any remaining balance in Stripe.")
+        return warnings
+
+    async def request_driver_deletion(self, driver_id: int):
+        try:
+            driver_obj = self._get_tenant_driver(driver_id)
+            warnings = self._driver_deletion_warnings(driver_obj)
+            token = secrets.token_urlsafe(32)
+            redis_client.set(self._driver_delete_key(driver_id), token, ex=self.DRIVER_DELETE_TTL)
+            logger.info(f"Driver {driver_id} deletion requested by tenant {self.tenant_id}")
+            return success_resp(
+                msg="Review the warnings, then confirm to permanently delete this driver",
+                data={
+                    "driver_id": driver_obj.id,
+                    "driver_name": driver_obj.full_name,
+                    "warnings": warnings,
+                    "confirmation_token": token,
+                    "expires_in_seconds": self.DRIVER_DELETE_TTL,
+                },
+            )
+        except redis.RedisError as e:
+            logger.error(f"Redis unavailable for driver deletion: {e}")
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                                detail="Deletion is temporarily unavailable. Try again shortly.")
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(e, self.db)
+
+    async def delete_driver(self, driver_id: int, payload):
+        try:
+            driver_obj = self._get_tenant_driver(driver_id)
+            key = self._driver_delete_key(driver_id)
+            stored = redis_client.get(key)
+            if not stored or not secrets.compare_digest(stored.decode(), payload.confirmation_token):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                    detail="Confirmation expired or invalid. Start the deletion again.")
+            if payload.confirm_email.lower() != driver_obj.email.lower():
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                    detail="The email you typed does not match this driver.")
+            self._driver_deletion_warnings(driver_obj)  # re-check blockers: state may have changed since step 1
+
+            self.db.delete(driver_obj)
+            self.db.commit()
+            redis_client.delete(key)  # single use
+            logger.warning(f"Driver {driver_id} permanently deleted by tenant {self.tenant_id}")
+            return success_resp(msg="Driver permanently deleted", data={"id": driver_id})
+        except redis.RedisError as e:
+            logger.error(f"Redis unavailable for driver deletion: {e}")
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                                detail="Deletion is temporarily unavailable. Try again shortly.")
+        except self.db_exceptions.COMMON_DB_ERRORS as e:
+            self.db_exceptions.handle(e, self.db)
+
+    async def set_driver_active(self, driver_id: int, is_active: bool):
+        """Reversible alternative to deletion. Inactive drivers cannot be assigned new rides."""
+        try:
+            driver_obj = self._get_tenant_driver(driver_id)
+            if driver_obj.is_registered != "registered":
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                    detail="Only registered drivers can be activated or deactivated. Approve pending drivers instead.")
+            if driver_obj.is_active != is_active:
+                driver_obj.is_active = is_active
+                self.db.commit()
+                drivers.DriverEmailServices(to_email=driver_obj.email, from_email='noreply', display_name=self.slug) \
+                    .status_change_email(obj=driver_obj, is_active=is_active)
+                logger.info(f"Driver {driver_id} set is_active={is_active} by tenant {self.tenant_id}")
+            return success_resp(msg="Driver activated" if is_active else "Driver deactivated",
+                                data={"id": driver_obj.id, "is_active": is_active})
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
@@ -879,6 +979,10 @@ class TenantService(ServiceContext):
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
                                     detail="outsourced drivers cannot be assigned to rides...")
             
+            if not driver_info.is_active:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                    detail="Deactivated drivers cannot be assigned to rides.")
+
             ride.driver_id = payload.driver_id
 
             self.db.commit()

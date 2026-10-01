@@ -1,9 +1,10 @@
 from io import BytesIO
 import re
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
 
+from app.api.core.rate_limit import limiter
 from app.utils.qr_code import custom_qrcode
 
 
@@ -13,6 +14,20 @@ router = APIRouter(
 )
 
 HEX_COLOR_RE = re.compile(r"^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$")
+NAMED_COLOR_RE = re.compile(r"^[a-zA-Z]{3,20}$")
+MAX_URL_LENGTH = 2048
+
+
+def validate_target_url(url: str) -> str:
+    """This endpoint is public, so only bounded http(s) links are encoded."""
+    url = url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="url is required")
+    if len(url) > MAX_URL_LENGTH:
+        raise HTTPException(status_code=400, detail=f"url must be at most {MAX_URL_LENGTH} characters")
+    if not re.match(r"^https?://", url, re.IGNORECASE):
+        raise HTTPException(status_code=400, detail="url must start with http:// or https://")
+    return url
 
 
 def normalize_color_value(value: str) -> str:
@@ -22,8 +37,10 @@ def normalize_color_value(value: str) -> str:
 
     if HEX_COLOR_RE.fullmatch(color):
         return color if color.startswith("#") else f"#{color}"
+    if NAMED_COLOR_RE.fullmatch(color):
+        return color.lower()
 
-    return color
+    raise HTTPException(status_code=400, detail="Colors must be hex (#rrggbb) or a simple color name")
 
 
 @router.get(
@@ -106,24 +123,27 @@ async def temp_qr_editor() -> str:
     summary="Generate temporary QR PNG",
     description="Generate a QR PNG from a custom URL with custom fill and background colors.",
 )
+@limiter.limit("30/minute")
 async def temp_qr_generate(
+    request: Request,
     url: str = Query(..., description="Target URL encoded into the QR code."),
     fill_color: str = Query("black", description="Foreground color (e.g. black or #000000)."),
     back_color: str = Query("white", description="Background color (e.g. white or #ffffff)."),
 ):
-    if not url.strip():
-        raise HTTPException(status_code=400, detail="url is required")
+    url = validate_target_url(url)
 
     try:
         normalized_fill = normalize_color_value(fill_color)
         normalized_background = normalize_color_value(back_color)
         image = custom_qrcode(
-            url=url.strip(),
+            url=url,
             fill_color=normalized_fill,
             back_color=normalized_background,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid QR input: {exc}") from exc
+        raise HTTPException(status_code=400, detail="Invalid QR input") from exc
 
     buffer = BytesIO()
     image.save(buffer, format="PNG")
@@ -135,24 +155,27 @@ async def temp_qr_generate(
     summary="Download temporary QR PNG",
     description="Generate and download a QR PNG from a custom URL with custom fill and background colors.",
 )
+@limiter.limit("30/minute")
 async def temp_qr_download(
+    request: Request,
     url: str = Query(..., description="Target URL encoded into the QR code."),
     fill_color: str = Query("black", description="Foreground color (e.g. black or #000000)."),
     back_color: str = Query("white", description="Background color (e.g. white or #ffffff)."),
 ):
-    if not url.strip():
-        raise HTTPException(status_code=400, detail="url is required")
+    url = validate_target_url(url)
 
     try:
         normalized_fill = normalize_color_value(fill_color)
         normalized_background = normalize_color_value(back_color)
         image = custom_qrcode(
-            url=url.strip(),
+            url=url,
             fill_color=normalized_fill,
             back_color=normalized_background,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid QR input: {exc}") from exc
+        raise HTTPException(status_code=400, detail="Invalid QR input") from exc
 
     buffer = BytesIO()
     image.save(buffer, format="PNG")
