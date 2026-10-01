@@ -15,7 +15,9 @@ backend/alembic/versions
 
 *.txt
 backend/logs
-backend/celerybeat-schedule
+# celery beat runtime state (dbm may add .db/.dat/.dir/.bak suffixes), never source
+celerybeat-schedule*
+celerybeat.pid
 
 .vscode/settings.json
 
