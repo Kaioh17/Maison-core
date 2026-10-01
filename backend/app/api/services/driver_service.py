@@ -2,7 +2,7 @@ from fastapi import HTTPException, status, Depends
 from app.models import *
 from app.utils import password_utils, db_error_handler
 from app.db.database import get_db, get_base_db
-from ..core import deps
+from ..core import deps, oauth2
 from app.utils.logging import logger
 from .helper_service import *
 from sqlalchemy.orm import selectinload
@@ -25,41 +25,94 @@ class DriverService(ServiceContext):
     def __init__(self, db, current_user):
         super().__init__(db=db, current_user=current_user)
     
+    @staticmethod
+    def _onboarding_tasks(driver):
+        """What the driver still has to finish before the account goes live."""
+        tasks = [
+            {"key": "profile", "label": "Phone number and licence details", "done": bool(driver.phone_no and driver.license_number)},
+            {"key": "password", "label": "Create your password", "done": bool(driver.password)},
+        ]
+        if (driver.driver_type or "").lower() == "outsourced":
+            tasks.append({"key": "vehicle", "label": "Register your vehicle", "done": driver.vehicle is not None})
+        return tasks
+
+    def _onboarding_view(self, driver):
+        # Hand back what was already collected at application/invite time so the
+        # registration form can pre-fill instead of asking for it twice, and so
+        # driver_type is presented as already decided rather than re-asked.
+        return {
+            "tenant_id": driver.tenant_id,
+            "first_name": driver.first_name,
+            "last_name": driver.last_name,
+            "email": driver.email,
+            "driver_type": driver.driver_type,
+            "tasks": self._onboarding_tasks(driver),
+        }
+
     async def check_token(self, slug, token):
+        """Exchange the emailed onboarding code for a short-lived onboarding session.
+
+        The code is only consumed when registration completes. Until then the returned
+        `onboarding_token` is what authenticates the driver to the onboarding endpoints.
+        """
         try:
             logger.info("Checking token..")
-            
+            wrong = HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                  detail="Incorrect token entered. try again...")
+            token = (token or "").strip()
+            # An unapproved application has driver_token == "": it must never match anything.
+            if not token:
+                raise wrong
+
             response=self.db.query(tenant_profile).filter(tenant_profile.slug == slug).first()
+            if not response:
+                raise wrong
             tenant_id = response.tenant_id
-            # is_token gates reuse (flips True below once verified) -- NOT updated_on, which also
-            # flips on unrelated writes like a tenant approving the driver (sets driver_token/is_active)
-            # and would otherwise lock a driver out of verifying their own freshly-issued token.
-            dresponse=self.db.query(driver_table).filter(driver_table.driver_token == token, driver_table.tenant_id == tenant_id, driver_table.is_token == False).first()
+            dresponse=self.db.query(driver_table).filter(
+                driver_table.driver_token == token,
+                driver_table.tenant_id == tenant_id,
+                driver_table.is_token == False,
+                driver_table.is_registered != "registered",
+            ).first()
 
             if not dresponse:
                 logger.error(f"Incorrect token entered. try again...")
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                                    detail = "Incorrect token entered. try again...")
+                raise wrong
 
             # Token is (re)issued at approval time for self-serve applications, so expiry
             # must count from there (updated_on) rather than the original application's
             # created_on -- falls back to created_on for the tenant-invite flow, where the
             # row is never touched before this call and updated_on is still null.
             await self._ensure_token_not_expired_(created_on = dresponse.updated_on or dresponse.created_on)
-            
-            dresponse.is_token = True
-            self.db.commit()
-            # Hand back what was already collected at application/invite time so the
-            # registration form can pre-fill instead of asking for it twice, and so
-            # driver_type is presented as already decided rather than re-asked.
+
             return success_resp(msg="Token Correct you can now register..", data={
-                "tenant_id": tenant_id,
-                "first_name": dresponse.first_name,
-                "last_name": dresponse.last_name,
-                "email": dresponse.email,
-                "driver_type": dresponse.driver_type,
+                **self._onboarding_view(dresponse),
+                "onboarding_token": oauth2.create_driver_onboarding_token(
+                    dresponse.id, tenant_id, dresponse.driver_token
+                ),
             })
-        
+
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(e, self.db)
+
+    async def _get_onboarding_driver(self, claims):
+        """The driver an onboarding session belongs to, or 401 if the session is stale."""
+        driver_obj = self.db.query(driver_table)\
+            .options(selectinload(driver_table.vehicle))\
+            .filter(driver_table.id == claims["driver_id"],
+                    driver_table.tenant_id == claims["tenant_id"]).first()
+        if (not driver_obj
+                or driver_obj.is_token
+                or driver_obj.is_registered == "registered"
+                or not oauth2.driver_token_matches(claims, driver_obj.driver_token)):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Onboarding session expired or invalid. Enter your verification code again.")
+        return driver_obj
+
+    async def onboarding_status(self, claims):
+        try:
+            driver_obj = await self._get_onboarding_driver(claims)
+            return success_resp(msg="Onboarding in progress", data=self._onboarding_view(driver_obj))
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
 
@@ -130,43 +183,32 @@ class DriverService(ServiceContext):
         ) or 0
         PlanPolicy.assert_can_add_vehicle(plan, sub_status, current_count)
 
-    async def register_driver(self,payload,tenant_id):
+    async def register_driver(self, payload, claims):
         """
-        Completes driver registration after initial creation by a tenant.
+        Completes driver onboarding. `claims` come from the onboarding session issued by
+        `check_token`, so the driver is identified by that session and never by anything
+        the caller types (name/email/tenant id are not credentials).
 
-        This function verifies the driver's token and personal information,
-        checks for duplicate license numbers, and updates the driver's record
-        with the provided registration details and hashed password. If the driver
-        is of type 'outsourced' and vehicle data is provided, it also creates a new
-        vehicle entry for the driver after ensuring the vehicle does not already exist.
+        Completing it sets the password, records profile/licence (and vehicle for
+        outsourced drivers), consumes the onboarding code and activates the account.
         """
         try:
             logger.info("Creating account...")
 
-            driver_query = self.db.query(driver_table)\
-                            .options(selectinload(driver_table.vehicle))\
-                            .filter(driver_table.first_name == payload.first_name,
-                                    driver_table.last_name == payload.last_name,
-                                    driver_table.email == payload.email,
-                                    driver_table.tenant_id == tenant_id)
-            driver_obj: driver_table =driver_query.first()
-            
-                
+            driver_obj: driver_table = await self._get_onboarding_driver(claims)
+            tenant_id = driver_obj.tenant_id
+
             await self._table_checks_(driver_obj, payload) 
             ##registeration starts
             logger.info("registeration started...")
 
             hashed_pwd = password_utils.hash(payload.password) #hash password
             driver_info = payload.model_dump()
-            driver_info.pop("users", None)
-            logger.debug(f"Driver info {driver_info}")
-            
-            for k, v in driver_info.items():
-                
-                if k =='vehicle':
-                    continue
-                    
-                setattr(driver_obj, k, v)
+            logger.debug(f"Driver onboarding for driver {driver_obj.id}")
+
+            # Whitelist: email is the identity and password is hashed below, neither is copied across.
+            for k in ("first_name", "last_name", "phone_no", "state", "postal_code", "license_number"):
+                setattr(driver_obj, k, driver_info[k])
             
             if driver_obj.driver_type.lower() == "outsourced":
             #    for key, value in driver_info.items():
@@ -220,6 +262,8 @@ class DriverService(ServiceContext):
             ##Add it to the 
             driver_obj.password = hashed_pwd
             driver_obj.is_registered = "registered"
+            driver_obj.is_token = True  # onboarding code is single-use
+            driver_obj.is_active = True  # all onboarding tasks done
             tenant = self.db.query(tenant_stats).filter(tenant_stats.tenant_id == driver_obj.tenant_id).first()
 
             tenant_driver = tenant.drivers_count + 1 
@@ -423,6 +467,8 @@ class DriverService(ServiceContext):
                 logger.info("Token has expired!!")
                 raise HTTPException(status_code=status.HTTP_408_REQUEST_TIMEOUT,
                             detail="Token has timed out...")
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Unkown error at token verification as {e}")
             raise HTTPException(status_code=500, detail="Unexpected error")  
@@ -430,33 +476,15 @@ class DriverService(ServiceContext):
     
     
     async def _table_checks_(self, driver_obj, payload):
-        if not driver_obj:
-            logger.warning(f"Data entered is not already registered... ")
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail = "Data entered is not already registered...")
-        liscense_exists = self.db.query(driver_table).filter(driver_table.tenant_id == driver_obj.tenant_id, 
+        liscense_exists = self.db.query(driver_table).filter(driver_table.tenant_id == driver_obj.tenant_id,
+                                                        driver_table.id != driver_obj.id,
                                                         driver_table.license_number == payload.license_number).first()
-        
-        if driver_table.is_token == True:
-            logger.warning(f"Token is not approved id:{driver_table.id}")
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail = f"Token is not approved id:{driver_table.id}")
-        # elif driver_obj.driver_token != payload.driver_token:
 
-        #         logger.error(f"Incorrect token entered. try again... {driver_obj.driver_token} != {payload.driver_token}")
-        #         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-        #                             detail = "Incorrect token entered. try again...") 
-        elif driver_obj.is_registered.lower() == 'registered':
-                logger.error(f"Driver has already been {driver_obj.is_registered.lower()}....")
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                                    detail = "Driver has aready been registered....") 
-                
-        elif driver_obj.email != payload.email or driver_obj.first_name != payload.first_name and driver_obj.last_name != payload.last_name:
-            logger.warning("Information provided does not exist in db")
+        if driver_obj.email.lower() != payload.email.lower():
+            logger.warning("Information provided does not match the invited driver")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail = "Data does not exists in db. Check with admin.")
-        # 
-        elif liscense_exists:
+        if liscense_exists:
             logger.warning(f"Driver license already exists")
             raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                 detail= f"Driver with liscence number {payload.license_number} already exists")

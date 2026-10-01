@@ -1,13 +1,15 @@
-from fastapi import APIRouter, HTTPException, FastAPI, Response, status, Query, Path
+from fastapi import APIRouter, HTTPException, FastAPI, Request, Response, status, Query, Path
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db, get_base_db
 # from ..services import driver_service
 from app.schemas import driver, booking, general, tenant as tenant_schemas
 from ..core import deps
-from .dependencies import is_driver, api_key_header, API_KEY, verify_api_key
+from .dependencies import is_driver, api_key_header, API_KEY, verify_api_key, get_onboarding_claims
 from typing import Optional
 from app.utils.logging import logger
+from slowapi.util import get_remote_address
+from ..core.auth_rate_limiter import assert_not_locked, record_failure, hashed
 from ..services.driver_service import DriverService,RiderDriverService,get_driver_service, get_unauthorized_driver_service, get_rdriver_service
 from ..services.booking_services import get_booking_service, BookingService
 """
@@ -49,19 +51,28 @@ async def driver_status(
     dependencies=[Depends(verify_api_key)],
     summary="Verify driver onboarding token (API key)",
     description=(
-        "Public pre-login step: validate **`token`** for the tenant **`slug`** (invitation / onboarding link). "
+        "Public pre-login step: exchange the emailed onboarding **`token`** for the tenant **`slug`** for a short-lived "
+        "**`onboarding_token`** (Bearer) plus the list of onboarding `tasks`. "
         "Requires **`X-API-Key`** header matching server config."
     ),
-    response_description="Token validation result for registration flow.",
+    response_description="Pre-filled driver details, onboarding tasks and the onboarding session token.",
 )
 async def verify_driver_token(
+    request: Request,
     slug: str = Path(..., description="Tenant slug from onboarding link."),
     token: str = Query(..., description="Driver onboarding token."),
     driver_service: DriverService = Depends(get_unauthorized_driver_service),
 ):
     logger.info("Driver..")
-    token = await driver_service.check_token(slug=slug, token=token)
-    return token
+    # The code is 6 characters and now opens an onboarding session, so wrong guesses are rationed.
+    who = hashed(get_remote_address(request), slug)
+    assert_not_locked("driver_verify", who, 10)
+    try:
+        return await driver_service.check_token(slug=slug, token=token)
+    except HTTPException as e:
+        if e.status_code == status.HTTP_409_CONFLICT:
+            record_failure("driver_verify", who, 15)
+        raise
 
 
 @router.post(
@@ -87,25 +98,40 @@ async def apply_to_drive(
     return result
 
 
+@router.get(
+    "/onboarding",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[dict],
+    summary="Driver onboarding progress",
+    description="Tasks the driver still has to complete before the account goes live. Requires the **onboarding_token** as Bearer.",
+    response_description="Pre-filled driver details and the onboarding task list.",
+)
+async def onboarding_status(
+    claims: dict = Depends(get_onboarding_claims),
+    driver_service: DriverService = Depends(get_unauthorized_driver_service),
+):
+    return await driver_service.onboarding_status(claims)
+
+
 @router.patch(
     "/register",
     status_code=status.HTTP_202_ACCEPTED,
     response_model=general.StandardResponse[driver.DriverResponse],
-    summary="Complete driver registration",
+    summary="Complete driver onboarding",
     description=(
-        "Submit driver profile after invite; associates the driver with **`tenant_id`**. "
-        "Typically used after `/driver/{slug}/verify`. No driver JWT required (unauthorized service)."
+        "Final onboarding task: submit profile, licence, password (and vehicle for outsourced drivers). "
+        "Requires the **onboarding_token** from `/driver/{slug}/verify` as Bearer; the driver is identified by "
+        "that session. On success the account is activated and the driver can sign in."
     ),
-    response_description="Created driver record.",
+    response_description="Registered driver record.",
 )
 async def register_driver(
-    tenant_id: int = Query(..., description="Tenant id this driver belongs to."),
     payload: driver.DriverCreate = ...,
+    claims: dict = Depends(get_onboarding_claims),
     driver_service: DriverService = Depends(get_unauthorized_driver_service),
-    db: Session = Depends(get_base_db),
 ):
     logger.info("Registration begins....")
-    driver = await driver_service.register_driver(payload, tenant_id=tenant_id)
+    driver = await driver_service.register_driver(payload, claims)
     return general.StandardResponse(
         data=driver,
         message="Driver registered successfully",
