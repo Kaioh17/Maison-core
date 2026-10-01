@@ -16,7 +16,7 @@ def get_tenant_id_from_token(token =  Depends(oauth2.oauth2_scheme)):
         # logger.info("retrieving")
 
         try:
-            payload =jwt.decode(token, SECRET_KEY, algorithms = [ALGORITHM])
+            payload = oauth2._decode(token, oauth2.ACCESS)
         except jwt.JWTError:
             raise HTTPException(status_code=401, detail="Invalid token")
         

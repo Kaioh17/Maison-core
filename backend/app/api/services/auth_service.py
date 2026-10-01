@@ -11,11 +11,12 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from app.api.core import deps
-from ..core.auth_rate_limiter import *
+from ..core.auth_rate_limiter import assert_not_locked, record_failure, clear_failures, hashed
+from app.config import Settings
 
 from app.db.database import  get_base_db
-from ..core.oauth2 import create_access_token, verify_access_token, create_refresh_token, verify_refresh_token
-from app.utils.password_utils import verify
+from ..core.oauth2 import create_access_token, verify_access_token, create_refresh_token, verify_refresh_token, revoke_refresh_token
+from app.utils.password_utils import verify, hash as hash_password
 from app.utils.logging import logger
 from app.utils.db_error_handler import DBErrorHandler
 
@@ -26,11 +27,17 @@ from .helper_service import (
     driver_table,
     admin_table)
 
+settings = Settings()
+# Verified against when the account does not exist so unknown emails cost the same as wrong passwords.
+_DUMMY_HASH = hash_password("not-a-real-password")
+
+
 class AuthService:
     def __init__(self, db):
         self.db = db
-    MAX_ATTEMPTS = 3
-    WINDOW_MINUTES=5
+    MAX_ATTEMPTS = 5          # failures per account+IP before a lockout
+    MAX_IP_FAILURES = 20      # failures from one IP across all accounts
+    WINDOW_MINUTES = 15
     environment = settings.environment
     # ponytail: per-role session length so drivers/riders aren't logged out mid-shift/trip
     REFRESH_DAYS_BY_ROLE = {"driver": 30, "rider": 90}
@@ -56,32 +63,26 @@ class AuthService:
             #retrieve client ip
             client_ip = get_remote_address(request)
 
-            #check user-specific rate limit
-            attempts_key= check_user_specific_rate_limit(
-                email=user_credentials.username,
-                ip = client_ip,
-                max_attempts=self.MAX_ATTEMPTS,
-                window_minutes=self.WINDOW_MINUTES
-            )
-            logger.debug(f"email: {user_credentials.username}")
-            user_query = self.db.query(table).filter(table.email == user_credentials.username)
-            user = user_query.first()
-            logger.debug(f"email: {user}")
-            
-            
-            
+            account_id = hashed(role, user_credentials.username.lower(), client_ip)
+            assert_not_locked("login", account_id, self.MAX_ATTEMPTS)
+            assert_not_locked("login_ip", client_ip, self.MAX_IP_FAILURES)
+
+            def fail():
+                record_failure("login", account_id, self.WINDOW_MINUTES)
+                record_failure("login_ip", client_ip, self.WINDOW_MINUTES)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                    detail="Invalid credentials")
+
+            user = self.db.query(table).filter(table.email == user_credentials.username).first()
             password = user_credentials.password.strip()
-            logger.debug(f"email: {user}")
-            
 
             if not user:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                    detail="Invalid credentials")
+                verify(password, _DUMMY_HASH)
+                fail()
             if not verify(password, user.password):
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                    detail="Invalid credentials")
-            
-            clear_failed_attempts(attempts_key)
+                fail()
+
+            clear_failures("login", account_id)
             if role == 'tenant':
                 tenant_id = user.id
                 auto_refresh = False
@@ -102,7 +103,7 @@ class AuthService:
             # logger.info(f"refresh token: {refresh_token}")
 
             response = JSONResponse(content = {"access_token": access_token})
-            secure = True if self.environment == 'production' else False
+            secure = self.environment.lower() != 'development'  # fail safe: only plain-http local dev gets a non-Secure cookie
             response.set_cookie(
                 key = "refresh_token",
                 value= refresh_token,
@@ -118,7 +119,8 @@ class AuthService:
             return response
         except DBErrorHandler.COMMON_DB_ERRORS as e:
             DBErrorHandler.handle(e, self.db)
-    def logout(self):
+    def logout(self, request):
+        revoke_refresh_token(request.cookies.get("refresh_token"))
         logger.debug("Logged out")
         response=JSONResponse(content={'message':'logged out'})
         
@@ -146,9 +148,7 @@ class AuthService:
             logger.info(f"Token refreshed successfully for user {payload.id}")
             
             token_data = {"id": str(payload.id), "role": payload.role, "tenant_id": str(payload.tenant_id), "auto_refresh":True}
-            logger.info(f"Creating new access token with data: {token_data}")
             new_access_token = create_access_token(data=token_data)
-            logger.info(f"New access token created: {new_access_token[:20]}...")
             return {"access_token": new_access_token}
         except HTTPException:
             raise
@@ -173,9 +173,7 @@ class AuthService:
             logger.info(f"Token refreshed successfully for user {payload.id}")
         
             token_data = {"id": str(payload.id), "role": payload.role, "tenant_id": str(payload.tenant_id),  "auto_refresh":True}
-            logger.info(f"Creating new access token with data: {token_data}")
             new_access_token = create_access_token(data=token_data)
-            logger.info(f"New access token created: {new_access_token[:20]}...")
             return {"access_token": new_access_token}
         except HTTPException:
             raise

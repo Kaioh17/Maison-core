@@ -10,7 +10,6 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from app.api.core import deps
-from ..core.auth_rate_limiter import *
 
 from app.db.database import  get_base_db
 from ..services import tenants_service
@@ -99,11 +98,11 @@ async def manual_refresh_access_token(
     "/logout",
     summary="Sign out",
     description=(
-        "Clears the **`refresh_token`** cookie (path `/api`). "
+        "Revokes the refresh token server-side and clears the **`refresh_token`** cookie (path `/api`). "
         "Clients should also discard the **access token** from memory on logout."
     ),
     response_description="JSON message confirming logout.",
 )
-async def logout_session(auth_service: AuthService = Depends(get_auth_service)):
-    response = auth_service.logout()
+async def logout_session(request: Request, auth_service: AuthService = Depends(get_auth_service)):
+    response = auth_service.logout(request)
     return response

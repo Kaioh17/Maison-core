@@ -1,57 +1,45 @@
+"""Failure-count lockouts kept in Redis (used for login and the driver onboarding code).
 
+Only *failures* count, so a legitimate user is never locked out by their own successful logins.
+`scope` + `ident` build the key, e.g. ("login", "<md5 of email:ip>") or ("driver_verify", "<ip>:<slug>").
+"""
 import hashlib
-from slowapi import Limiter,_rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from app.config import Settings
-from app.redis_connect import redis_client
+
 from fastapi import HTTPException, status
+
+from app.redis_connect import redis_client
 from app.utils.logging import logger
 
-settings = Settings()
 
-limiter = Limiter(
-    key_func= get_remote_address, #rate limit by ip address
-    storage_uri = settings.redis_url if settings.redis_url else None,
-    default_limits = ["1000/day", "100/hour"]
-)
+def hashed(*parts: str) -> str:
+    return hashlib.sha256(":".join(parts).encode()).hexdigest()[:32]
 
-"""Helper Fynctions"""
-def get_user_rate_limit_key(email: str, ip: str) -> str:
-    """create unique key for user and ip combined"""
-    combined = f"{email}:{ip}"
-    return hashlib.md5(combined.encode()).hexdigest()
 
-def check_user_specific_rate_limit(email:str, ip:str, max_attempts: int = 3, window_minutes: int = 5):
-    """Check and updates user-specific rate limiting"""
-    user_key = get_user_rate_limit_key(email, ip)
-    attempts_key = f"login_attempts:{user_key}"
-    logger.info(f" {attempts_key}")
+def _key(scope: str, ident: str) -> str:
+    return f"failed:{scope}:{ident}"
 
-    current_attempts = redis_client.incr(attempts_key)
-    logger.info(f"current_attempts = {current_attempts}")
 
-    #set expiry time 
-    if current_attempts == 1:
-        redis_client.expire(attempts_key, window_minutes * 60)
-
-    if current_attempts and int(current_attempts) >= max_attempts:
-        ttl = redis_client.ttl(attempts_key)
-        logger.info(f"To many failed login attempts. Try again in {ttl} seconds.")
+def assert_not_locked(scope: str, ident: str, max_failures: int) -> None:
+    """429 if `ident` already has `max_failures` recent failures. Does not count the current attempt."""
+    key = _key(scope, ident)
+    failures = int(redis_client.get(key) or 0)
+    if failures >= max_failures:
+        ttl = max(redis_client.ttl(key), 1)
+        logger.info(f"[{scope}] locked out, {ttl}s left")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail = f"To many failed login attempts. Try again in {ttl} seconds."
+            detail=f"Too many failed attempts. Try again in {ttl} seconds.",
+            headers={"Retry-After": str(ttl)},
         )
-    return attempts_key
 
-def record_failed_attempt(attempts_key: str, window_minutes: int = 5):
-    """record a failed login attempt"""
+
+def record_failure(scope: str, ident: str, window_minutes: int) -> None:
+    key = _key(scope, ident)
     pipe = redis_client.pipeline()
-    pipe.incr(attempts_key)
-    pipe.expire(attempts_key, window_minutes * 60)
-    pipe.execute()                
+    pipe.incr(key)
+    pipe.expire(key, window_minutes * 60)  # window slides with each failure
+    pipe.execute()
 
-def clear_failed_attempts(attempts_key: str):
-    """clear failed attempts on successful login"""
-    logger.info("attempts_key has been deleted")
-    redis_client.delete(attempts_key)
+
+def clear_failures(scope: str, ident: str) -> None:
+    redis_client.delete(_key(scope, ident))
