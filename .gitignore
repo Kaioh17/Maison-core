@@ -11,7 +11,7 @@ frontend/mobile/node_modules
 
 # backend/alembic
 *.log
-backend/alembic/versions
+#backend/alembic/versions
 
 *.txt
 backend/logs

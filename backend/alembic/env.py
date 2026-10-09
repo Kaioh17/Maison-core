@@ -21,7 +21,7 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../../../use
 # if load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../app/.env'))
 
 db_url = os.getenv("DB_URL")
-print(f'DB url {db_url}')
+#print(f'DB url {db_url}')
 config = context.config
 
 if not db_url:
