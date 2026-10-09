@@ -6,7 +6,7 @@ from app.db.database import get_db, get_base_db
 from app.schemas import driver, booking, general, tenant as tenant_schemas
 from ..core import deps
 from .dependencies import is_driver, api_key_header, API_KEY, verify_api_key, get_onboarding_claims
-from typing import Optional
+from typing import Literal, Optional
 from app.utils.logging import logger
 from slowapi.util import get_remote_address
 from ..core.auth_rate_limiter import assert_not_locked, record_failure, hashed
@@ -42,6 +42,37 @@ async def driver_status(
 ):
     status = await driver_service.driver_status(is_active=is_active)
     return status
+
+
+@router.patch(
+    "/nav-app",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[dict],
+    summary="Set preferred navigation app",
+    description="Which app Start ride / Navigate opens: **google**, **apple** or **waze**. Requires driver JWT.",
+)
+async def set_nav_app(
+    nav_app: Literal['google', 'apple', 'waze'],
+    is_driver: bool = Depends(is_driver),
+    driver_service: DriverService = Depends(get_driver_service),
+):
+    return await driver_service.set_nav_app(nav_app)
+
+
+@router.patch(
+    "/ride/{booking_id}/phase",
+    status_code=status.HTTP_200_OK,
+    response_model=general.StandardResponse[dict],
+    summary="Mark a confirmed ride en route or arrived",
+    description="Stamps `driver_started_at` (**enroute**) or `driver_arrived_at` (**arrived**) once. Requires driver JWT and an assigned, confirmed ride.",
+)
+async def set_ride_phase(
+    phase: Literal['enroute', 'arrived'],
+    booking_id: int = Path(..., description="Booking id."),
+    is_driver: bool = Depends(is_driver),
+    driver_service: DriverService = Depends(get_driver_service),
+):
+    return await driver_service.set_ride_phase(booking_id, phase)
 
 
 @router.get(

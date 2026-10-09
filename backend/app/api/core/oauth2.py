@@ -35,7 +35,8 @@ DRIVER_ONBOARDING_EXPIRE_MINUTES = 120
 
 # Every JWT we mint carries a `type` so one kind can never be replayed as another
 # (e.g. a 90-day refresh token used as a Bearer access token). `exp` is mandatory.
-ACCESS, REFRESH, DRIVER_ONBOARDING = "access", "refresh", "driver_onboarding"
+ACCESS, REFRESH, DRIVER_ONBOARDING, PASSWORD_RESET = "access", "refresh", "driver_onboarding", "password_reset"
+PASSWORD_RESET_EXPIRE_MINUTES = 30
 
 
 def _decode(token: str, token_type: str) -> dict:
@@ -99,6 +100,36 @@ def revoke_refresh_token(token: str | None) -> None:
             redis_client.delete(_refresh_key(claims["jti"]))
     except (JWTError, RedisError) as e:
         logger.warning(f"Could not revoke refresh token: {e}")
+
+
+def create_password_reset_token(role: str, user_id: int, password_hash: str) -> str:
+    """Emailed reset link for a tenant, rider or driver. Bound to a fingerprint of the current password hash, so it works once:
+    changing the password (by this link or any other way) invalidates it. Carries no `role`."""
+    return jwt.encode(
+        {
+            "type": PASSWORD_RESET,
+            "kind": role,  # not "role": this token must never look like a login token
+            "id": str(user_id),
+            "pw": _token_fingerprint(password_hash),
+            "exp": datetime.utcnow() + timedelta(minutes=PASSWORD_RESET_EXPIRE_MINUTES),
+        },
+        SECRET_KEY,
+        algorithm=ALGORITHM,
+    )
+
+
+def verify_password_reset_token(token: str, role: str, password_hash: str | None = None) -> dict:
+    """Claims of a valid reset token; 400 otherwise. Pass the tenant's current hash to also enforce single use."""
+    bad = HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This reset link is invalid or has expired.")
+    try:
+        claims = _decode(token, PASSWORD_RESET)
+    except JWTError:
+        raise bad
+    if claims.get("kind") != role:
+        raise bad
+    if password_hash is not None and claims.get("pw") != _token_fingerprint(password_hash):
+        raise bad
+    return claims
 
 
 def create_booking_confirm_token(booking_id: int, tenant_id: int, rider_id: int) -> str:

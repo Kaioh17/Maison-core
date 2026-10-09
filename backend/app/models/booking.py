@@ -45,6 +45,10 @@ class Bookings(Base):
 
     # Reminder tracking -- one-shot flags so the periodic reminder job (app/reminders.py)
     # never double-sends across runs.
+    # Driver progress on a confirmed ride: started_at = driver is en route, arrived_at = at the pickup.
+    driver_started_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    driver_arrived_at = Column(TIMESTAMP(timezone=True), nullable=True)
+
     reminder_24h_sent = Column(Boolean, nullable=False, default=False, server_default=text('false'))
     reminder_1h_sent = Column(Boolean, nullable=False, default=False, server_default=text('false'))
     confirm_reminder_sent = Column(Boolean, nullable=False, default=False, server_default=text('false'))

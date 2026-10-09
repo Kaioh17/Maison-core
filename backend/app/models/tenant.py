@@ -21,6 +21,8 @@ class Tenants(Base):
     role = Column(String, nullable=False, index=True, default = "tenant")
     is_verified = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
+    # Set on first legal acceptance (+90 days). NULL = pilot clock not started. Extend by editing this column.
+    pilot_ends_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_on = Column(TIMESTAMP(timezone = True), nullable=False
                         ,server_default=text('now()'))
     updated_on = Column(TIMESTAMP(timezone=True), onupdate= func.now(), nullable=True)

@@ -1,48 +1,24 @@
-
-
 """
-Service layer for tenant-related operations in the Maison-core backend.
-This module provides functions to manage tenants, drivers, vehicles, and bookings, including creation, retrieval, onboarding, and approval processes. It handles database interactions, enforces unique constraints, and manages error handling for common DB exceptions. The service also includes helper functions for tenant settings setup, driver email validation, and onboarding token generation.
-Key functionalities:
-- Tenant creation and settings initialization
-- Retrieval of company, driver, vehicle, and booking information
-- Onboarding and approval workflows for drivers
-- Vehicle assignment and ownership queries
-- Error handling and logging for all operations
-Dependencies:
-- FastAPI for HTTP exception handling
-- SQLAlchemy ORM models for tenants, drivers, vehicles, bookings, and tenant settings
-- Utility modules for password hashing, database error handling, and logging
+Tenant account service: signup, company profile, driver mode, plan limits and the rider directory.
+Driver management lives in tenant_driver_service.py; vehicle/booking assignment in tenant_dispatch_service.py.
 """
-import os
-import secrets
-import redis
-from typing import Optional
-from fastapi import HTTPException, UploadFile, status, Form, File, Depends
-from sqlalchemy import func, text
+from fastapi import HTTPException, status, Depends
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
-from sqlalchemy import select
 from pydantic import EmailStr
-from app.models import tenant, driver, TenantSettings, vehicle, booking, vehicle_category_rate, payout
-from app.redis_connect import redis_client
+from app.models import tenant, driver, TenantSettings, vehicle, booking, vehicle_category_rate
 from app.utils import password_utils, db_error_handler
 from app.utils.logging import logger
-from datetime import datetime, timedelta 
-import random
-# from .stripe_service import StripeService
-import string
-from .booking_services import BookingService
 from app.db.database import get_db, get_base_db
 from ..core import deps
 from .helper_service import *
-from .email_services import drivers, admin, tenants
+from .email_services import admin, tenants
 from .service_context import ServiceContext
-from .stripe_services import stripe_service, stripe_tier_service 
+from .stripe_services import stripe_service
 from app.policies import plan_policy
 from app.domain import plans
 from .auth_service import AuthService
-import httpx 
-
+from .tenant_driver_service import count_drivers
 
 
 def founding_operator_slots_remaining(db) -> int:
@@ -52,11 +28,8 @@ def founding_operator_slots_remaining(db) -> int:
 
 
 class TenantService(ServiceContext):
-    def __init__(self, db, current_user):
-         super().__init__(db, current_user)
     db_exceptions = db_error_handler.DBErrorHandler
 
-    # tenant_table = tenant.Tenants
     tenant_info = tenant.Tenants
     tenant_profile = tenant.TenantProfile
     tenant_stats = tenant.TenantStats
@@ -66,104 +39,65 @@ class TenantService(ServiceContext):
     booking_table = booking.Bookings
     vehicle_category_table = vehicle_category_rate.VehicleCategoryRate
 
-    async def create_tenant(self, email:EmailStr,
-                             first_name:str,
-                             last_name:str,
+    async def create_tenant(self, email: EmailStr,
+                            first_name: str,
+                            last_name: str,
                             password,
-                            phone_no ,
-                            company_name ,
-                            # logo_url: Optional[UploadFile] = None
-                            slug ,
-                            address ,
-                            city ,
-                            drivers_count ,
-                            logo_url ):
+                            phone_no,
+                            company_name,
+                            slug,
+                            address,
+                            city,
+                            drivers_count,
+                            logo_url):
         try:
-            model_map = {
-                "email": email,
-                # "company_name": company_name,
-                "phone_no": phone_no,
-                "slug": slug
-            }
             first_name = first_name.strip().capitalize()
             last_name = last_name.strip().capitalize()
             full_name = f"{first_name} {last_name}"
-            self._check_unique_fields(self.tenant_info, model_map)
+            self._check_unique_fields(self.tenant_info, {"email": email, "phone_no": phone_no, "slug": slug})
             if slug in self.RESERVED_SLUGS:
                 logger.error(f"Tenant creation failed: Reserved slug '{slug}' cannot be used")
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f"The slug '{slug}' is reserved and cannot be used. Please choose a different slug."
-                )  
-            """Stripe config"""
-            tenant_email =email 
-            logger.info(f"Tenant: {tenant_email}")
-            stripe_customer_id = stripe_service.StripeService(self.current_user, self.db).create_customer(email = tenant_email,
-                                                                                                       name = full_name)
-            
-            """initial stripe express account integration (soley for v2 transition in the future if needed)
-            # stripe_account_id, stripe_customer_id = stripe_service.StripeService(self.current_user, self.db).create_account_v2(email = email, full_name=full_name)
-            
-            # stripe_service.StripeService(self.current_user, self.db).add_account_metdata(tenant_id=new_tenant_id, acct_id=stripe_account_id)
-            """
-            
-            """Save log if there is a logo"""
-            logo_path = await SupaS3.upload_to_s3(url=logo_url, slug=slug, bucket_name='logos') if logo_url != None else None
-            """Create new tenants"""
-            
-            hashed_pwd = password_utils.hash(password.strip()) #hash password
-          
-            new_tenant_info = self.tenant_info( email=email,
-                                        first_name=first_name,
-                                        last_name=last_name,
-                                        password=hashed_pwd,
-                                        phone_no=phone_no,
-                                        
-                                                               
-                                        )
-            # new_tenant_info.password = hashed_pwd
-            
-            self.db.add(new_tenant_info)
-            self.db.commit()
-            self.db.refresh(new_tenant_info)
-            new_tenant_id = new_tenant_info.id
-            
-            logger.debug(f"New tenant id: {new_tenant_id}")
-            
-            
-            
-            """set up tenant profile and stats"""
-            new_tenant_profile = self.tenant_profile(tenant_id = new_tenant_id,
-                                                     company_name=company_name,
-                                                    slug=slug,
-                                                    address=address,
-                                                    city=city,                                
-                                                    logo_url = logo_path,
-                                                    stripe_customer_id = stripe_customer_id,
-                                                                                                   
-                                                    )
-            new_tenant_stats = self.tenant_stats(tenant_id = new_tenant_id, 
-                                                 drivers_count=drivers_count)
+                )
 
-        
-        
-            self.db.add(new_tenant_profile)
-            self.db.add(new_tenant_stats)
-            
+            # External calls first, so nothing below needs undoing if one of them fails.
+            stripe_customer_id = stripe_service.StripeService(self.current_user, self.db).create_customer(email=email, name=full_name)
+            logo_path = await SupaS3.upload_to_s3(url=logo_url, slug=slug, bucket_name='logos') if logo_url is not None else None
+
+            # One transaction: a failure leaves no half-created tenant behind.
+            new_tenant_info = self.tenant_info(email=email,
+                                               first_name=first_name,
+                                               last_name=last_name,
+                                               password=password_utils.hash(password.strip()),
+                                               phone_no=phone_no)
+            self.db.add(new_tenant_info)
+            self.db.flush()  # assigns new_tenant_info.id
+            new_tenant_id = new_tenant_info.id
+            logger.debug(f"New tenant id: {new_tenant_id}")
+
+            new_tenant_profile = self.tenant_profile(tenant_id=new_tenant_id,
+                                                     company_name=company_name,
+                                                     slug=slug,
+                                                     address=address,
+                                                     city=city,
+                                                     logo_url=logo_path,
+                                                     stripe_customer_id=stripe_customer_id)
+            new_tenant_stats = self.tenant_stats(tenant_id=new_tenant_id, drivers_count=drivers_count)
+            self.db.add_all([new_tenant_profile, new_tenant_stats])
+            self.db.add_all(self._default_tenant_settings(new_tenant_id, logo_path, slug))
+            self.db.add_all(self._default_vehicle_categories(new_tenant_id))
             self.db.commit()
             self.db.refresh(new_tenant_profile)
             self.db.refresh(new_tenant_stats)
-           
+            logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")
+
             stripe_service.StripeService(self.current_user, self.db).create_express_account(tenant_obj=new_tenant_info)
-            # logger.info(f"new tenant_id {new_tenant.id}")
-            response_dict  = {"tenants": new_tenant_info, "profile": new_tenant_profile, "stats": new_tenant_stats}
-            """add tenants settings"""
-            logger.debug(response_dict)
-            await self._set_up_tenant_settings(new_tenant_id, logo_path, slug)
-            await self._create_vehicle_category_rate_table(new_tenant_id)
-            
+            response_dict = {"tenants": new_tenant_info, "profile": new_tenant_profile, "stats": new_tenant_stats}
+
             # The welcome / "one step left to go live" email is sent from the
-            # checkout.session.completed webhook, not here — nothing is live
+            # checkout.session.completed webhook, not here - nothing is live
             # until the tenant has actually subscribed.
             # The tenant is already committed: a failed notification email must
             # not turn a successful signup into a 500.
@@ -185,8 +119,9 @@ class TenantService(ServiceContext):
 
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
-        
+
         return success_resp(data=response_dict, msg="Tenant created successfully")
+
     def stripe_account_setup(self):
         try:
             # obj = self.db.query(tenant_table).filter(tenant_table.id == self.tenant_id).first()
@@ -261,7 +196,7 @@ class TenantService(ServiceContext):
             plan_policy.PlanPolicy.assert_can_onboard_driver(
                 plan=self.plan,
                 sub_status=self.sub_status,
-                current_count=self._count_drivers(self.tenant_id),
+                current_count=count_drivers(self.db, self.tenant_id),
             )
             driver = driver_table(tenant_id = self.tenant_id,
                                        first_name = self.current_user.first_name,
@@ -362,236 +297,96 @@ class TenantService(ServiceContext):
             logger.error(f"Unexpected error in update_company_info: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
 
-    # async def _set_up_tenant_settings(self, new_tenant_id, logo_url, slug):
-    #     try: 
-    #         logger.debug(f"Logo url{logo_url}")
-    #         new_tenants_settings = [TenantSettings(
-    #                         tenant_id = new_tenant_id,
-    #                         logo_url = logo_url, 
-    #                         slug = slug,
-    #                         theme = "dark",  # Default theme
-    #                         enable_branding = False,  # Default to false
-    #                         base_fare = 0.0,  # Default base fare
-    #                         per_mile_rate = 0.0,  # Default per mile rate
-    #                         per_minute_rate = 0.0,  # Default per minute rate
-    #                         per_hour_rate = 0.0,  # Default per hour rate
-    #                         rider_tiers_enabled = False,  # Default to false
-    #                         cancellation_fee = 0.0,  # Default cancellation fee
-    #                         discounts = False  # Default to false
-    #                     ),
-    #        TenantBranding(
-    #                         tenant_id=new_tenant_id,
-    #                         logo_url=logo_url,
-    #                         slug=slug,
-    #                         theme="dark",
-    #                         enable_branding=False,
-    #                         primary_color=None,
-    #                         secondary_color=None,
-    #                         accent_color=None,
-    #                         favicon_url=None,
-    #                         email_from_name=None,
-    #                         email_from_address=None
-    #                     ),
-    #         TenantPricing(
-    #                         tenant_id=new_tenant_id,
-    #                         base_fare=0.0,
-    #                         per_mile_rate=0.0,
-    #                         per_minute_rate=0.0,
-    #                         per_hour_rate=0.0,
-    #                         cancellation_fee=0.0,
-    #                         discounts=False
-    #                     ),
-    #                     TenantBookingPricing(
-    #                         tenant_id=new_tenant_id,
-    #                         service_type = 'airport',
-    #                         deposit_type = 'percentage',
-    #                         deposit_fee =  0.3
-    #                     ),TenantBookingPricing(
-    #                         tenant_id=new_tenant_id,
-    #                         service_type = 'dropoff',
-    #                         deposit_type = 'percentage',
-    #                         deposit_fee =  0.3
-    #                     ),TenantBookingPricing(
-    #                         tenant_id=new_tenant_id,
-    #                         service_type = 'hourly',
-    #                         deposit_type = 'percentage',
-    #                         deposit_fee =  0.3
-    #                     )
-    #                                     ]
 
-    #         # self.db.add(new_tenant_branding)
-    #         # self.db.add(new_tenant_pricing)            
-    #         self.db.add(new_tenants_settings)
-    #         self.db.commit()
-    #         logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")
-    #     except self.db_exceptions.COMMON_DB_ERRORS as e:
-    #         self.db_exceptions.handle(e, self.db)
-    async def _set_up_tenant_settings(self, new_tenant_id, logo_url, slug):
-        try: 
-            logger.debug(f"Logo url{logo_url}")
-            new_tenants_settings = [TenantSettings(
-                            tenant_id=new_tenant_id,
-                            rider_tiers_enabled=False,
-                            config={
-                                "booking": {
-                                    "allow_guest_bookings": True,
-                                    "show_vehicle_images": False,
-                                    "allowed_payment_method": {
-                                        "cash": {"is_allowed": True},
-                                        "zelle": {"is_allowed": True},
-                                        "stripe": {"is_allowed": True},
-                                    }, 
-                                    "types": {
-                                        "airport": {"is_deposit_required": False},
-                                        "dropoff": {"is_deposit_required": False},
-                                        "hourly": {"is_deposit_required": False},
-                                    },
-                                },
-                                "branding": {
-                                    "button_radius": 8,
-                                    "font_family": "DM Sans",
-                                },
-                                "features": {
-                                    "vip_profiles": True,
-                                    "show_loyalty_banner": False,
+    def _default_tenant_settings(self, new_tenant_id, logo_url, slug):
+        """Default settings, branding, pricing and booking-pricing rows for a new tenant (added by the caller)."""
+        return [TenantSettings(
+                        tenant_id=new_tenant_id,
+                        rider_tiers_enabled=False,
+                        config={
+                            "booking": {
+                                "allow_guest_bookings": True,
+                                "show_vehicle_images": False,
+                                "allowed_payment_method": {
+                                    "cash": {"is_allowed": True},
+                                    "zelle": {"is_allowed": True},
+                                    "stripe": {"is_allowed": True},
+                                }, 
+                                "types": {
+                                    "airport": {"is_deposit_required": False},
+                                    "dropoff": {"is_deposit_required": False},
+                                    "hourly": {"is_deposit_required": False},
                                 },
                             },
-                        ),
-                        TenantBranding(
-                            tenant_id=new_tenant_id,
-                            slug=slug,
-                            theme="dark",
-                            enable_branding=False,
-                            # colors — same palette used by the new rider auth pages
-                            # (matches the example in TenantBrandingUpdate.Config.json_schema_extra)
-                            primary_color="#7c3aed",        # brand purple (CTA bg, links)
-                            secondary_color="#a78bfa",      # lighter purple (subtle accents)
-                            accent_color="#6d28d9",         # darker purple (hover/pressed)
-                            background_color="#0a0a12",     # page bg
-                            surface_color="#13131f",        # cards / input fill (elevated)
-                            text_color="#ffffff",           # primary text
-                            text_muted_color="#6b7280",     # muted / secondary text
-                            button_text_color="#ffffff",    # text on filled brand buttons
-                            # assets
-                            logo_url=logo_url,
-                            favicon_url=None,
-                            email_from_name=None,
-                            email_from_address=None,
-                            phone=None
-                        ),
-                        TenantPricing(
-                            tenant_id=new_tenant_id,
-                            base_fare=25.0,
-                            per_mile_rate=5.0,
-                            per_minute_rate=3.0,
-                            per_hour_rate=70.0,
-                            cancellation_fee=0.0,
-                            discounts=False
-                        ),
-                        TenantBookingPricing(
-                            tenant_id=new_tenant_id,
-                            service_type="airport",
-                            stc_rate=0.1,
-                            gratuity_rate=0.1,
-                            airport_gate_fee=0,
-                            meet_and_greet_fee=0,
-                            deposit_type="percentage",
-                            deposit_fee=0.3,
-                        ),
-                        TenantBookingPricing(
-                            tenant_id=new_tenant_id,
-                            service_type="dropoff",
-                            deposit_type="percentage",
-                            deposit_fee=0.3,
-                        ),
-                        TenantBookingPricing(
-                            tenant_id=new_tenant_id,
-                            service_type="hourly",
-                            deposit_type="percentage",
-                            deposit_fee=0.3,
-                        ),
-                                        ]
+                            "branding": {
+                                "button_radius": 8,
+                                "font_family": "DM Sans",
+                            },
+                            "features": {
+                                "vip_profiles": True,
+                                "show_loyalty_banner": False,
+                            },
+                        },
+                    ),
+                    TenantBranding(
+                        tenant_id=new_tenant_id,
+                        slug=slug,
+                        theme="dark",
+                        enable_branding=False,
+                        # colors — same palette used by the new rider auth pages
+                        # (matches the example in TenantBrandingUpdate.Config.json_schema_extra)
+                        primary_color="#7c3aed",        # brand purple (CTA bg, links)
+                        secondary_color="#a78bfa",      # lighter purple (subtle accents)
+                        accent_color="#6d28d9",         # darker purple (hover/pressed)
+                        background_color="#0a0a12",     # page bg
+                        surface_color="#13131f",        # cards / input fill (elevated)
+                        text_color="#ffffff",           # primary text
+                        text_muted_color="#6b7280",     # muted / secondary text
+                        button_text_color="#ffffff",    # text on filled brand buttons
+                        # assets
+                        logo_url=logo_url,
+                        favicon_url=None,
+                        email_from_name=None,
+                        email_from_address=None,
+                        phone=None
+                    ),
+                    TenantPricing(
+                        tenant_id=new_tenant_id,
+                        base_fare=25.0,
+                        per_mile_rate=5.0,
+                        per_minute_rate=3.0,
+                        per_hour_rate=70.0,
+                        cancellation_fee=0.0,
+                        discounts=False
+                    ),
+                    TenantBookingPricing(
+                        tenant_id=new_tenant_id,
+                        service_type="airport",
+                        stc_rate=0.1,
+                        gratuity_rate=0.1,
+                        airport_gate_fee=0,
+                        meet_and_greet_fee=0,
+                        deposit_type="percentage",
+                        deposit_fee=0.3,
+                    ),
+                    TenantBookingPricing(
+                        tenant_id=new_tenant_id,
+                        service_type="dropoff",
+                        deposit_type="percentage",
+                        deposit_fee=0.3,
+                    ),
+                    TenantBookingPricing(
+                        tenant_id=new_tenant_id,
+                        service_type="hourly",
+                        deposit_type="percentage",
+                        deposit_fee=0.3,
+                    ),
+                                    ]
 
-            # self.db.add(new_tenant_branding)
-            # self.db.add(new_tenant_pricing)            
-            self.db.add_all(new_tenants_settings)
-            self.db.commit()
-            logger.info(f"Tenant settings created for tenant_id: {new_tenant_id}")
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)    
-    async def _create_vehicle_category_rate_table(self, id_tenant):
-        try:
-            logger.info("Setting new tenant vehicle settings table..")
-            vehicle_category = [
-                self.vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Luxury Sedan"),
-                self.vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Executive SUV"),
-                self.vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Stretch Limo"),
-                self.vehicle_category_table(tenant_id = id_tenant,vehicle_category = "Business Van")
+    def _default_vehicle_categories(self, id_tenant):
+        return [self.vehicle_category_table(tenant_id=id_tenant, vehicle_category=name)
+                for name in ("Luxury Sedan", "Executive SUV", "Stretch Limo", "Business Van")]
 
-            ]
-
-            self.db.add_all(vehicle_category)
-            self.db.commit()
-            
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-    
-    async def get_all_drivers(self, driver_id):
-        try:
-            logger.info(f"Getting all drivers for {self.tenant_id}")
-            if driver_id:
-                drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.tenant_id, self.driver_table.id == driver_id)
-                drivers = drivers_query.all()    
-            else:    
-                drivers_query = self.db.query(self.driver_table).filter(self.driver_table.tenant_id == self.tenant_id)
-                drivers = drivers_query.all()
-
-            if not drivers:
-                logger.info(f"There are no drivers for tenant {self.tenant_id}")
-                return success_resp(data=[], msg="Drivers retrieved successfully", meta={"count": 0})
-
-            return success_resp(data=drivers, msg="Drivers retrieved successfully", meta={"count": len(drivers)})
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-            raise HTTPException(status_code=500, detail="Database error occurred")
-        except Exception as e:
-            logger.error(f"Unexpected error in get_all_drivers: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
-
-    async def _validate_driver_id(self, driver_id):
-        try:
-            exists = self.db.query(self.driver_table).filter(self.driver_table.id == driver_id, 
-                                                self.driver_table.tenant_id == self.tenant_id).first()
-            if not exists:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                                    detail= f"Driver with {driver_id} does not exists") 
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    async def _confirm_driver_email_absence(self, payload):
-        ##verify_email does not exist
-        try:
-            driver_exists = self.db.query(self.driver_table).filter(self.driver_table.email == payload.email,
-                                                    self.driver_table.tenant_id == self.tenant_id).first()
-
-            if driver_exists: 
-                logger.warning("Driver with email already exists...")
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                                    detail = "Driver with email already exists...")
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    async def _onboarding_token(self, length = 10):
-        access_token = string.ascii_letters + string.digits
-        return ''.join(random.choices(access_token, k=length))
-    def _count_drivers(self, tenant_id):
-        try:
-            stmt = select(func.count()).where(self.driver_table.tenant_id == tenant_id)
-            count = self.db.scalar(stmt)
-            logger.debug(f"DRiver counnt {count}")
-            return count
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(exc=e, db=self.db)
     @staticmethod
     def _usage(used: int, allowed):
         """Shape one quota line. allowed=None means unlimited."""
@@ -615,7 +410,7 @@ class TenantService(ServiceContext):
         vehicle_count = VehicleService(
             db=self.db, current_user=self.current_user
         )._count_vehicles(self.tenant_id) or 0
-        driver_count = self._count_drivers(self.tenant_id) or 0
+        driver_count = count_drivers(self.db, self.tenant_id) or 0
 
         data = {
             "plan": self.sub_plan,  # None when unsubscribed
@@ -631,241 +426,6 @@ class TenantService(ServiceContext):
         }
         meta = {"founding_operator_slots_remaining": founding_operator_slots_remaining(self.db)}
         return success_resp(msg="Retrieved plan limits", data=data, meta=meta)
-
-    async def onboard_drivers(self, payload):
-        try:
-            ##check policies
-            cur_driver_count = self._count_drivers(self.tenant_id)
-            logger.debug(f"DRiver counnt {cur_driver_count}")
-            plan_policy.PlanPolicy.assert_can_onboard_driver(
-                plan=self.plan,
-                sub_status=self.sub_status,
-                current_count=cur_driver_count,
-            )
-            await self._confirm_driver_email_absence(payload)
-            onboard_token = await self._onboarding_token(6)
-            logger.info("Starting onboarding process....")
-            driver_info = payload.model_dump()
-            driver_info.pop("users", None)
-            new_driver = self.driver_table(tenant_id = self.tenant_id,
-                                      driver_token = onboard_token, 
-                                      is_registered = "pending",**driver_info)
-
-
-            self.db.add(new_driver)
-            self.db.commit()
-            self.db.refresh(new_driver)
-            
-            """email notification"""
-            drivers.DriverEmailServices(to_email=new_driver.email, from_email='driver', display_name=self.slug).onboarding_email(token=onboard_token, slug=self.slug)
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-        logger.info("Onboarding process complete...")
-
-        return success_resp(data=new_driver, msg="New driver onboarded successfully")
-
-    async def approve_driver(self, driver_id: int):
-        """
-        Approves a driver row that is awaiting review -- either a self-serve
-        application (see DriverService.apply) or a tenant invite the driver
-        hasn't finished registering yet. Issues the onboarding token and
-        emails the driver their registration link, same as `onboard_drivers`.
-        """
-        try:
-            driver_obj = self.db.query(self.driver_table).filter(
-                self.driver_table.id == driver_id,
-                self.driver_table.tenant_id == self.tenant_id,
-            ).first()
-            if not driver_obj:
-                logger.warning(f"Driver {driver_id} not found for tenant {self.tenant_id}")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found")
-            if driver_obj.is_registered == "registered":
-                logger.warning(f"Driver {driver_id} is already registered")
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Driver is already registered")
-
-            onboard_token = await self._onboarding_token(6)
-            driver_obj.driver_token = onboard_token
-            driver_obj.is_active = True
-            self.db.commit()
-            self.db.refresh(driver_obj)
-
-            drivers.DriverEmailServices(
-                to_email=driver_obj.email, from_email='driver', display_name=self.slug
-            ).onboarding_email(token=onboard_token, slug=self.slug)
-
-            logger.info(f"Driver {driver_id} approved")
-            return success_resp(msg="Driver approved", data={"id": driver_obj.id})
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    # --- Permanent driver deletion (two steps, no schema change: the step-1 token lives in Redis) ---
-    DRIVER_DELETE_TTL = 600
-
-    def _driver_delete_key(self, driver_id: int) -> str:
-        return f"driver_delete:{self.tenant_id}:{driver_id}"
-
-    def _get_tenant_driver(self, driver_id: int):
-        driver_obj = self.db.query(self.driver_table).filter(
-            self.driver_table.id == driver_id,
-            self.driver_table.tenant_id == self.tenant_id,
-        ).first()
-        if not driver_obj:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found")
-        return driver_obj
-
-    def _driver_deletion_warnings(self, driver_obj) -> list[str]:
-        """Raises 409 if history/fleet data forbids deletion; otherwise returns the warnings to show."""
-        has_bookings = self.db.query(self.booking_table.id).filter(
-            self.booking_table.driver_id == driver_obj.id).first()
-        has_payouts = self.db.query(payout.Payout.id).filter(
-            payout.Payout.driving_id == driver_obj.id).first()
-        if has_bookings or has_payouts:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="This driver has booking or payout history, which must be kept. Deactivate the driver instead.",
-            )
-
-        warnings = [
-            "This is permanent and cannot be undone. The driver cannot be restored.",
-            "The driver's account and login are removed immediately.",
-        ]
-        vehicle_obj = driver_obj.vehicle
-        if vehicle_obj:
-            if driver_obj.driver_type == "in_house":
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Unassign this driver's fleet vehicle before deleting the driver.",
-                )
-            if self.db.query(self.booking_table.id).filter(
-                    self.booking_table.vehicle_id == vehicle_obj.id).first():
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="This driver's vehicle is used by existing bookings, so the driver cannot be deleted.",
-                )
-            warnings.append("The driver's vehicle is deleted along with the driver.")
-        if driver_obj.stripe_account_id:
-            warnings.append("The driver's Stripe account is not closed. Handle any remaining balance in Stripe.")
-        return warnings
-
-    async def request_driver_deletion(self, driver_id: int):
-        try:
-            driver_obj = self._get_tenant_driver(driver_id)
-            warnings = self._driver_deletion_warnings(driver_obj)
-            token = secrets.token_urlsafe(32)
-            redis_client.set(self._driver_delete_key(driver_id), token, ex=self.DRIVER_DELETE_TTL)
-            logger.info(f"Driver {driver_id} deletion requested by tenant {self.tenant_id}")
-            return success_resp(
-                msg="Review the warnings, then confirm to permanently delete this driver",
-                data={
-                    "driver_id": driver_obj.id,
-                    "driver_name": driver_obj.full_name,
-                    "warnings": warnings,
-                    "confirmation_token": token,
-                    "expires_in_seconds": self.DRIVER_DELETE_TTL,
-                },
-            )
-        except redis.RedisError as e:
-            logger.error(f"Redis unavailable for driver deletion: {e}")
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                                detail="Deletion is temporarily unavailable. Try again shortly.")
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    async def delete_driver(self, driver_id: int, payload):
-        try:
-            driver_obj = self._get_tenant_driver(driver_id)
-            key = self._driver_delete_key(driver_id)
-            stored = redis_client.get(key)
-            if not stored or not secrets.compare_digest(stored.decode(), payload.confirmation_token):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                    detail="Confirmation expired or invalid. Start the deletion again.")
-            if payload.confirm_email.lower() != driver_obj.email.lower():
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                    detail="The email you typed does not match this driver.")
-            self._driver_deletion_warnings(driver_obj)  # re-check blockers: state may have changed since step 1
-
-            self.db.delete(driver_obj)
-            self.db.commit()
-            redis_client.delete(key)  # single use
-            logger.warning(f"Driver {driver_id} permanently deleted by tenant {self.tenant_id}")
-            return success_resp(msg="Driver permanently deleted", data={"id": driver_id})
-        except redis.RedisError as e:
-            logger.error(f"Redis unavailable for driver deletion: {e}")
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                                detail="Deletion is temporarily unavailable. Try again shortly.")
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    async def set_driver_active(self, driver_id: int, is_active: bool):
-        """Reversible alternative to deletion. Inactive drivers cannot be assigned new rides."""
-        try:
-            driver_obj = self._get_tenant_driver(driver_id)
-            if driver_obj.is_registered != "registered":
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                                    detail="Only registered drivers can be activated or deactivated. Approve pending drivers instead.")
-            if driver_obj.is_active != is_active:
-                driver_obj.is_active = is_active
-                self.db.commit()
-                drivers.DriverEmailServices(to_email=driver_obj.email, from_email='noreply', display_name=self.slug) \
-                    .status_change_email(obj=driver_obj, is_active=is_active)
-                logger.info(f"Driver {driver_id} set is_active={is_active} by tenant {self.tenant_id}")
-            return success_resp(msg="Driver activated" if is_active else "Driver deactivated",
-                                data={"id": driver_obj.id, "is_active": is_active})
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    async def get_all_vehicles(self):
-        try:
-            logger.info(f"Getting vehicles for tenant: {self.tenant_id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.tenant_id)
-            vehicle_obj = vehicle_query.all()
-
-            if not vehicle_obj:
-                logger.info(f"There are no vehicles for tenant {self.tenant_id}")
-                return success_resp(data=[], msg="Vehicles retrieved successfully", meta={"count": 0})
-
-            return success_resp(data=vehicle_obj, msg="Vehicles retrieved successfully", meta={"count": len(vehicle_obj)})
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-            raise HTTPException(status_code=500, detail="Database error occurred")
-        except Exception as e:
-            logger.error(f"Unexpected error in get_all_vehicles: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
-
-    async def fetch_assigned_drivers_vehicles(self):
-        try:
-            
-            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.tenant_id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.tenant_id,
-                                                            self.vehicle_table.driver_id != None)
-            vehicle_obj = vehicle_query.all()
-                    
-
-            if not vehicle_obj:
-                logger.warning(f"There are no vehicles assigned to any drivers {self.tenant_id}")
-                raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-                                    detail = f"Tenant {self.tenant_id} has no vehicles assigned to any drivers")
-            return success_resp(data=vehicle_obj, msg="Vehicles with assigned drivers retrieved successfully", meta={"count": len(vehicle_obj)})
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    async def find_vehicles_owned_by_driver(self, driver_id: int):
-        try:
-            await self._validate_driver_id(driver_id)
-            logger.info(f"Getting vehicles with assigned drivers for tenant: {self.tenant_id}")
-            vehicle_query = self.db.query(self.vehicle_table).filter(self.vehicle_table.tenant_id == self.tenant_id,
-                                                            self.vehicle_table.driver_id == driver_id)
-            vehicle_obj = vehicle_query.all()
-                    
-
-            if not vehicle_obj:
-                logger.warning(f"Driver {driver_id} does not have an assigned a vehicle {self.tenant_id}")
-                raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-                                    detail = f"Driver {driver_id} does not have an assigned a vehicle {self.tenant_id}")
-            return success_resp(data=vehicle_obj, msg=f"Vehicles for driver {driver_id} retrieved successfully", meta={"count": len(vehicle_obj), "driver_id": driver_id})
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
 
     async def list_rider_emails(self):
         try:
@@ -916,136 +476,9 @@ class TenantService(ServiceContext):
         except self.db_exceptions.COMMON_DB_ERRORS as e:
             self.db_exceptions.handle(e, self.db)
 
-    async def assign_driver_to_vehicle(self, driver_id, vehicle_id):
-        """A tenant can only assign a vehicle to one driver at a time"""
-        try:
-            vehicle_ =  self.db.query(self.vehicle_table).filter(self.vehicle_table.driver_id == driver_id, self.vehicle_table.tenant_id == self.tenant_id).first()
-            if vehicle_:
-                logger.warning(f"Driver already has a vehicle [{vehicle_.vehicle_name}]")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= f"Driver already has a vehicle [{vehicle_.vehicle_name}]")
-            vehicle =  self.db.query(self.vehicle_table).filter(self.vehicle_table.id == vehicle_id, self.vehicle_table.tenant_id == self.tenant_id).first()
-
-            if not vehicle:
-                logger.warning("This vehicle does not exist")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= "This vehicle does not exist")
-            if vehicle.driver_id:
-                raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                    detail = "Vehicle already assigned to a driver.If you need to assign this driver unassign the current driver from that vehicle.")
-            driver_info = self.db.query(self.driver_table).filter(self.driver_table.id == driver_id).first()
-            if not driver_info:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= "Driver info does not exists")
-            if driver_info.driver_type == None and driver_info.driver_type != "in_house":
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
-                                    detail="Outsourced drivers cannot be assigned to rides...")
-                
-            vehicle.driver_id = driver_id
-
-            self.db.commit()
-            
-            # Email: Send vehicle assignment notification to driver
-            if driver_info:
-                drivers.DriverEmailServices(to_email=driver_info.email, from_email='notifications', display_name=self.slug).vehicle_assignment_email(
-                    obj=driver_info,
-                    vehicle_obj=vehicle
-                )
-            
-            return success_resp(data={"driver_id": driver_id, "vehicle_id": vehicle_id}, msg=f"Driver {driver_id} has been assigned to vehicle: {vehicle_id}")
-            
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-
-    """BOOKINGS"""
-
-    async def assign_driver_to_rides(self, payload, booking_id: int):
-       try:
-            """We can only assign a driver with a vehicle to the pla"""
-            ride =  self.db.query(self.booking_table).filter(self.booking_table.id == booking_id).first()
-
-            if not ride:
-                logger.warning(f"There is no booking with this id {booking_id}...")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= f"There is no booking with this id {booking_id}....")
-            if ride.driver_id and payload.override != True:
-                logger.warning("Driver already assigned to ride....")
-                raise HTTPException(status_code=404,
-                                   detail = "Driver already assigned to ride....")
-            
-            driver_info = self.db.query(self.driver_table).filter(self.driver_table.id == payload.driver_id).first()
-            if not driver_info:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail= "Driver info does not exists")
-            if driver_info.driver_type == None and driver_info.driver_type != "in_house":
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
-                                    detail="outsourced drivers cannot be assigned to rides...")
-            
-            if not driver_info.is_active:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                                    detail="Deactivated drivers cannot be assigned to rides.")
-
-            ride.driver_id = payload.driver_id
-
-            self.db.commit()
-            
-            """Email Notificaition"""
-            rider_row = self.db.query(user_table).filter(user_table.id == ride.rider_id).first()
-            rider_nm = rider_row.full_name if rider_row else None
-            rider_phone = rider_row.phone_no if rider_row else None
-            drivers.DriverEmailServices(to_email=driver_info.email, from_email='notifications', display_name=self.slug).new_ride(
-                booking_obj=ride, assigned=True, slug=self.slug, rider_name=rider_nm, rider_phone=rider_phone
-            )
-            return success_resp(data={"driver_id": payload.driver_id, "booking_id": booking_id}, msg=f"Driver {payload.driver_id} has been assigned to {booking_id}")
-       except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-
-    async def unassign_driver_from_vehicles(self, override, vehicle_id):
-        try:
-            if override:
-                
-                vehicle =  self.db.query(self.vehicle_table).filter(self.vehicle_table.id == vehicle_id, self.vehicle_table.tenant_id == self.tenant_id).first()
-
-                if not vehicle:
-                    logger.warning("Vehicle not found....")
-                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                        detail= "Vehicle not found....")
-                if not vehicle.driver_id:
-                    raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                        detail = "Vehicle does not have a driver to unassign")
-                
-                if not vehicle.driver_type or vehicle.driver_type != 'in_house':
-                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
-                                        detail="Outsourced drivers cannot be unassigned from their vehicles...")
-                
-                # Store driver info for email before unassigning
-                driver_email = vehicle.driver.email
-                driver_obj = vehicle.driver
-                unassigned_driver_id = vehicle.driver_id
-                logger.debug(unassigned_driver_id)
-                # Unassign the driver from the vehicle
-                vehicle.driver_id = None
-
-                self.db.commit()
-                
-                # Email: Send vehicle unassignment notification to driver
-                drivers.DriverEmailServices(to_email=driver_email, from_email='notifications', display_name=self.slug).vehicle_unassignment_email(
-                    obj=driver_obj,
-                    vehicle_obj=vehicle
-                )
-                
-                return success_resp(msg=f"Driver {unassigned_driver_id} has been unassigned from vehicle: {vehicle_id}")
-            else:
-                return success_resp(msg=f"unassign process has been cancelled")
-        except self.db_exceptions.COMMON_DB_ERRORS as e:
-            self.db_exceptions.handle(e, self.db)
-            
 def get_tenant_service(db = Depends(get_db), current_user = Depends(deps.get_current_user)):
-    """ext param is used to decide which class we will be using in the tenant service"""
-
     return TenantService(db=db, current_user=current_user)
 
-        
+
 def get_unauthorized_tenant_service(db = Depends(get_base_db)):
     return TenantService(db=db, current_user=None)

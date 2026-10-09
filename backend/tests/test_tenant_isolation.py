@@ -19,7 +19,7 @@ reachable by tenant/driver/rider roles today, so it isn't exercised either.
 import pytest
 from fastapi import status
 from app.api.core.oauth2 import create_access_token
-from app.models.tenant import Tenants
+from app.models.tenant import Tenants, TenantProfile, TenantStats
 from app.models.driver import Drivers
 from app.models.user import Users
 from app.models.vehicle import Vehicles
@@ -35,13 +35,16 @@ NOT_YOURS = (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND)
 @pytest.fixture
 def test_tenant_b(db_session):
     tenant = Tenants(
-        id=2, company_name="Rival Co", email="rival@company.com",
+        id=2, email="rival@company.com",
         password=hash("testpassword123"), role="tenant", is_active=True,
-        first_name="Rival", last_name="Co", phone_no="+10000000000",
-        slug="rivalco", address="1 Rival St", city="Rival City",
-        drivers_count=0, is_verified=True,
+        first_name="Rival", last_name="Co", phone_no="+10000000000", is_verified=True,
     )
     db_session.add(tenant)
+    db_session.flush()
+    db_session.add_all([
+        TenantProfile(tenant_id=tenant.id, company_name="Rival Co", slug="rivalco", address="1 Rival St", city="Rival City"),
+        TenantStats(tenant_id=tenant.id, drivers_count=0),
+    ])
     db_session.commit()
     db_session.refresh(tenant)
     return tenant
@@ -88,13 +91,13 @@ def test_vehicle_b(db_session, test_tenant_b, test_driver_b):
 
 
 @pytest.fixture
-def test_booking_b(db_session, test_tenant_b, test_driver_b, test_user_b):
+def test_booking_b(db_session, test_tenant_b, test_driver_b, test_user_b, test_vehicle_b):
     booking = Bookings(
-        id=2, tenant_id=test_tenant_b.id, driver_id=test_driver_b.id,
+        id=2, tenant_id=test_tenant_b.id, driver_id=test_driver_b.id, vehicle_id=test_vehicle_b.id,
         rider_id=test_user_b.id, service_type="standard",
         pickup_location="1 Rival St", pickup_time="2024-01-01T10:00:00",
         dropoff_location="2 Rival Ave", dropoff_time="2024-01-01T11:00:00",
-        city="Rival City", booking_status="pending", estimated_price=25.00,
+        booking_status="pending", estimated_price=25.00,
         notes="Rival booking",
     )
     db_session.add(booking)

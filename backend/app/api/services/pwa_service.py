@@ -193,6 +193,10 @@ def snap_icon_size(requested: int) -> int:
     return min(ICON_SIZES, key=lambda s: abs(s - requested))
 
 
+# Where an installed rider/driver app opens. The routes bounce a signed-out user to their login.
+ROLE_START_URLS = {"driver": "/driver/dashboard?source=pwa", "rider": "/rider/dashboard?source=pwa"}
+
+
 class PwaService:
     """Resolves tenant branding for PWA endpoints from a request host."""
 
@@ -243,7 +247,13 @@ class PwaService:
             updated_on=str(branding.get("updated_on") or branding.get("created_on") or ""),
         )
 
-    def build_manifest(self, snapshot: Optional[TenantBrandingSnapshot], *, is_tenant_app: bool = False) -> dict:
+    def build_manifest(
+        self,
+        snapshot: Optional[TenantBrandingSnapshot],
+        *,
+        is_tenant_app: bool = False,
+        role: Optional[str] = None,
+    ) -> dict:
         """
         Build a JSON-serializable web app manifest tailored to the tenant.
         Falls back to Maison defaults when snapshot is None. `is_tenant_app`
@@ -251,6 +261,10 @@ class PwaService:
         installed PWA opens straight at the dashboard (ProtectedRoute already
         bounces an unauthenticated visit to /tenant/login) instead of the
         generic root, which would otherwise show the marketing landing page.
+
+        `role` ("driver" or "rider", from `?role=`) makes a tenant host's install open
+        that role's app instead of the tenant landing page, and gives it its own `id`
+        so one device can install both. Anything else keeps the generic manifest.
         """
         if snapshot is None:
             name = "Maison for Business" if is_tenant_app else DEFAULT_APP_NAME
@@ -268,6 +282,12 @@ class PwaService:
         start_url = "/tenant/overview" if is_tenant_app else "/?source=pwa"
         # Unique per tenant even if two tenants are ever served from one origin.
         app_id = f"/?tenant={snapshot.slug}" if snapshot else start_url
+        if role in ROLE_START_URLS and not is_tenant_app:
+            start_url = ROLE_START_URLS[role]
+            app_id = f"/?role={role}" + (f"&tenant={snapshot.slug}" if snapshot else "")
+            if role == "driver":
+                name = f"{name} Driver"
+                short_name = make_short_name(f"{short_name} Driver")
         description = (
             "Manage your fleet, drivers, and bookings."
             if is_tenant_app

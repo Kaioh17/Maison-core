@@ -106,10 +106,14 @@ def _icon_response(
         "branding. Unknown hosts get the default Maison manifest."
     ),
 )
-def get_manifest(request: Request, service: PwaService = Depends(get_pwa_service)):
+def get_manifest(
+    request: Request,
+    role: Optional[str] = None,
+    service: PwaService = Depends(get_pwa_service),
+):
     host = _resolve_host(request)
     snapshot = service.resolve_branding(host)
-    manifest = service.build_manifest(snapshot, is_tenant_app=service.is_tenant_app_host(host))
+    manifest = service.build_manifest(snapshot, is_tenant_app=service.is_tenant_app_host(host), role=role)
     return Response(
         content=json.dumps(manifest, separators=(",", ":"), ensure_ascii=False).encode("utf-8"),
         media_type="application/manifest+json",

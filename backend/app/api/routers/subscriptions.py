@@ -2,7 +2,7 @@ from typing import Union
 from fastapi import APIRouter, Request, status, Path
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
-from app.db.database import get_db
+from app.db.database import get_db, get_base_db
 from app.schemas import general, subscription
 from app.domain import plans
 from ..services.helper_service import success_resp
@@ -129,7 +129,7 @@ def get_billing_overview(
     ),
     response_description="The plan ladder, cheapest first.",
 )
-async def get_public_plans(db: Session = Depends(get_db)):
+async def get_public_plans(db: Session = Depends(get_base_db)):
     return success_resp(
         msg="Retrieved plans",
         data=[p.to_dict() for p in plans.PLAN_LADDER],

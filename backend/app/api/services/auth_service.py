@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, FastAPI, Response,status, Request,
 from fastapi.params import Depends
 
 from fastapi.responses import JSONResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 
@@ -15,17 +16,21 @@ from ..core.auth_rate_limiter import assert_not_locked, record_failure, clear_fa
 from app.config import Settings
 
 from app.db.database import  get_base_db
-from ..core.oauth2 import create_access_token, verify_access_token, create_refresh_token, verify_refresh_token, revoke_refresh_token
+from ..core.oauth2 import create_password_reset_token, verify_password_reset_token, PASSWORD_RESET_EXPIRE_MINUTES, create_access_token, verify_access_token, create_refresh_token, verify_refresh_token, revoke_refresh_token
 from app.utils.password_utils import verify, hash as hash_password
 from app.utils.logging import logger
 from app.utils.db_error_handler import DBErrorHandler
 
 # from 
+from . import legal_service
+from .email_services.password_reset import PasswordResetEmails
 from .helper_service import (
     user_table,
     tenant_table,
     driver_table,
-    admin_table)
+    admin_table,
+    tenant_profile,
+    tenant_branding)
 
 settings = Settings()
 # Verified against when the account does not exist so unknown emails cost the same as wrong passwords.
@@ -42,7 +47,75 @@ class AuthService:
     # ponytail: per-role session length so drivers/riders aren't logged out mid-shift/trip
     REFRESH_DAYS_BY_ROLE = {"driver": 30, "rider": 90}
     
-    def login(self, request, user_credentials, role:str):
+    RESET_EMAILS_PER_ADDRESS = 3   # reset requests per address / per IP in the window
+    RESET_REQUESTS_PER_IP = 10
+    RESET_ROLES = {"tenant": tenant_table, "rider": user_table, "driver": driver_table}
+
+    def _reset_table(self, role: str):
+        table = self.RESET_ROLES.get(role)
+        if table is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request. Role is not valid")
+        return table
+
+    def request_password_reset(self, request, role: str, email: str, slug: str | None) -> None:
+        """Email a reset link, but only when `email` belongs to an account of that role.
+
+        Riders and drivers are looked up inside the operator named by `slug` and get that operator's
+        branded email. Returns nothing either way, so the response cannot be used to find out which
+        emails are registered. Requests are counted (not just failures) per address and per IP.
+        """
+        table = self._reset_table(role)
+        email = email.strip().lower()
+        slug = (slug or "").strip().lower()
+        ip = get_remote_address(request)
+        who = hashed(role, slug, email)
+        assert_not_locked("pwd_reset", who, self.RESET_EMAILS_PER_ADDRESS)
+        assert_not_locked("pwd_reset_ip", ip, self.RESET_REQUESTS_PER_IP)
+        record_failure("pwd_reset", who, self.WINDOW_MINUTES)
+        record_failure("pwd_reset_ip", ip, self.WINDOW_MINUTES)
+
+        query = self.db.query(table).filter(func.lower(table.email) == email)
+        brand = None
+        if role != "tenant":
+            profile = self.db.query(tenant_profile).filter(tenant_profile.slug == slug).first()
+            if not profile:
+                logger.info("Password reset requested for an unknown operator slug; nothing sent")
+                return
+            query = query.filter(table.tenant_id == profile.tenant_id)
+            branding = self.db.query(tenant_branding).filter(tenant_branding.tenant_id == profile.tenant_id).first()
+            brand = {
+                "company_name": profile.company_name,
+                "enable_branding": bool(branding and branding.enable_branding),
+                "primary_color": branding.primary_color if branding else None,
+                "button_text_color": branding.button_text_color if branding else None,
+                "logo_url": (branding.logo_url if branding else None) or profile.logo_url,
+            }
+        user = query.first()
+        # Tenants can be deactivated; a driver with no password has not finished onboarding (nothing to reset).
+        if not user or not user.password or (role == "tenant" and not user.is_active):
+            logger.info(f"Password reset requested for an email that is not a {role} account; nothing sent")
+            return
+        try:
+            PasswordResetEmails(
+                to_email=user.email, role=role, first_name=user.full_name,
+                token=create_password_reset_token(role, user.id, user.password),
+                minutes=PASSWORD_RESET_EXPIRE_MINUTES, slug=slug or None, branding=brand,
+            ).send()
+        except Exception:
+            # Same response whether or not the send worked: a failure here must not reveal the account exists.
+            logger.exception("Could not send password reset email")
+
+    def reset_password(self, role: str, token: str, new_password: str) -> None:
+        table = self._reset_table(role)
+        claims = verify_password_reset_token(token, role)
+        user = self.db.query(table).filter(table.id == int(claims["id"])).first()
+        if not user or not user.password or (role == "tenant" and not user.is_active):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This reset link is invalid or has expired.")
+        verify_password_reset_token(token, role, user.password)  # single use: the stored hash must still match
+        user.password = hash_password(new_password)
+        self.db.commit()
+
+    def login(self, request, user_credentials, role:str, legal_version: str | None = None):
         try:
             allowed_roles = ['tenant', 'rider', 'driver', 'admin']
             if role not in allowed_roles:
@@ -59,7 +132,6 @@ class AuthService:
             table = table_dict[role]
             
             logger.info(f"{role} login in....")
-            
             #retrieve client ip
             client_ip = get_remote_address(request)
 
@@ -75,15 +147,18 @@ class AuthService:
 
             user = self.db.query(table).filter(table.email == user_credentials.username).first()
             password = user_credentials.password.strip()
-
+           
             if not user:
+                logger.debug("Dummy hash entered....")
                 verify(password, _DUMMY_HASH)
                 fail()
             if not verify(password, user.password):
+                logger.debug("Failing actual auth...")
                 fail()
 
             clear_failures("login", account_id)
             if role == 'tenant':
+                legal_service.enforce_on_login(self.db, user, request, legal_version)
                 tenant_id = user.id
                 auto_refresh = False
             elif role == 'admin':

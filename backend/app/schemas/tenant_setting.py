@@ -136,6 +136,11 @@ class TenantBookingUpdate(BaseModel):
     meet_and_greet_fee: Optional[float] = Field(None) #For airports only  [flat fee]
     
     
+# Keep in sync with BRAND_FONTS in maison_frontend/app/src/utils/brandFonts.ts.
+BRAND_FONTS = {"DM Sans", "Work Sans", "Inter", "Manrope", "Lexend", "Geist",
+               "Instrument Serif", "Playfair Display", "Fraunces", "Cormorant"}
+
+
 class TenantBrandingUpdate(BaseModel):
     theme: Optional[str] = None
 
@@ -149,6 +154,13 @@ class TenantBrandingUpdate(BaseModel):
     text_muted_color: Optional[str] = None
     button_text_color: Optional[str] = None
 
+    # fonts: a catalog name, or "" to go back to the platform default
+    font_heading: Optional[str] = None
+    font_body: Optional[str] = None
+    font_accent: Optional[str] = None
+    # where the fonts apply: rider app only (default), + driver app, + landing page
+    font_scope: Optional[Literal["rider", "rider_driver", "all"]] = None
+
     # assets
     favicon_url: Optional[str] = None
     logo_url: Optional[str] = None
@@ -158,6 +170,13 @@ class TenantBrandingUpdate(BaseModel):
     email_from_address: Optional[str] = None
     enable_branding: Optional[bool] = None
     phone: Optional[str] = None
+    @field_validator('font_heading', 'font_body', 'font_accent')
+    @classmethod
+    def validate_font(cls, value):
+        if value and value not in BRAND_FONTS:
+            raise ValueError(f"Unsupported font: {value}")
+        return value
+
     @field_validator('slug', mode='before')
     def validate_slug(cls, value:str) -> any:
         if value != None:

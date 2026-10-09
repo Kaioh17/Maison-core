@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 from fastapi import APIRouter, HTTPException, FastAPI, Query, Response, status, Request, UploadFile, File, Form
 from pydantic import EmailStr
@@ -7,10 +8,13 @@ from app.db.database import get_db, get_base_db
 from ..core import deps
 from ..services.booking_services import BookingService, get_booking_service
 from ..services.tenants_service import TenantService, get_tenant_service, get_unauthorized_tenant_service
+from ..services.tenant_driver_service import TenantDriverService, get_tenant_driver_service
+from ..services.tenant_dispatch_service import TenantDispatchService, get_tenant_dispatch_service
 from ..services.analytics.tenant import TenantAnalyticService, get_tenant_analytics
 from app.schemas import tenant, driver, vehicle, booking, general
 from ..core import security, deps
 from app.utils.logging import logger
+from app.utils.text_normalize import normalize_company_name, normalize_slug
 
 
 
@@ -104,7 +108,7 @@ async def create_tenants(
                             phone_no: str = Form(..., pattern = r'^\+?[\d\s\-\(\)]+$'),
                             company_name: str = Form(..., min_length=1, max_length=200),
                             # logo_url: Optional[UploadFile] = None
-                            slug: str = Form(..., min_length=1, max_length=100, pattern=r'^[a-z0-9-]+$'),
+                            slug: str = Form(..., min_length=1, max_length=100),
                             address: Optional[str] = Form(None),
                             city: str = Form(..., min_length=1, max_length=100),
                             drivers_count: int = Form(default=0, ge=0),
@@ -113,6 +117,10 @@ async def create_tenants(
                             db: Session = Depends(get_base_db)):
                             
         logger.info("Creating Tenant....")
+        slug = normalize_slug(slug)
+        if not re.fullmatch(r'[a-z0-9-]+', slug):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Slug can only contain letters, numbers, and hyphens")
+        company_name = normalize_company_name(company_name)
         
         tenant_obj = await tenant_service.create_tenant(email=email,
                                                         first_name=first_name,
@@ -138,10 +146,10 @@ async def create_tenants(
 )
 async def get_tenant_drivers(
     driver_id: Optional[int] = None,
-    tenant_service: TenantService = Depends(get_tenant_service),
+    driver_service: TenantDriverService = Depends(get_tenant_driver_service),
 ):
     logger.info("Tenant drivers")
-    drivers = await tenant_service.get_all_drivers(driver_id)
+    drivers = await driver_service.get_all_drivers(driver_id)
     return drivers
 
 
@@ -156,18 +164,18 @@ async def get_tenant_drivers(
 async def get_vehicles_deprecated(
     driver_id: Optional[int] = Query(None, description="Get vehicles for specific driver"),
     assigned_drivers: Optional[bool] = Query(False, description="Get only vehicles assigned to drivers"),
-    tenant_service: TenantService = Depends(get_tenant_service)
+    dispatch_service: TenantDispatchService = Depends(get_tenant_dispatch_service)
 ):
     raise HTTPException(status_code=status.HTTP_410_GONE)
     if assigned_drivers:
         logger.info("Getting vehicles assigned to drivers")
-        vehicles = await tenant_service.fetch_assigned_drivers_vehicles()
+        vehicles = await dispatch_service.fetch_assigned_drivers_vehicles()
     elif driver_id:
         logger.info(f"Getting driver [{driver_id}] vehicles...")
-        vehicles = await tenant_service.find_vehicles_owned_by_driver(driver_id)
+        vehicles = await dispatch_service.find_vehicles_owned_by_driver(driver_id)
     else:
         logger.info("Tenant vehicles...")
-        vehicles = await tenant_service.get_all_vehicles()
+        vehicles = await dispatch_service.get_all_vehicles()
     return vehicles
 
 
@@ -237,10 +245,10 @@ async def list_tenant_rider_emails(
 async def onboard_drivers(
     payload: tenant.OnboardDriver,
     is_tenant=Depends(require_active_subscription),
-    tenant_service: TenantService = Depends(get_tenant_service)
+    driver_service: TenantDriverService = Depends(get_tenant_driver_service)
 ):
     logger.info("Onboarding driver...")
-    new_driver = await tenant_service.onboard_drivers(payload)
+    new_driver = await driver_service.onboard_drivers(payload)
     return new_driver
 
 
@@ -257,10 +265,10 @@ async def onboard_drivers(
 )
 async def approve_driver(
     driver_id: int,
-    tenant_service: TenantService = Depends(get_tenant_service),
+    driver_service: TenantDriverService = Depends(get_tenant_driver_service),
 ):
     logger.info("Approving driver...")
-    result = await tenant_service.approve_driver(driver_id)
+    result = await driver_service.approve_driver(driver_id)
     return result
 
 
@@ -278,9 +286,9 @@ async def approve_driver(
 async def set_driver_status(
     driver_id: int,
     is_active: bool,
-    tenant_service: TenantService = Depends(get_tenant_service),
+    driver_service: TenantDriverService = Depends(get_tenant_driver_service),
 ):
-    return await tenant_service.set_driver_active(driver_id, is_active)
+    return await driver_service.set_driver_active(driver_id, is_active)
 
 
 @router.post(
@@ -296,10 +304,10 @@ async def set_driver_status(
 )
 async def request_driver_deletion(
     driver_id: int,
-    tenant_service: TenantService = Depends(get_tenant_service),
+    driver_service: TenantDriverService = Depends(get_tenant_driver_service),
 ):
     logger.info("Requesting driver deletion...")
-    return await tenant_service.request_driver_deletion(driver_id)
+    return await driver_service.request_driver_deletion(driver_id)
 
 
 @router.delete(
@@ -317,10 +325,10 @@ async def request_driver_deletion(
 async def delete_driver(
     driver_id: int,
     payload: driver.DriverDeleteConfirm,
-    tenant_service: TenantService = Depends(get_tenant_service),
+    driver_service: TenantDriverService = Depends(get_tenant_driver_service),
 ):
     logger.info("Deleting driver...")
-    return await tenant_service.delete_driver(driver_id, payload)
+    return await driver_service.delete_driver(driver_id, payload)
 
 
 @router.patch(
@@ -333,9 +341,9 @@ async def delete_driver(
 async def assign_driver_to_rides(
     payload: tenant.AssignDriver,
     booking_id: int,
-    tenant_service: TenantService = Depends(get_tenant_service),
+    dispatch_service: TenantDispatchService = Depends(get_tenant_dispatch_service),
 ):
-    assigned_driver = await tenant_service.assign_driver_to_rides(payload, booking_id)
+    assigned_driver = await dispatch_service.assign_driver_to_rides(payload, booking_id)
     return assigned_driver
 
 
@@ -349,9 +357,9 @@ async def assign_driver_to_rides(
 async def assign_driver_to_vehicles(
     driver_id: int,
     vehicle_id: int,
-    tenant_service: TenantService = Depends(get_tenant_service),
+    dispatch_service: TenantDispatchService = Depends(get_tenant_dispatch_service),
 ):
-    assigned_driver = await tenant_service.assign_driver_to_vehicle(driver_id, vehicle_id)
+    assigned_driver = await dispatch_service.assign_driver_to_vehicle(driver_id, vehicle_id)
     return assigned_driver
 
 @router.patch(
@@ -364,9 +372,9 @@ async def assign_driver_to_vehicles(
 async def unassign_driver_from_vehicle(
     vehicle_id: int,
     override: bool = False,
-    tenant_service: TenantService = Depends(get_tenant_service),
+    dispatch_service: TenantDispatchService = Depends(get_tenant_dispatch_service),
 ):
-    assigned_driver = await tenant_service.unassign_driver_from_vehicles(
+    assigned_driver = await dispatch_service.unassign_driver_from_vehicles(
         override=override, vehicle_id=vehicle_id
     )
     return assigned_driver

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-from typing import Optional
+from typing import Literal, Optional
 from .vehicle_config import VehicleConfigResponse
 from .vehicle import VehicleResponse, VehicleCreate
 
@@ -47,6 +47,7 @@ class DriverResponse(DriverBase):
     is_active: bool = True
     is_registered: str
     status: Optional[str] = "available"
+    nav_app: Optional[Literal['google', 'apple', 'waze']] = None
     created_on: datetime
     updated_on: Optional[datetime] = None
     vehicle: Optional[VehicleResponse] = None

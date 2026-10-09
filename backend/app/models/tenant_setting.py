@@ -69,6 +69,12 @@ class TenantBranding(Base):
     text_muted_color   = Column(String, nullable=True)
     button_text_color  = Column(String, nullable=True)
 
+    # Rider-app fonts by catalog name (see BRAND_FONTS in schemas/tenant_setting.py). NULL/'' = platform default.
+    font_heading       = Column(String, nullable=True)
+    font_body          = Column(String, nullable=True)
+    font_accent        = Column(String, nullable=True)
+    font_scope         = Column(String, nullable=True)  # rider | rider_driver | all; NULL = rider
+
 
     favicon_url = Column(String, nullable=True)
     slug = Column(String, unique=True, nullable = True, index=True)

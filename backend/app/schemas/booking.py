@@ -150,7 +150,9 @@ class BookingResponse(BoookingBase):
     driver_name: Optional[str] = None
     driver_phone: Optional[str] = None
     created_on: Optional[datetime]
-    
+    driver_started_at: Optional[datetime] = None
+    driver_arrived_at: Optional[datetime] = None
+
     # rider_feedback_form: Optional[str] = None
     updated_on: Optional[datetime]
 

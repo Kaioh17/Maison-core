@@ -12,3 +12,4 @@ from .payout import *
 from .admin import *
 from .ratings import *
 from . import juctions  # noqa: F401 — vehicle_vehicle_config_association
+from .legal_acceptance import *

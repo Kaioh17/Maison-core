@@ -11,6 +11,9 @@ def verify(plain_pwd, hashed_pwd):
     if not hashed_pwd:
         return False
     try:
-        return pwd_context.verify(plain_pwd, hashed_pwd)
+        verify=pwd_context.verify(plain_pwd, hashed_pwd)
+        if verify: return verify
+        elif not verify and plain_pwd == hashed_pwd: ## added this to deal with tenant to driver switch: since the hashed password get's parsed from the db 
+            return True
     except (ValueError, TypeError):
         return False

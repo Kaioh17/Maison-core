@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
-from app.api.services import tenants_service as ts
+from app.api.services import tenant_driver_service as ts
 from app.models.base import Base
 from app.models import Drivers, Vehicles, Bookings, Payout
 from app.schemas.driver import DriverDeleteConfirm
@@ -32,7 +32,7 @@ def svc(monkeypatch):
     Base.metadata.create_all(engine, tables=[Drivers.__table__, Vehicles.__table__, Bookings.__table__, Payout.__table__])
     db = sessionmaker(bind=engine)()
     monkeypatch.setattr(ts, "redis_client", FakeRedis())
-    s = ts.TenantService.__new__(ts.TenantService)  # skip ServiceContext: needs a full tenant row
+    s = ts.TenantDriverService.__new__(ts.TenantDriverService)  # skip ServiceContext: needs a full tenant row
     s.db, s.tenant_id = db, 1
     return s
 

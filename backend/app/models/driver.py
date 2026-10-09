@@ -51,12 +51,19 @@ class Drivers(Base):
     background_check_status = Column(String(50),nullable=True, default='pending')
     stripe_onboaring_complete = Column(Boolean, nullable=True, default=False)
 
+    # Navigation app the driver's Start ride / Navigate buttons open. NULL = let the device decide.
+    nav_app = Column(String(16), nullable=True)
+
     
     __table_args__ = (
         UniqueConstraint('email', 'tenant_id','license_number', name = 'unique_driver'),
         CheckConstraint(
             "is_registered IN ('registered', 'pending')",
             name='check_driver_registeration',
+        ),
+        CheckConstraint(
+            "nav_app IS NULL OR nav_app IN ('google', 'apple', 'waze')",
+            name='check_driver_nav_app',
         ),
     )
     

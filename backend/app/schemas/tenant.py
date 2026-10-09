@@ -6,10 +6,22 @@ import re
 from enum import Enum
 from fastapi import UploadFile, Form
 from .general import GlobalValidator
+from app.utils.text_normalize import normalize_company_name, normalize_slug
 class DriverType(str, Enum):
     OUTSOURCED = "outsourced"
     IN_HOUSE = "in_house"
 """Tenants Schemas"""
+def check_password_strength(v: str) -> str:
+    if not re.search(r'[A-Z]', v):
+        raise ValueError('Password must contain at least one uppercase letter')
+    if not re.search(r'[a-z]', v):
+        raise ValueError('Password must contain at least one lowercase letter')
+    if not re.search(r'\d', v):
+        raise ValueError('Password must contain at least one number')
+    return v
+
+
+
 class TenantCreate(GlobalValidator):
     email: EmailStr = Form(...)
     first_name: str = Form(..., min_length=1, max_length=200)
@@ -26,10 +38,14 @@ class TenantCreate(GlobalValidator):
     @field_validator('email')
     def validate_email(cls, v):
         return v.lower()
+
+    @field_validator('company_name', mode='before')
+    def validate_company_name(cls, value):
+        return normalize_company_name(value) if isinstance(value, str) else value
     @field_validator('slug', mode='before')
     def validate_slug(cls, value:str) -> any:
         if value != None:
-            return value.lower().strip().replace(' ', '-').replace('_','-')
+            return normalize_slug(value)
     
     # @field_validator('slug')
     # def validate_slug(cls, v):
@@ -39,13 +55,9 @@ class TenantCreate(GlobalValidator):
     
     @field_validator('password')
     def validate_password(cls, v):
-        if not re.search(r'[A-Z]', v):
-            raise ValueError('Password must contain at least one uppercase letter')
-        if not re.search(r'[a-z]', v):
-            raise ValueError('Password must contain at least one lowercase letter')
-        if not re.search(r'\d', v):
-            raise ValueError('Password must contain at least one number')
-        return v
+        return check_password_strength(v)
+
+
 class BeDriver(BaseModel):
     license_number: Optional[int]
     state: Optional[str]
@@ -70,8 +82,12 @@ class TenantUpdate(BaseModel):
     @field_validator('slug', mode='before')
     def validate_slug(cls, value: str) -> any:
         if value:
-            return value.lower().strip().replace(' ', '-').replace('_', '-')
+            return normalize_slug(value)
         return value
+
+    @field_validator('company_name', mode='before')
+    def validate_company_name(cls, value):
+        return normalize_company_name(value) if isinstance(value, str) else value
 
 
 class TenantProfile(BaseModel):

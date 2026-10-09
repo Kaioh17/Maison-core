@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, FastAPI, Response, status, Request, Depends, Path
+from fastapi import APIRouter, HTTPException, FastAPI, Response, status, Request, Depends, Path, Query
 # from fastapi.params import Depends
 
 from fastapi.responses import JSONResponse
@@ -52,11 +52,39 @@ def login(
     ),
     auth_service: AuthService = Depends(get_auth_service),
     user_credentials: OAuth2PasswordRequestForm = Depends(),
+    legal_version: str | None = Query(None, description="Tenant only: legal version the user ticked the clickwrap box for."),
 ):
     response = auth_service.login(
-        request=request, user_credentials=user_credentials, role=role
+        request=request, user_credentials=user_credentials, role=role, legal_version=legal_version
     )
     return response
+
+
+@router.post(
+    "/forgot-password/{role}",
+    summary="Request a password reset email",
+    description=(
+        "Emails a reset link only if **email** belongs to an account of that role (`tenant`, `rider` or `driver`). "
+        "Riders and drivers must also send the operator's **slug** and receive that operator's branded email. "
+        "Always returns the same message, so it cannot be used to discover registered emails. "
+        "Rate limited per address and per IP."
+    ),
+)
+def forgot_password(request: Request, payload: auth.ForgotPasswordRequest, role: str = Path(..., examples=["tenant", "rider", "driver"]),
+                    auth_service: AuthService = Depends(get_auth_service)):
+    auth_service.request_password_reset(request, role, payload.email, payload.slug)
+    return {"message": "If an account exists for that email, a reset link is on its way."}
+
+
+@router.post(
+    "/reset-password/{role}",
+    summary="Set a new password from an emailed link",
+    description="The link works once and expires after 30 minutes. 400 if invalid or already used.",
+)
+def reset_password(payload: auth.ResetPasswordRequest, role: str = Path(..., examples=["tenant", "rider", "driver"]),
+                   auth_service: AuthService = Depends(get_auth_service)):
+    auth_service.reset_password(role, payload.token, payload.password)
+    return {"message": "Password updated. You can sign in now."}
 
 
 @router.post(

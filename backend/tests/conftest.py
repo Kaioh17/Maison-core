@@ -7,7 +7,7 @@ from app.main import app
 from app.db.database import get_db, get_base_db
 from app.models.base import Base
 from app.api.core.oauth2 import create_access_token
-from app.models.tenant import Tenants
+from app.models.tenant import Tenants, TenantProfile, TenantStats
 from app.models.driver import Drivers
 from app.models.user import Users
 from app.models.vehicle import Vehicles
@@ -76,7 +76,6 @@ def test_tenant(db_session):
     """Test tenant fixture"""
     tenant = Tenants(
         id=1,
-        company_name="Test Company",
         email="test@company.com",
         password=hash("testpassword123"),
         role="tenant",
@@ -84,13 +83,15 @@ def test_tenant(db_session):
         first_name="Test",
         last_name="Company",
         phone_no="+1234567890",
-        slug="testcompany",
-        address="123 Test St",
-        city="Test City",
-        drivers_count=0,
-        is_verified=True
+        is_verified=True,
     )
     db_session.add(tenant)
+    db_session.flush()
+    # Company fields live on the profile / stats rows, not on `tenants`.
+    db_session.add_all([
+        TenantProfile(tenant_id=tenant.id, company_name="Test Company", slug="testcompany", address="123 Test St", city="Test City"),
+        TenantStats(tenant_id=tenant.id, drivers_count=0),
+    ])
     db_session.commit()
     db_session.refresh(tenant)
     return tenant
@@ -155,19 +156,19 @@ def test_vehicle(db_session, test_tenant, test_driver):
     return vehicle
 
 @pytest.fixture
-def test_booking(db_session, test_tenant, test_driver, test_user):
+def test_booking(db_session, test_tenant, test_driver, test_user, test_vehicle):
     """Test booking fixture"""
     booking = Bookings(
         id=1,
         tenant_id=test_tenant.id,
         driver_id=test_driver.id,
+        vehicle_id=test_vehicle.id,
         rider_id=test_user.id,
         service_type="standard",
         pickup_location="123 Main St",
         pickup_time="2024-01-01T10:00:00",
         dropoff_location="456 Oak Ave",
         dropoff_time="2024-01-01T11:00:00",
-        city="Test City",
         booking_status="pending",
         estimated_price=25.00,
         notes="Test booking"

@@ -36,11 +36,17 @@ def _year() -> int:
     return datetime.now().year
 
 
-def wordmark_row(operator: str = 'Maison') -> str:
+def wordmark_row(operator: str = 'Maison', logo_url: Optional[str] = None) -> str:
+    # A tenant logo replaces the text name; the name stays as alt text for clients that block images.
+    mark = (
+        f'<img src="{html.escape(logo_url, quote=True)}" alt="{html.escape(operator)}" height="36" style="display: block; height: 36px; width: auto; max-width: 220px; border: 0;">'
+        if logo_url
+        else f'<span style="font-family: {FONT}; font-size: 17px; font-weight: 600; color: {TEXT}; letter-spacing: -0.03em;">{operator}</span>'
+    )
     return f"""
     <tr>
         <td style="padding: 28px {EMAIL_CONTENT_PAD_X} 18px {EMAIL_CONTENT_PAD_X}; border-bottom: 1px solid #e5e7eb;">
-            <span style="font-family: {FONT}; font-size: 17px; font-weight: 600; color: {TEXT}; letter-spacing: -0.03em;">{operator}</span>
+            {mark}
         </td>
     </tr>
     """
@@ -164,19 +170,21 @@ def signoff_maison_team() -> str:
     return p("— The Maison team", margin_bottom="0")
 
 
-def primary_cta(href: str, label: str) -> str:
+def primary_cta(href: str, label: str, *, bg: Optional[str] = None, fg: str = "#ffffff") -> str:
+    """`bg` / `fg` are a tenant's brand colors (already validated hex); default is the Maison button."""
+    bg_css, border_css = (bg, bg) if bg else (BTN_BG, BTN_BORDER)
     return f"""
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 28px;">
         <tr>
             <td style="padding: 0;">
-                <a href="{href}" style="display: block; width: 100%; box-sizing: border-box; padding: 14px 24px; background-color: {BTN_BG}; color: #ffffff; text-decoration: none; font-family: {FONT}; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center; border: 1px solid {BTN_BORDER};">{label}</a>
+                <a href="{href}" style="display: block; width: 100%; box-sizing: border-box; padding: 14px 24px; background-color: {bg_css}; color: {fg}; text-decoration: none; font-family: {FONT}; font-size: 16px; font-weight: 500; border-radius: 8px; text-align: center; border: 1px solid {border_css};">{label}</a>
             </td>
         </tr>
     </table>
     """
 
 
-def build_email(body_html: str, *, footer_brand: str = "Maison", unsubscribe_href: str = "#") -> str:
+def build_email(body_html: str, *, footer_brand: str = "Maison", unsubscribe_href: str = "#", logo_url: Optional[str] = None) -> str:
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -188,7 +196,7 @@ def build_email(body_html: str, *, footer_brand: str = "Maison", unsubscribe_hre
         <tr>
             <td align="center" style="padding: {EMAIL_SHELL_PADDING};">
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: {EMAIL_INNER_MAX_WIDTH}; width: 100%; background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
-                    {wordmark_row(footer_brand)}
+                    {wordmark_row(footer_brand, logo_url)}
                     <tr>
                         <td style="padding: 32px {EMAIL_CONTENT_PAD_X} 40px {EMAIL_CONTENT_PAD_X};">
                             {body_html}

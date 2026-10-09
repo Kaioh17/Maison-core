@@ -122,3 +122,19 @@ def test_icon_version_changes_when_logo_is_reuploaded_to_same_url():
     a = _snapshot("Acme", logo_url="https://x/y.png", updated_on="2026-01-01")
     b = _snapshot("Acme", logo_url="https://x/y.png", updated_on="2026-02-01")
     assert a.version != b.version
+
+
+def test_manifest_role_sets_start_url_and_unique_id():
+    from app.api.services.pwa_service import PwaService
+
+    svc = PwaService.__new__(PwaService)  # build_manifest uses no instance state
+    snap = _snapshot("Acme")
+    base = svc.build_manifest(snap)
+    driver = svc.build_manifest(snap, role="driver")
+    rider = svc.build_manifest(snap, role="rider")
+    assert base["start_url"] == "/?source=pwa" and base["id"] == "/?tenant=acme"  # existing installs unchanged
+    assert driver["start_url"].startswith("/driver/dashboard") and driver["name"] == "Acme Driver"
+    assert rider["start_url"].startswith("/rider/dashboard") and rider["name"] == "Acme"
+    assert len({base["id"], driver["id"], rider["id"]}) == 3
+    assert svc.build_manifest(snap, role="bogus") == base
+    assert svc.build_manifest(snap, is_tenant_app=True, role="driver")["start_url"] == "/tenant/overview"

@@ -346,13 +346,14 @@ class DriverService(ServiceContext):
         try:
             logger.debug(f"driver chose {action}")
             if approve_action:
-                booking_obj = self.db.query(booking_table).filter(booking_table.id == booking_id).first()
-                driver:driver_table = self.db.query(driver_table).filter(booking_table.id == booking_id, 
-                                                                         driver_table.id == booking_obj.driver_id).first()
+                booking_obj = self.db.query(booking_table).filter(booking_table.id == booking_id,
+                                                                  booking_table.tenant_id == self.tenant_id).first()
                 if not booking_obj:
                     logger.warning("There are no booked_rides..")
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                         detail = f"There no {booking_id} bookings")   
+                driver:driver_table = self.db.query(driver_table).filter(driver_table.id == booking_obj.driver_id,
+                                                                         driver_table.tenant_id == self.tenant_id).first()
                 if booking_obj.booking_status == "completed":
                     logger.error( f"Ride already {booking_obj.booking_status}. Cannot set to `{action}`")
                     raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
@@ -439,6 +440,46 @@ class DriverService(ServiceContext):
         except db_exceptions.COMMON_DB_ERRORS as e:
             db_exceptions.handle(e, self.db)
         
+    async def set_nav_app(self, nav_app: str):
+        try:
+            obj = self.db.query(driver_table).filter(driver_table.tenant_id == self.tenant_id, driver_table.id == self.driver_id).first()
+            Validations(db=self.db)._obj_empty(obj=obj)
+            obj.nav_app = nav_app
+            self.db.commit()
+            return success_resp(msg="Navigation app saved", data={"nav_app": obj.nav_app})
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(exc=e, db=self.db)
+
+    def _my_confirmed_ride(self, booking_id: int):
+        ride = self.db.query(booking_table).filter(
+            booking_table.id == booking_id,
+            booking_table.tenant_id == self.tenant_id,
+            booking_table.driver_id == self.driver_id,
+        ).first()
+        if not ride:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ride not found")
+        if ride.booking_status != 'confirmed':
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Ride is {ride.booking_status}, not confirmed")
+        return ride
+
+    async def set_ride_phase(self, booking_id: int, phase: str):
+        """enroute -> arrived, stamped once. Moving forward only; repeating a phase is a no-op."""
+        try:
+            ride = self._my_confirmed_ride(booking_id)
+            now = datetime.now(timezone.utc)
+            if ride.driver_started_at is None:
+                ride.driver_started_at = now
+            if phase == 'arrived' and ride.driver_arrived_at is None:
+                ride.driver_arrived_at = now
+            self.db.commit()
+            return success_resp(msg="Ride phase saved", data={
+                "booking_id": ride.id,
+                "driver_started_at": ride.driver_started_at,
+                "driver_arrived_at": ride.driver_arrived_at,
+            })
+        except db_exceptions.COMMON_DB_ERRORS as e:
+            db_exceptions.handle(exc=e, db=self.db)
+
     async def driver_status(self, is_active:bool):
         try:
             
